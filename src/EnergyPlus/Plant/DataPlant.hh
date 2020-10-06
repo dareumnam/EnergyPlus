@@ -191,6 +191,7 @@ namespace DataPlant {
     extern int const TypeOf_CoilSteamAirHeating;          // demand side component
     extern int const TypeOf_SolarCollectorFlatPlate;      // demand side component
     extern int const TypeOf_PlantLoadProfile;             // demand side component
+    extern int const TypeOf_PlantLoadProfileSteam;
     extern int const TypeOf_GrndHtExchgSystem;
     extern int const TypeOf_GrndHtExchgSurface;
     extern int const TypeOf_GrndHtExchgPond;

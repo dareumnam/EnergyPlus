@@ -176,6 +176,7 @@ namespace DataPlant {
                                              "COIL:HEATING:STEAM",
                                              "SOLARCOLLECTOR:FLATPLATE:WATER",
                                              "LOADPROFILE:PLANT",
+                                             "LOADPROFILE:PLANT:STEAM",
                                              "GROUNDHEATEXCHANGER:SYSTEM",
                                              "GROUNDHEATEXCHANGER:SURFACE",
                                              "GROUNDHEATEXCHANGER:POND",
@@ -274,6 +275,7 @@ namespace DataPlant {
                                                "Coil:Heating:Steam",
                                                "Solarcollector:Flatplate:Water",
                                                "LoadProfile:Plant",
+                                               "LoadProfile:Plant:Steam",
                                                "GroundHeatExchanger:System",
                                                "GroundHeatExchanger:Surface",
                                                "GroundHeatExchanger:Pond",
@@ -387,6 +389,7 @@ namespace DataPlant {
     int const TypeOf_CoilSteamAirHeating(42);          // demand side component
     int const TypeOf_SolarCollectorFlatPlate(43);      // demand side component
     int const TypeOf_PlantLoadProfile(44);             // demand side component
+    int const TypeOf_PlantLoadProfileSteam(97);
     int const TypeOf_GrndHtExchgSystem(45);
     int const TypeOf_GrndHtExchgSurface(46);
     int const TypeOf_GrndHtExchgPond(47);

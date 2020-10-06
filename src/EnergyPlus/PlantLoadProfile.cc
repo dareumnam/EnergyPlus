@@ -93,6 +93,7 @@ namespace PlantLoadProfile {
     using DataGlobals::BeginEnvrnFlag;
     using DataPlant::PlantLoop;
     using DataPlant::TypeOf_PlantLoadProfile;
+    using DataPlant::TypeOf_PlantLoadProfileSteam;
     using PlantUtilities::InitComponentNodes;
     using PlantUtilities::ScanPlantLoopsForObject;
     using PlantUtilities::SetComponentFlowRate;
@@ -100,6 +101,8 @@ namespace PlantLoadProfile {
     // MODULE VARIABLE DECLARATIONS:
     bool GetPlantLoadProfileInputFlag(true);
     int NumOfPlantProfile;
+    int NumOfPlantProfileWater;
+    int NumOfPlantProfileSteam;
 
     // Object Data
     Array1D<PlantProfileData> PlantProfile;
@@ -378,135 +381,200 @@ namespace PlantLoadProfile {
         int NumAlphas;                  // Number of Alphas for each GetObjectItem call
         int NumNumbers;                 // Number of Numbers for each GetObjectItem call
         int ProfileNum;                 // PLANT LOAD PROFILE (PlantProfile) object number
+        int ProfileWaterNum;
+        int ProfileSteamNum;
         //  CHARACTER(len=MaxNameLength)   :: FoundBranchName
         //  INTEGER                        :: BranchControlType
 
         // FLOW:
-        cCurrentModuleObject = "LoadProfile:Plant";
-        NumOfPlantProfile = inputProcessor->getNumObjectsFound(cCurrentModuleObject);
+        
+        NumOfPlantProfileWater = inputProcessor->getNumObjectsFound("LoadProfile:Plant");
+        NumOfPlantProfileSteam = inputProcessor->getNumObjectsFound("LoadProfile:Plant:Steam");
+
+        NumOfPlantProfile = NumOfPlantProfileWater + NumOfPlantProfileSteam;
 
         if (NumOfPlantProfile > 0) {
             PlantProfile.allocate(NumOfPlantProfile);
-
-            for (ProfileNum = 1; ProfileNum <= NumOfPlantProfile; ++ProfileNum) {
-                inputProcessor->getObjectItem(cCurrentModuleObject,
-                                              ProfileNum,
-                                              cAlphaArgs,
-                                              NumAlphas,
-                                              rNumericArgs,
-                                              NumNumbers,
-                                              IOStatus,
-                                              lNumericFieldBlanks,
-                                              _,
-                                              cAlphaFieldNames,
-                                              cNumericFieldNames);
-                UtilityRoutines::IsNameEmpty(cAlphaArgs(1), cCurrentModuleObject, ErrorsFound);
-
-                PlantProfile(ProfileNum).Name = cAlphaArgs(1);
-                PlantProfile(ProfileNum).TypeNum = TypeOf_PlantLoadProfile; // parameter assigned in DataPlant !DSU
-
-                PlantProfile(ProfileNum).InletNode = GetOnlySingleNode(
-                    cAlphaArgs(2), ErrorsFound, cCurrentModuleObject, cAlphaArgs(1), NodeType_Water, NodeConnectionType_Inlet, 1, ObjectIsNotParent);
-                PlantProfile(ProfileNum).OutletNode = GetOnlySingleNode(
-                    cAlphaArgs(3), ErrorsFound, cCurrentModuleObject, cAlphaArgs(1), NodeType_Water, NodeConnectionType_Outlet, 1, ObjectIsNotParent);
-
-                PlantProfile(ProfileNum).LoadSchedule = GetScheduleIndex(cAlphaArgs(4));
-
-                if (PlantProfile(ProfileNum).LoadSchedule == 0) {
-                    ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(4) + " called " +
-                                    cAlphaArgs(4) + " was not found.");
-                    ErrorsFound = true;
-                }
-
-                PlantProfile(ProfileNum).PeakVolFlowRate = rNumericArgs(1);
-
-                PlantProfile(ProfileNum).FlowRateFracSchedule = GetScheduleIndex(cAlphaArgs(5));
-
-                if (PlantProfile(ProfileNum).FlowRateFracSchedule == 0) {
-                    ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(5) + " called " +
-                                    cAlphaArgs(5) + " was not found.");
-
-                    ErrorsFound = true;
-                }
-
-                // Check plant connections
-                TestCompSet(cCurrentModuleObject, cAlphaArgs(1), cAlphaArgs(2), cAlphaArgs(3), cCurrentModuleObject + " Nodes");
-
-                // Setup report variables
-                SetupOutputVariable("Plant Load Profile Mass Flow Rate",
-                                    OutputProcessor::Unit::kg_s,
-                                    PlantProfile(ProfileNum).MassFlowRate,
-                                    "System",
-                                    "Average",
-                                    PlantProfile(ProfileNum).Name);
-
-                SetupOutputVariable("Plant Load Profile Heat Transfer Rate",
-                                    OutputProcessor::Unit::W,
-                                    PlantProfile(ProfileNum).Power,
-                                    "System",
-                                    "Average",
-                                    PlantProfile(ProfileNum).Name);
-
-                SetupOutputVariable("Plant Load Profile Heat Transfer Energy",
-                                    OutputProcessor::Unit::J,
-                                    PlantProfile(ProfileNum).Energy,
-                                    "System",
-                                    "Sum",
-                                    PlantProfile(ProfileNum).Name,
-                                    _,
-                                    "ENERGYTRANSFER",
-                                    "Heating",
-                                    _,
-                                    "Plant"); // is EndUseKey right?
-
-                SetupOutputVariable("Plant Load Profile Heating Energy",
-                                    OutputProcessor::Unit::J,
-                                    PlantProfile(ProfileNum).HeatingEnergy,
-                                    "System",
-                                    "Sum",
-                                    PlantProfile(ProfileNum).Name,
-                                    _,
-                                    "PLANTLOOPHEATINGDEMAND",
-                                    "Heating",
-                                    _,
-                                    "Plant");
-
-                SetupOutputVariable("Plant Load Profile Cooling Energy",
-                                    OutputProcessor::Unit::J,
-                                    PlantProfile(ProfileNum).CoolingEnergy,
-                                    "System",
-                                    "Sum",
-                                    PlantProfile(ProfileNum).Name,
-                                    _,
-                                    "PLANTLOOPCOOLINGDEMAND",
-                                    "Cooling",
-                                    _,
-                                    "Plant");
-
-                if (AnyEnergyManagementSystemInModel) {
-                    SetupEMSActuator("Plant Load Profile",
-                                     PlantProfile(ProfileNum).Name,
-                                     "Mass Flow Rate",
-                                     "[kg/s]",
-                                     PlantProfile(ProfileNum).EMSOverrideMassFlow,
-                                     PlantProfile(ProfileNum).EMSMassFlowValue);
-                    SetupEMSActuator("Plant Load Profile",
-                                     PlantProfile(ProfileNum).Name,
-                                     "Power",
-                                     "[W]",
-                                     PlantProfile(ProfileNum).EMSOverridePower,
-                                     PlantProfile(ProfileNum).EMSPowerValue);
-                }
-
-                if (ErrorsFound) ShowFatalError("Errors in " + cCurrentModuleObject + " input.");
-
-            } // ProfileNum
         }
+        
+        cCurrentModuleObject = "LoadProfile:Plant";
+        for (ProfileWaterNum = 1; ProfileWaterNum <= NumOfPlantProfileWater; ++ProfileWaterNum) {
+            inputProcessor->getObjectItem(cCurrentModuleObject,
+                                          ProfileWaterNum,
+                                          cAlphaArgs,
+                                          NumAlphas,
+                                          rNumericArgs,
+                                          NumNumbers,
+                                          IOStatus,
+                                          lNumericFieldBlanks,
+                                          _,
+                                          cAlphaFieldNames,
+                                          cNumericFieldNames);
+            UtilityRoutines::IsNameEmpty(cAlphaArgs(1), cCurrentModuleObject, ErrorsFound);
+
+            PlantProfile(ProfileWaterNum).Name = cAlphaArgs(1);
+            PlantProfile(ProfileWaterNum).TypeNum = TypeOf_PlantLoadProfile; // parameter assigned in DataPlant !DSU
+
+            PlantProfile(ProfileWaterNum).InletNode = GetOnlySingleNode(
+                cAlphaArgs(2), ErrorsFound, cCurrentModuleObject, cAlphaArgs(1), NodeType_Water, NodeConnectionType_Inlet, 1, ObjectIsNotParent);
+            PlantProfile(ProfileWaterNum).OutletNode = GetOnlySingleNode(
+                cAlphaArgs(3), ErrorsFound, cCurrentModuleObject, cAlphaArgs(1), NodeType_Water, NodeConnectionType_Outlet, 1, ObjectIsNotParent);
+
+            PlantProfile(ProfileWaterNum).LoadSchedule = GetScheduleIndex(cAlphaArgs(4));
+
+            if (PlantProfile(ProfileWaterNum).LoadSchedule == 0) {
+                ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(4) + " called " +
+                                cAlphaArgs(4) + " was not found.");
+                ErrorsFound = true;
+            }
+
+            PlantProfile(ProfileWaterNum).PeakVolFlowRate = rNumericArgs(1);
+
+            PlantProfile(ProfileWaterNum).FlowRateFracSchedule = GetScheduleIndex(cAlphaArgs(5));
+
+            if (PlantProfile(ProfileWaterNum).FlowRateFracSchedule == 0) {
+                ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(5) + " called " +
+                                cAlphaArgs(5) + " was not found.");
+
+                ErrorsFound = true;
+            }
+
+            // Check plant connections
+            TestCompSet(cCurrentModuleObject, cAlphaArgs(1), cAlphaArgs(2), cAlphaArgs(3), cCurrentModuleObject + " Nodes");
+        }      
+
+        cCurrentModuleObject = "LoadProfile:Plant:Steam";
+        for (ProfileSteamNum = 1; ProfileSteamNum <= NumOfPlantProfileSteam; ++ProfileSteamNum) {
+            inputProcessor->getObjectItem(cCurrentModuleObject,
+                                          ProfileSteamNum,
+                                          cAlphaArgs,
+                                          NumAlphas,
+                                          rNumericArgs,
+                                          NumNumbers,
+                                          IOStatus,
+                                          lNumericFieldBlanks,
+                                          _,
+                                          cAlphaFieldNames,
+                                          cNumericFieldNames);
+            UtilityRoutines::IsNameEmpty(cAlphaArgs(1), cCurrentModuleObject, ErrorsFound);
+
+            PlantProfile(ProfileSteamNum).Name = cAlphaArgs(1);
+            PlantProfile(ProfileSteamNum).TypeNum = TypeOf_PlantLoadProfileSteam;
+
+            PlantProfile(ProfileSteamNum).InletNode = GetOnlySingleNode(
+                cAlphaArgs(2), ErrorsFound, cCurrentModuleObject, cAlphaArgs(1), NodeType_Steam, NodeConnectionType_Inlet, 2, ObjectIsNotParent);
+            PlantProfile(ProfileSteamNum).OutletNode = GetOnlySingleNode(
+                cAlphaArgs(3), ErrorsFound, cCurrentModuleObject, cAlphaArgs(1), NodeType_Steam, NodeConnectionType_Outlet, 2, ObjectIsNotParent);
+
+            PlantProfile(ProfileSteamNum).LoadSchedule = GetScheduleIndex(cAlphaArgs(4));
+
+            if (PlantProfile(ProfileSteamNum).LoadSchedule == 0) {
+                ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(4) + " called " +
+                                cAlphaArgs(4) + " was not found.");
+                ErrorsFound = true;
+            }
+
+            PlantProfile(ProfileSteamNum).PeakVolFlowRate = rNumericArgs(1);
+
+            PlantProfile(ProfileSteamNum).FlowRateFracSchedule = GetScheduleIndex(cAlphaArgs(5));
+
+            PlantProfile(ProfileSteamNum).MaxSteamVolFlowRate = rNumericArgs(2);
+
+            PlantProfile(ProfileSteamNum).DegOfSubcooling = rNumericArgs(3);
+
+            PlantProfile(ProfileSteamNum).LoopSubcoolReturn = rNumericArgs(4);
+
+            if (PlantProfile(ProfileSteamNum).FlowRateFracSchedule == 0) {
+                ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(5) + " called " +
+                                cAlphaArgs(5) + " was not found.");
+
+                ErrorsFound = true;
+            }
+
+            // Check plant connections
+            TestCompSet(cCurrentModuleObject, cAlphaArgs(1), cAlphaArgs(2), cAlphaArgs(3), cCurrentModuleObject + " Nodes");
+        }    
+
+        for (ProfileNum = 1; ProfileNum <= NumOfPlantProfile; ++ProfileNum) {
+
+            // Setup report variables
+            SetupOutputVariable("Plant Load Profile Mass Flow Rate",
+                                OutputProcessor::Unit::kg_s,
+                                PlantProfile(ProfileNum).MassFlowRate,
+                                "System",
+                                "Average",
+                                PlantProfile(ProfileNum).Name);
+
+            SetupOutputVariable("Plant Load Profile Heat Transfer Rate",
+                                OutputProcessor::Unit::W,
+                                PlantProfile(ProfileNum).Power,
+                                "System",
+                                "Average",
+                                PlantProfile(ProfileNum).Name);
+
+            SetupOutputVariable("Plant Load Profile Heat Transfer Energy",
+                                OutputProcessor::Unit::J,
+                                PlantProfile(ProfileNum).Energy,
+                                "System",
+                                "Sum",
+                                PlantProfile(ProfileNum).Name,
+                                _,
+                                "ENERGYTRANSFER",
+                                "Heating",
+                                _,
+                                "Plant"); // is EndUseKey right?
+
+            SetupOutputVariable("Plant Load Profile Heating Energy",
+                                OutputProcessor::Unit::J,
+                                PlantProfile(ProfileNum).HeatingEnergy,
+                                "System",
+                                "Sum",
+                                PlantProfile(ProfileNum).Name,
+                                _,
+                                "PLANTLOOPHEATINGDEMAND",
+                                "Heating",
+                                _,
+                                "Plant");
+
+            SetupOutputVariable("Plant Load Profile Cooling Energy",
+                                OutputProcessor::Unit::J,
+                                PlantProfile(ProfileNum).CoolingEnergy,
+                                "System",
+                                "Sum",
+                                PlantProfile(ProfileNum).Name,
+                                _,
+                                "PLANTLOOPCOOLINGDEMAND",
+                                "Cooling",
+                                _,
+                                "Plant");
+
+            if (AnyEnergyManagementSystemInModel) {
+                SetupEMSActuator("Plant Load Profile",
+                                 PlantProfile(ProfileNum).Name,
+                                 "Mass Flow Rate",
+                                 "[kg/s]",
+                                 PlantProfile(ProfileNum).EMSOverrideMassFlow,
+                                 PlantProfile(ProfileNum).EMSMassFlowValue);
+                SetupEMSActuator("Plant Load Profile",
+                                 PlantProfile(ProfileNum).Name,
+                                 "Power",
+                                 "[W]",
+                                 PlantProfile(ProfileNum).EMSOverridePower,
+                                 PlantProfile(ProfileNum).EMSPowerValue);
+            }
+
+            if (ErrorsFound) ShowFatalError("Errors in " + cCurrentModuleObject + " input.");
+
+        } // ProfileNum
+
+
     }
 
     void clear_state()
     {
         NumOfPlantProfile = 0;
+        NumOfPlantProfileWater = 0;
+        NumOfPlantProfileSteam = 0;
         GetPlantLoadProfileInputFlag = true;
         PlantProfile.deallocate();
     }

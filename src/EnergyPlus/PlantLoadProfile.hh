@@ -102,6 +102,9 @@ namespace PlantLoadProfile {
         int FlowRateFracSchedule; // Pointer to schedule object
         Real64 VolFlowRate;       // Volumetric flow rate (m3/s)
         Real64 MassFlowRate;      // Mass flow rate (kg/s)
+        Real64 MaxSteamVolFlowRate; // Maximum water Volume flow rate [m3/s]
+        Real64 DegOfSubcooling;
+        Real64 LoopSubcoolReturn;
         bool EMSOverrideMassFlow;
         Real64 EMSMassFlowValue;
         // Report variables

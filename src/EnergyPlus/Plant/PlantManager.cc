@@ -1009,6 +1009,10 @@ namespace EnergyPlus {
                                 this_comp.TypeOf_Num = TypeOf_PlantLoadProfile;
                                 this_comp.CurOpSchemeType = DemandOpSchemeType;
                                 this_comp.compPtr = PlantLoadProfile::PlantProfileData::factory(CompNames(CompNum));
+                            } else if (UtilityRoutines::SameString(this_comp_type, "LoadProfile:Plant:Steam")) {
+                                this_comp.TypeOf_Num = TypeOf_PlantLoadProfileSteam;
+                                this_comp.CurOpSchemeType = DemandOpSchemeType;
+                                this_comp.compPtr = PlantLoadProfile::PlantProfileData::factory(CompNames(CompNum));
                             } else if (UtilityRoutines::SameString(this_comp_type, "GroundHeatExchanger:System")) {
                                 this_comp.TypeOf_Num = TypeOf_GrndHtExchgSystem;
                                 this_comp.CurOpSchemeType = UncontrolledOpSchemeType;
@@ -2879,6 +2883,8 @@ namespace EnergyPlus {
                                         ShouldBeACTIVE = true;
                                     } else if (SELECT_CASE_var == TypeOf_PlantLoadProfile) {
                                         ShouldBeACTIVE = true;
+                                    } else if (SELECT_CASE_var == TypeOf_PlantLoadProfileSteam) {
+                                        ShouldBeACTIVE = true;
                                     } else {
                                         // not a demand side component that we know needs to be active, do nothing
                                     }
@@ -3966,6 +3972,10 @@ namespace EnergyPlus {
                                     this_component.HowLoadServed = HowMet_PassiveCap;
                                 } else if (SELECT_CASE_var ==
                                            TypeOf_PlantLoadProfile) { //            = 44  ! demand side component
+                                    this_component.FlowCtrl = ControlType_Active;
+                                    this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
+                                    this_component.HowLoadServed = HowMet_NoneDemand;
+                                } else if (SELECT_CASE_var == TypeOf_PlantLoadProfileSteam) { //            = 97  ! demand side component
                                     this_component.FlowCtrl = ControlType_Active;
                                     this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
                                     this_component.HowLoadServed = HowMet_NoneDemand;
