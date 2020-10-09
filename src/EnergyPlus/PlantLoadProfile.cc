@@ -53,17 +53,17 @@
 
 // EnergyPlus Headers
 #include <EnergyPlus/BranchNodeConnections.hh>
+#include <EnergyPlus/Data/EnergyPlusData.hh>
 #include <EnergyPlus/DataHVACGlobals.hh>
 #include <EnergyPlus/DataIPShortCuts.hh>
 #include <EnergyPlus/DataLoopNode.hh>
-#include <EnergyPlus/Plant/DataPlant.hh>
 #include <EnergyPlus/DataPrecisionGlobals.hh>
 #include <EnergyPlus/EMSManager.hh>
 #include <EnergyPlus/FluidProperties.hh>
-#include <EnergyPlus/Data/EnergyPlusData.hh>
 #include <EnergyPlus/InputProcessing/InputProcessor.hh>
 #include <EnergyPlus/NodeInputManager.hh>
 #include <EnergyPlus/OutputProcessor.hh>
+#include <EnergyPlus/Plant/DataPlant.hh>
 #include <EnergyPlus/PlantLoadProfile.hh>
 #include <EnergyPlus/PlantUtilities.hh>
 #include <EnergyPlus/ScheduleManager.hh>
@@ -130,7 +130,8 @@ namespace PlantLoadProfile {
         this->InitPlantProfile(state);
     }
 
-    void PlantProfileData::simulate(EnergyPlusData &state, const PlantLocation &EP_UNUSED(calledFromLocation),
+    void PlantProfileData::simulate(EnergyPlusData &state,
+                                    const PlantLocation &EP_UNUSED(calledFromLocation),
                                     bool const EP_UNUSED(FirstHVACIteration),
                                     Real64 &EP_UNUSED(CurLoad),
                                     bool const EP_UNUSED(RunFlag))
@@ -160,19 +161,54 @@ namespace PlantLoadProfile {
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         static std::string const RoutineName("SimulatePlantProfile");
         Real64 DeltaTemp;
+        Real64 EnthSteamInDry;
+        Real64 EnthSteamOutWet;
+        Real64 LatentHeatSteam;
+        static std::string const fluidNameSteam("STEAM");
+        int FluidIndex;
+        Real64 CpWater;
 
         this->InitPlantProfile(state);
 
-        if (this->MassFlowRate > 0.0) {
-            Real64 Cp =
-                GetSpecificHeatGlycol(PlantLoop(this->WLoopNum).FluidName, this->InletTemp, PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
-            DeltaTemp = this->Power / (this->MassFlowRate * Cp);
-        } else {
-            this->Power = 0.0;
-            DeltaTemp = 0.0;
-        }
+        auto const SELECT_CASE_var(this->TypeNum);
 
-        this->OutletTemp = this->InletTemp - DeltaTemp;
+        if (SELECT_CASE_var == TypeOf_PlantLoadProfile) {
+            if (this->MassFlowRate > 0.0) {
+                Real64 Cp =
+                    GetSpecificHeatGlycol(PlantLoop(this->WLoopNum).FluidName, this->InletTemp, PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
+                DeltaTemp = this->Power / (this->MassFlowRate * Cp);
+            } else {
+                this->Power = 0.0;
+                DeltaTemp = 0.0;
+            }
+
+            this->OutletTemp = this->InletTemp - DeltaTemp;
+
+        } else if (SELECT_CASE_var == TypeOf_PlantLoadProfileSteam) {
+            if (((this->MassFlowRate) > 0.0) && (this->Power > 0.0)) {
+                // Steam heat exchangers would not have effectivness, since all of the steam is
+                // converted to water and only then the steam trap allows it to leave the heat
+                // exchanger, subsequently heat exchange is latent heat + subcooling.
+
+                FluidIndex = FluidProperties::FindRefrigerant("Steam");
+                EnthSteamInDry = FluidProperties::GetSatEnthalpyRefrig(fluidNameSteam, this->InletTemp, 1.0, FluidIndex, RoutineName);
+                EnthSteamOutWet = FluidProperties::GetSatEnthalpyRefrig(fluidNameSteam, this->InletTemp, 0.0, FluidIndex, RoutineName);
+                LatentHeatSteam = EnthSteamInDry - EnthSteamOutWet;
+
+                CpWater = FluidProperties::GetSatSpecificHeatRefrig(fluidNameSteam, this->InletTemp, 0.0, FluidIndex, RoutineName);
+
+                // Steam Mass Flow Rate Required
+                this->MassFlowRate = this->Power / (LatentHeatSteam + this->DegOfSubcooling * CpWater);
+
+                // In practice Sensible & Superheated heat transfer is negligible compared to latent part.
+                // This is required for outlet water temperature, otherwise it will be saturation temperature.
+                // Steam Trap drains off all the Water formed.
+                // Here Degree of Subcooling is used to calculate hot water return temperature.
+
+                // Calculating Water outlet temperature
+                this->OutletTemp = this->InletTemp - this->DegOfSubcooling;
+            }
+        }
 
         this->UpdatePlantProfile();
         this->ReportPlantProfile();
@@ -218,7 +254,18 @@ namespace PlantLoadProfile {
             if (allocated(PlantLoop)) {
                 errFlag = false;
                 ScanPlantLoopsForObject(state,
-                    this->Name, this->TypeNum, this->WLoopNum, this->WLoopSideNum, this->WLoopBranchNum, this->WLoopCompNum, errFlag, _, _, _, _, _);
+                                        this->Name,
+                                        this->TypeNum,
+                                        this->WLoopNum,
+                                        this->WLoopSideNum,
+                                        this->WLoopBranchNum,
+                                        this->WLoopCompNum,
+                                        errFlag,
+                                        _,
+                                        _,
+                                        _,
+                                        _,
+                                        _);
                 if (errFlag) {
                     ShowFatalError("InitPlantProfile: Program terminated for previous conditions.");
                 }
@@ -312,6 +359,7 @@ namespace PlantLoadProfile {
 
         // Set outlet node variables that are possibly changed
         Node(OutletNode).Temp = this->OutletTemp;
+        Node(OutletNode).MassFlowRate = this->MassFlowRate;
 
         // DSU? enthalpy? quality etc? central routine? given inlet node, fluid type, delta T, properly fill all node vars?
     }
@@ -377,17 +425,17 @@ namespace PlantLoadProfile {
         // Locals
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         bool ErrorsFound(false); // Set to true if errors in input, fatal at end of routine
-        int IOStatus;                   // Used in GetObjectItem
-        int NumAlphas;                  // Number of Alphas for each GetObjectItem call
-        int NumNumbers;                 // Number of Numbers for each GetObjectItem call
-        int ProfileNum;                 // PLANT LOAD PROFILE (PlantProfile) object number
+        int IOStatus;            // Used in GetObjectItem
+        int NumAlphas;           // Number of Alphas for each GetObjectItem call
+        int NumNumbers;          // Number of Numbers for each GetObjectItem call
+        int ProfileNum;          // PLANT LOAD PROFILE (PlantProfile) object number
         int ProfileWaterNum;
         int ProfileSteamNum;
         //  CHARACTER(len=MaxNameLength)   :: FoundBranchName
         //  INTEGER                        :: BranchControlType
 
         // FLOW:
-        
+
         NumOfPlantProfileWater = inputProcessor->getNumObjectsFound("LoadProfile:Plant");
         NumOfPlantProfileSteam = inputProcessor->getNumObjectsFound("LoadProfile:Plant:Steam");
 
@@ -396,7 +444,7 @@ namespace PlantLoadProfile {
         if (NumOfPlantProfile > 0) {
             PlantProfile.allocate(NumOfPlantProfile);
         }
-        
+
         cCurrentModuleObject = "LoadProfile:Plant";
         for (ProfileWaterNum = 1; ProfileWaterNum <= NumOfPlantProfileWater; ++ProfileWaterNum) {
             inputProcessor->getObjectItem(cCurrentModuleObject,
@@ -441,7 +489,7 @@ namespace PlantLoadProfile {
 
             // Check plant connections
             TestCompSet(cCurrentModuleObject, cAlphaArgs(1), cAlphaArgs(2), cAlphaArgs(3), cCurrentModuleObject + " Nodes");
-        }      
+        }
 
         cCurrentModuleObject = "LoadProfile:Plant:Steam";
         for (ProfileSteamNum = 1; ProfileSteamNum <= NumOfPlantProfileSteam; ++ProfileSteamNum) {
@@ -478,11 +526,7 @@ namespace PlantLoadProfile {
 
             PlantProfile(ProfileSteamNum).FlowRateFracSchedule = GetScheduleIndex(cAlphaArgs(5));
 
-            PlantProfile(ProfileSteamNum).MaxSteamVolFlowRate = rNumericArgs(2);
-
-            PlantProfile(ProfileSteamNum).DegOfSubcooling = rNumericArgs(3);
-
-            PlantProfile(ProfileSteamNum).LoopSubcoolReturn = rNumericArgs(4);
+            PlantProfile(ProfileSteamNum).DegOfSubcooling = rNumericArgs(2);
 
             if (PlantProfile(ProfileSteamNum).FlowRateFracSchedule == 0) {
                 ShowSevereError(cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(5) + " called " +
@@ -493,7 +537,7 @@ namespace PlantLoadProfile {
 
             // Check plant connections
             TestCompSet(cCurrentModuleObject, cAlphaArgs(1), cAlphaArgs(2), cAlphaArgs(3), cCurrentModuleObject + " Nodes");
-        }    
+        }
 
         for (ProfileNum = 1; ProfileNum <= NumOfPlantProfile; ++ProfileNum) {
 
@@ -566,8 +610,6 @@ namespace PlantLoadProfile {
             if (ErrorsFound) ShowFatalError("Errors in " + cCurrentModuleObject + " input.");
 
         } // ProfileNum
-
-
     }
 
     void clear_state()
