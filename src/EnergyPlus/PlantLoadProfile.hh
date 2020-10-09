@@ -122,7 +122,7 @@ namespace PlantLoadProfile {
         }
 
         // Functions
-        static PlantComponent *factory(std::string objectName);
+        static PlantComponent *factory(EnergyPlusData &state, std::string objectName);
 
         void simulate(EnergyPlusData &EP_UNUSED(state), const PlantLocation &calledFromLocation, bool const FirstHVACIteration, Real64 &CurLoad, bool const RunFlag) override;
 
@@ -139,7 +139,7 @@ namespace PlantLoadProfile {
     extern Array1D<PlantProfileData> PlantProfile;
 
     // This could be static inside the class
-    void GetPlantProfileInput();
+    void GetPlantProfileInput(EnergyPlusData &state);
 
     // As could this
     void clear_state();
