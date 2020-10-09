@@ -3973,8 +3973,7 @@ namespace EnergyPlus {
                                     this_component.FlowCtrl = ControlType_Active;
                                     this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
                                     this_component.HowLoadServed = HowMet_PassiveCap;
-                                } else if (SELECT_CASE_var ==
-                                           TypeOf_PlantLoadProfile) { //            = 44  ! demand side component
+                                } else if (SELECT_CASE_var == TypeOf_PlantLoadProfile) { //            = 44  ! demand side component
                                     this_component.FlowCtrl = ControlType_Active;
                                     this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
                                     this_component.HowLoadServed = HowMet_NoneDemand;

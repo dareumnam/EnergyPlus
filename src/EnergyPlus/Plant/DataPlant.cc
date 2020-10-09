@@ -130,7 +130,7 @@ namespace DataPlant {
     Array1D_string const PressureSimType(4, {"NONE", "PUMPPOWERCORRECTION", "LOOPFLOWCORRECTION", "PRESSURESIMULATION"});
 
     // Parameters for Component/Equipment Types  (ref: TypeOf in CompData)
-    int const NumSimPlantEquipTypes(96);
+    int const NumSimPlantEquipTypes(97);
     Array1D_string const SimPlantEquipTypes(NumSimPlantEquipTypes,
                                             {"BOILER:HOTWATER",
                                              "BOILER:STEAM",
@@ -176,7 +176,6 @@ namespace DataPlant {
                                              "COIL:HEATING:STEAM",
                                              "SOLARCOLLECTOR:FLATPLATE:WATER",
                                              "LOADPROFILE:PLANT",
-                                             "LOADPROFILE:PLANT:STEAM",
                                              "GROUNDHEATEXCHANGER:SYSTEM",
                                              "GROUNDHEATEXCHANGER:SURFACE",
                                              "GROUNDHEATEXCHANGER:POND",
@@ -228,7 +227,8 @@ namespace DataPlant {
                                              "AIRTERMINAL:SINGLEDUCT:CONSTANTVOLUME:FOURPIPEBEAM",
                                              "ZONEHVAC:COOLINGPANEL:RADIANTCONVECTIVE:WATER",
                                              "HEATPUMP:PLANTLOOP:EIR:COOLING",
-                                             "HEATPUMP:PLANTLOOP:EIR:HEATING"});
+                                             "HEATPUMP:PLANTLOOP:EIR:HEATING",
+                                             "LOADPROFILE:PLANT:STEAM"});
 
     Array1D_string const ccSimPlantEquipTypes(NumSimPlantEquipTypes,
                                               {"Boiler:HotWater",
@@ -275,7 +275,6 @@ namespace DataPlant {
                                                "Coil:Heating:Steam",
                                                "Solarcollector:Flatplate:Water",
                                                "LoadProfile:Plant",
-                                               "LoadProfile:Plant:Steam",
                                                "GroundHeatExchanger:System",
                                                "GroundHeatExchanger:Surface",
                                                "GroundHeatExchanger:Pond",
@@ -327,7 +326,8 @@ namespace DataPlant {
                                                "AirTerminal:SingleDuct:ConstantVolume:FourPipeBeam",
                                                "ZoneHVAC:CoolingPanel:RadiantConvective:Water",
                                                "HeatPump:PlantLoop:EIR:Cooling",
-                                               "HeatPump:PlantLoop:EIR:Heating"});
+                                               "HeatPump:PlantLoop:EIR:Heating"
+                                               "LoadProfile:Plant:Steam"});
 
     Array1D_int const ValidLoopEquipTypes(
         NumSimPlantEquipTypes,
@@ -342,7 +342,8 @@ namespace DataPlant {
          LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Plant,
          LoopType_Plant, LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,
          LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Plant, LoopType_Plant, LoopType_Both,
-         LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Plant, LoopType_Plant, LoopType_Plant, LoopType_Both,  LoopType_Both});
+         LoopType_Both,  LoopType_Both,  LoopType_Both,  LoopType_Plant, LoopType_Plant, LoopType_Plant, LoopType_Both,  LoopType_Both,
+         LoopType_Both});
 
     int const TypeOf_Other(-1);
     int const TypeOf_Boiler_Simple(1);
@@ -389,7 +390,6 @@ namespace DataPlant {
     int const TypeOf_CoilSteamAirHeating(42);          // demand side component
     int const TypeOf_SolarCollectorFlatPlate(43);      // demand side component
     int const TypeOf_PlantLoadProfile(44);             // demand side component
-    int const TypeOf_PlantLoadProfileSteam(97);
     int const TypeOf_GrndHtExchgSystem(45);
     int const TypeOf_GrndHtExchgSurface(46);
     int const TypeOf_GrndHtExchgPond(47);
@@ -442,6 +442,7 @@ namespace DataPlant {
     int const TypeOf_CoolingPanel_Simple(94);
     int const TypeOf_HeatPumpEIRCooling(95);
     int const TypeOf_HeatPumpEIRHeating(96);
+    int const TypeOf_PlantLoadProfileSteam(97);
 
     Array1D<Real64> const ConvergenceHistoryARR(DataPlant::NumConvergenceHistoryTerms, {0.0, -1.0, -2.0, -3.0, -4.0});
     Real64 const sum_ConvergenceHistoryARR(sum(ConvergenceHistoryARR));
