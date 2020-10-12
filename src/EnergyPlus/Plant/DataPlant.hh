@@ -191,7 +191,6 @@ namespace DataPlant {
     extern int const TypeOf_CoilSteamAirHeating;          // demand side component
     extern int const TypeOf_SolarCollectorFlatPlate;      // demand side component
     extern int const TypeOf_PlantLoadProfile;             // demand side component
-    extern int const TypeOf_PlantLoadProfileSteam;
     extern int const TypeOf_GrndHtExchgSystem;
     extern int const TypeOf_GrndHtExchgSurface;
     extern int const TypeOf_GrndHtExchgPond;
@@ -243,6 +242,7 @@ namespace DataPlant {
     extern int const TypeOf_FourPipeBeamAirTerminal;
     extern int const TypeOf_HeatPumpEIRCooling;
     extern int const TypeOf_HeatPumpEIRHeating;
+    extern int const TypeOf_PlantLoadProfileSteam;
 
     extern Array1D<Real64> const ConvergenceHistoryARR;
     extern Real64 const sum_ConvergenceHistoryARR;
