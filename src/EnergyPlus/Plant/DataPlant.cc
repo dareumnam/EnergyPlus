@@ -326,7 +326,7 @@ namespace DataPlant {
                                                "AirTerminal:SingleDuct:ConstantVolume:FourPipeBeam",
                                                "ZoneHVAC:CoolingPanel:RadiantConvective:Water",
                                                "HeatPump:PlantLoop:EIR:Cooling",
-                                               "HeatPump:PlantLoop:EIR:Heating"
+                                               "HeatPump:PlantLoop:EIR:Heating",
                                                "LoadProfile:Plant:Steam"});
 
     Array1D_int const ValidLoopEquipTypes(
