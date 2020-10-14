@@ -211,10 +211,10 @@ namespace PlantLoadProfile {
                 // Calculating Water outlet temperature
                 this->OutletTemp = this->InletTemp - this->DegOfSubcooling;
 
-                InletNode = this->InletNode;
-                OutletNode = this->OutletNode;
-                Node(InletNode).MassFlowRate = this->MassFlowRate;
-                Node(OutletNode).MassFlowRate = this->MassFlowRate;
+                //InletNode = this->InletNode;
+                //OutletNode = this->OutletNode;
+                //Node(InletNode).MassFlowRate = this->MassFlowRate;
+                //Node(OutletNode).MassFlowRate = this->MassFlowRate;
             }
         }
 
