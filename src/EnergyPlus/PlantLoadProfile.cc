@@ -154,6 +154,7 @@ namespace PlantLoadProfile {
 
         // Using/Aliasing
         using FluidProperties::GetSpecificHeatGlycol;
+        using DataLoopNode::Node;
 
         // Locals
         // SUBROUTINE ARGUMENT DEFINITIONS:
@@ -167,6 +168,8 @@ namespace PlantLoadProfile {
         static std::string const fluidNameSteam("STEAM");
         int FluidIndex;
         Real64 CpWater;
+        int InletNode;
+        int OutletNode;
 
         this->InitPlantProfile(state);
 
@@ -207,6 +210,11 @@ namespace PlantLoadProfile {
 
                 // Calculating Water outlet temperature
                 this->OutletTemp = this->InletTemp - this->DegOfSubcooling;
+
+                InletNode = this->InletNode;
+                OutletNode = this->OutletNode;
+                Node(InletNode).MassFlowRate = this->MassFlowRate;
+                Node(OutletNode).MassFlowRate = this->MassFlowRate;
             }
         }
 
