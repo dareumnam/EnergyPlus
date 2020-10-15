@@ -168,8 +168,6 @@ namespace PlantLoadProfile {
         static std::string const fluidNameSteam("STEAM");
         int FluidIndex;
         Real64 CpWater;
-        int InletNode;
-        int OutletNode;
 
         this->InitPlantProfile(state);
 
@@ -203,6 +201,14 @@ namespace PlantLoadProfile {
                 // Steam Mass Flow Rate Required
                 this->MassFlowRate = this->Power / (LatentHeatSteam + this->DegOfSubcooling * CpWater);
 
+                SetComponentFlowRate(this->MassFlowRate,
+                                     this->InletNode,
+                                     this->OutletNode,
+                                     this->WLoopNum,
+                                     this->WLoopSideNum,
+                                     this->WLoopBranchNum,
+                                     this->WLoopCompNum);
+
                 // In practice Sensible & Superheated heat transfer is negligible compared to latent part.
                 // This is required for outlet water temperature, otherwise it will be saturation temperature.
                 // Steam Trap drains off all the Water formed.
@@ -210,11 +216,6 @@ namespace PlantLoadProfile {
 
                 // Calculating Water outlet temperature
                 this->OutletTemp = this->InletTemp - this->DegOfSubcooling;
-
-                //InletNode = this->InletNode;
-                //OutletNode = this->OutletNode;
-                //Node(InletNode).MassFlowRate = this->MassFlowRate;
-                //Node(OutletNode).MassFlowRate = this->MassFlowRate;
             }
         }
 
