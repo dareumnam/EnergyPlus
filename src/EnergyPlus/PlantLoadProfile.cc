@@ -57,11 +57,7 @@
 #include <EnergyPlus/DataHVACGlobals.hh>
 #include <EnergyPlus/DataIPShortCuts.hh>
 #include <EnergyPlus/DataLoopNode.hh>
-<<<<<<< HEAD
-#include <EnergyPlus/DataPrecisionGlobals.hh>
-=======
 #include <EnergyPlus/Plant/DataPlant.hh>
->>>>>>> upstream/develop
 #include <EnergyPlus/EMSManager.hh>
 #include <EnergyPlus/FluidProperties.hh>
 #include <EnergyPlus/InputProcessing/InputProcessor.hh>
@@ -436,21 +432,12 @@ namespace PlantLoadProfile {
         // Locals
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         bool ErrorsFound(false); // Set to true if errors in input, fatal at end of routine
-<<<<<<< HEAD
-        int IOStatus;            // Used in GetObjectItem
-        int NumAlphas;           // Number of Alphas for each GetObjectItem call
-        int NumNumbers;          // Number of Numbers for each GetObjectItem call
-        int ProfileNum;          // PLANT LOAD PROFILE (PlantProfile) object number
-        int ProfileWaterNum;
-        int ProfileSteamNum;
-        //  CHARACTER(len=MaxNameLength)   :: FoundBranchName
-        //  INTEGER                        :: BranchControlType
-=======
         int IOStatus;                   // Used in GetObjectItem
         int NumAlphas;                  // Number of Alphas for each GetObjectItem call
         int NumNumbers;                 // Number of Numbers for each GetObjectItem call
         int ProfileNum;                 // PLANT LOAD PROFILE (PlantProfile) object number
->>>>>>> upstream/develop
+        int ProfileWaterNum;
+        int ProfileSteamNum;
 
         // FLOW:
 
