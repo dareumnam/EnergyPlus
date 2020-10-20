@@ -57,7 +57,11 @@
 #include <EnergyPlus/DataHVACGlobals.hh>
 #include <EnergyPlus/DataIPShortCuts.hh>
 #include <EnergyPlus/DataLoopNode.hh>
+<<<<<<< HEAD
 #include <EnergyPlus/DataPrecisionGlobals.hh>
+=======
+#include <EnergyPlus/Plant/DataPlant.hh>
+>>>>>>> upstream/develop
 #include <EnergyPlus/EMSManager.hh>
 #include <EnergyPlus/FluidProperties.hh>
 #include <EnergyPlus/InputProcessing/InputProcessor.hh>
@@ -89,7 +93,6 @@ namespace PlantLoadProfile {
     // manager (see NonZoneEquipmentManager.cc).
 
     // Using/Aliasing
-    using namespace DataPrecisionGlobals;
     using DataGlobals::BeginEnvrnFlag;
     using DataPlant::PlantLoop;
     using DataPlant::TypeOf_PlantLoadProfile;
@@ -295,7 +298,7 @@ namespace PlantLoadProfile {
             Node(OutletNode).Temp = 0.0;
 
             FluidDensityInit =
-                GetDensityGlycol(state, PlantLoop(this->WLoopNum).FluidName, DataGlobals::InitConvTemp, PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
+                GetDensityGlycol(state, PlantLoop(this->WLoopNum).FluidName, DataGlobalConstants::InitConvTemp(), PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
 
             Real64 MaxFlowMultiplier = GetScheduleMaxValue(this->FlowRateFracSchedule);
 
@@ -389,14 +392,13 @@ namespace PlantLoadProfile {
         // Standard EnergyPlus methodology.
 
         // Using/Aliasing
-        using DataGlobals::SecInHour;
         using DataHVACGlobals::TimeStepSys;
 
         // Locals
         // SUBROUTINE ARGUMENT DEFINITIONS:
 
         // FLOW:
-        this->Energy = this->Power * TimeStepSys * SecInHour;
+        this->Energy = this->Power * TimeStepSys * DataGlobalConstants::SecInHour();
 
         if (this->Energy >= 0.0) {
             this->HeatingEnergy = this->Energy;
@@ -434,6 +436,7 @@ namespace PlantLoadProfile {
         // Locals
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         bool ErrorsFound(false); // Set to true if errors in input, fatal at end of routine
+<<<<<<< HEAD
         int IOStatus;            // Used in GetObjectItem
         int NumAlphas;           // Number of Alphas for each GetObjectItem call
         int NumNumbers;          // Number of Numbers for each GetObjectItem call
@@ -442,6 +445,12 @@ namespace PlantLoadProfile {
         int ProfileSteamNum;
         //  CHARACTER(len=MaxNameLength)   :: FoundBranchName
         //  INTEGER                        :: BranchControlType
+=======
+        int IOStatus;                   // Used in GetObjectItem
+        int NumAlphas;                  // Number of Alphas for each GetObjectItem call
+        int NumNumbers;                 // Number of Numbers for each GetObjectItem call
+        int ProfileNum;                 // PLANT LOAD PROFILE (PlantProfile) object number
+>>>>>>> upstream/develop
 
         // FLOW:
 

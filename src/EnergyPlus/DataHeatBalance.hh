@@ -79,7 +79,6 @@ namespace DataHeatBalance {
     using DataComplexFenestration::GapSupportPillar;
     using DataComplexFenestration::WindowComplexShade;
     using DataComplexFenestration::WindowThermalModelParams;
-    using DataGlobals::AutoCalculate;
     using DataSurfaces::MaxSlatAngs;
     using DataVectorTypes::Vector;
 
@@ -778,8 +777,8 @@ namespace DataHeatBalance {
 
         // Default Constructor
         ZoneData()
-            : Multiplier(1), ListMultiplier(1), ListGroup(0), RelNorth(0.0), OriginX(0.0), OriginY(0.0), OriginZ(0.0), CeilingHeight(AutoCalculate),
-              Volume(AutoCalculate), OfType(1), UserEnteredFloorArea(AutoCalculate), FloorArea(0.0), CalcFloorArea(0.0), CeilingArea(0.0),
+            : Multiplier(1), ListMultiplier(1), ListGroup(0), RelNorth(0.0), OriginX(0.0), OriginY(0.0), OriginZ(0.0), CeilingHeight(DataGlobalConstants::AutoCalculate()),
+              Volume(DataGlobalConstants::AutoCalculate()), OfType(1), UserEnteredFloorArea(DataGlobalConstants::AutoCalculate()), FloorArea(0.0), CalcFloorArea(0.0), CeilingArea(0.0),
               HasFloor(false), HasRoof(false), HasInterZoneWindow(false), HasWindow(false), AirCapacity(0.0), ExtWindowArea(0.0),
               ExtGrossWallArea(0.0), ExtWindowArea_Multiplied(0.0), ExtGrossWallArea_Multiplied(0.0), ExtNetWallArea(0.0), TotalSurfArea(0.0),
               ExteriorTotalSurfArea(0.0), ExteriorTotalGroundSurfArea(0.0), ExtGrossGroundWallArea(0.0), ExtGrossGroundWallArea_Multiplied(0.0),
@@ -2211,11 +2210,13 @@ namespace DataHeatBalance {
 
     void SetZoneWindDirAt();
 
-    void CheckAndSetConstructionProperties(int ConstrNum, // Construction number to be set/checked
+    void CheckAndSetConstructionProperties(EnergyPlusData &state,
+                                           int ConstrNum, // Construction number to be set/checked
                                            bool &ErrorsFound    // error flag that is set when certain errors have occurred
     );
 
-    int AssignReverseConstructionNumber(int ConstrNum, // Existing Construction number of first surface
+    int AssignReverseConstructionNumber(EnergyPlusData &state,
+                                        int ConstrNum, // Existing Construction number of first surface
                                         bool &ErrorsFound);
 
     void AddVariableSlatBlind(int inBlindNumber, // current Blind Number/pointer to name
@@ -2235,7 +2236,7 @@ namespace DataHeatBalance {
                                          bool &isValid      // returns true if result is valid
     );
 
-    void SetFlagForWindowConstructionWithShadeOrBlindLayer();
+    void SetFlagForWindowConstructionWithShadeOrBlindLayer(EnergyPlusData &state);
 
 } // namespace DataHeatBalance
 

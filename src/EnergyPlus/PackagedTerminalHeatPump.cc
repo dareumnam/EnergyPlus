@@ -52,7 +52,6 @@
 // ObjexxFCL Headers
 #include <ObjexxFCL/Array.functions.hh>
 #include <ObjexxFCL/Fmath.hh>
-#include <ObjexxFCL/gio.hh>
 #include <ObjexxFCL/string.functions.hh>
 
 // EnergyPlus Headers
@@ -72,7 +71,6 @@
 #include <EnergyPlus/DataHeatBalFanSys.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
 #include <EnergyPlus/DataLoopNode.hh>
-#include <EnergyPlus/DataPrecisionGlobals.hh>
 #include <EnergyPlus/DataSizing.hh>
 #include <EnergyPlus/DataZoneEnergyDemands.hh>
 #include <EnergyPlus/DataZoneEquipment.hh>
@@ -138,18 +136,15 @@ namespace PackagedTerminalHeatPump {
     // USE STATEMENTS:
     // Use statements for data only modules
     // Using/Aliasing
-    using namespace DataPrecisionGlobals;
     using namespace DataLoopNode;
     using namespace DataSizing;
     using DataGlobals::BeginEnvrnFlag;
     using DataGlobals::DisplayExtraWarnings;
     using DataGlobals::NumOfZones;
     using DataGlobals::ScheduleAlwaysOn;
-    using DataGlobals::SecInHour;
     using DataGlobals::SysSizingCalc;
     using namespace DataHVACGlobals;
     using DXCoils::DXCoilPartLoadRatio;
-    using VariableSpeedCoils::MaxSpedLevels;
 
     // Use statements for access to subroutines in other modules
     using namespace ScheduleManager;
@@ -159,7 +154,6 @@ namespace PackagedTerminalHeatPump {
         bool MyOneTimeFlag(true);               // initialization flag
         bool ZoneEquipmentListNotChecked(true); // False after the Zone Equipment List has been checked for items
     }                                           // namespace
-
     // Data
     // MODULE PARAMETER DEFINITIONS
     // Compressor operation
@@ -594,7 +588,6 @@ namespace PackagedTerminalHeatPump {
         using SteamCoils::GetSteamCoilIndex;
         auto &GetCoilMaxSteamFlowRate(SteamCoils::GetCoilMaxSteamFlowRate);
         using SteamCoils::GetTypeOfCoil;
-        using SteamCoils::ZoneLoadControl;
         using WaterCoils::GetCoilMaxWaterFlowRate;
         using WaterCoils::GetCoilWaterInletNode;
         auto &GetWaterCoilInletNode(WaterCoils::GetCoilInletNode);
@@ -1853,7 +1846,7 @@ namespace PackagedTerminalHeatPump {
                         ShowContinueError("...occurs in " + PTUnit(PTUnitNum).UnitType + " \"" + PTUnit(PTUnitNum).Name + "\"");
                         ErrorsFound = true;
                     }
-                    if (GetTypeOfCoil(state, PTUnit(PTUnitNum).ACHeatCoilIndex, ACHeatCoilName, errFlag) != ZoneLoadControl) {
+                    if (GetTypeOfCoil(state, PTUnit(PTUnitNum).ACHeatCoilIndex, ACHeatCoilName, errFlag) != state.dataSteamCoils->ZoneLoadControl) {
                         if (errFlag) {
                             ShowContinueError("...occurs in " + PTUnit(PTUnitNum).UnitType + " \"" + PTUnit(PTUnitNum).Name + "\"");
                             ErrorsFound = true;
@@ -3792,7 +3785,6 @@ namespace PackagedTerminalHeatPump {
         using PlantUtilities::ScanPlantLoopsForObject;
         using PlantUtilities::SetComponentFlowRate;
         using VariableSpeedCoils::SimVariableSpeedCoils;
-        using VariableSpeedCoils::VarSpeedCoil;
         using WaterCoils::GetCoilMaxWaterFlowRate;
         using WaterCoils::SimulateWaterCoilComponents;
 
@@ -3895,7 +3887,7 @@ namespace PackagedTerminalHeatPump {
                     if (PTUnit(PTUnitNum).MaxHeatCoilFluidFlow > 0.0) {
                         rho = GetDensityGlycol(state,
                                                PlantLoop(PTUnit(PTUnitNum).HeatCoilLoopNum).FluidName,
-                                               DataGlobals::HWInitConvTemp,
+                                               DataGlobalConstants::HWInitConvTemp(),
                                                PlantLoop(PTUnit(PTUnitNum).HeatCoilLoopNum).FluidIndex,
                                                RoutineName);
 
@@ -3968,7 +3960,7 @@ namespace PackagedTerminalHeatPump {
 
                     if (PTUnit(PTUnitNum).MaxSuppCoilFluidFlow > 0.0) {
                         rho = GetDensityGlycol(state, PlantLoop(PTUnit(PTUnitNum).SuppCoilLoopNum).FluidName,
-                                               DataGlobals::HWInitConvTemp,
+                                               DataGlobalConstants::HWInitConvTemp(),
                                                PlantLoop(PTUnit(PTUnitNum).SuppCoilLoopNum).FluidIndex,
                                                RoutineName);
                         PTUnit(PTUnitNum).MaxSuppCoilFluidFlow =
@@ -4061,12 +4053,12 @@ namespace PackagedTerminalHeatPump {
                                       0.0,
                                       0.0,
                                       0.0); // conduct the sizing operation in the VS WSHP
-                PTUnit(PTUnitNum).NumOfSpeedCooling = VarSpeedCoil(PTUnit(PTUnitNum).DXCoolCoilIndexNum).NumOfSpeeds;
+                PTUnit(PTUnitNum).NumOfSpeedCooling = state.dataVariableSpeedCoils->VarSpeedCoil(PTUnit(PTUnitNum).DXCoolCoilIndexNum).NumOfSpeeds;
 
                 for (Iter = 1; Iter <= PTUnit(PTUnitNum).NumOfSpeedCooling; ++Iter) {
                     PTUnit(PTUnitNum).MSCoolingSpeedRatio(Iter) =
-                        VarSpeedCoil(PTUnit(PTUnitNum).DXCoolCoilIndexNum).MSRatedAirVolFlowRate(Iter) /
-                        VarSpeedCoil(PTUnit(PTUnitNum).DXCoolCoilIndexNum).MSRatedAirVolFlowRate(PTUnit(PTUnitNum).NumOfSpeedCooling);
+                        state.dataVariableSpeedCoils->VarSpeedCoil(PTUnit(PTUnitNum).DXCoolCoilIndexNum).MSRatedAirVolFlowRate(Iter) /
+                        state.dataVariableSpeedCoils->VarSpeedCoil(PTUnit(PTUnitNum).DXCoolCoilIndexNum).MSRatedAirVolFlowRate(PTUnit(PTUnitNum).NumOfSpeedCooling);
                     PTUnit(PTUnitNum).CoolVolumeFlowRate(Iter) = PTUnit(PTUnitNum).MaxCoolAirVolFlow * PTUnit(PTUnitNum).MSCoolingSpeedRatio(Iter);
                     PTUnit(PTUnitNum).CoolMassFlowRate(Iter) = PTUnit(PTUnitNum).MaxCoolAirMassFlow * PTUnit(PTUnitNum).MSCoolingSpeedRatio(Iter);
                 }
@@ -4089,12 +4081,12 @@ namespace PackagedTerminalHeatPump {
                                           0.0,
                                           0.0); // conduct the sizing operation in the VS WSHP
 
-                    PTUnit(PTUnitNum).NumOfSpeedHeating = VarSpeedCoil(PTUnit(PTUnitNum).DXHeatCoilIndexNum).NumOfSpeeds;
+                    PTUnit(PTUnitNum).NumOfSpeedHeating = state.dataVariableSpeedCoils->VarSpeedCoil(PTUnit(PTUnitNum).DXHeatCoilIndexNum).NumOfSpeeds;
 
                     for (Iter = 1; Iter <= PTUnit(PTUnitNum).NumOfSpeedHeating; ++Iter) {
                         PTUnit(PTUnitNum).MSHeatingSpeedRatio(Iter) =
-                            VarSpeedCoil(PTUnit(PTUnitNum).DXHeatCoilIndexNum).MSRatedAirVolFlowRate(Iter) /
-                            VarSpeedCoil(PTUnit(PTUnitNum).DXHeatCoilIndexNum).MSRatedAirVolFlowRate(PTUnit(PTUnitNum).NumOfSpeedHeating);
+                            state.dataVariableSpeedCoils->VarSpeedCoil(PTUnit(PTUnitNum).DXHeatCoilIndexNum).MSRatedAirVolFlowRate(Iter) /
+                            state.dataVariableSpeedCoils->VarSpeedCoil(PTUnit(PTUnitNum).DXHeatCoilIndexNum).MSRatedAirVolFlowRate(PTUnit(PTUnitNum).NumOfSpeedHeating);
                         PTUnit(PTUnitNum).HeatVolumeFlowRate(Iter) =
                             PTUnit(PTUnitNum).MaxHeatAirVolFlow * PTUnit(PTUnitNum).MSHeatingSpeedRatio(Iter);
                         PTUnit(PTUnitNum).HeatMassFlowRate(Iter) = PTUnit(PTUnitNum).MaxHeatAirMassFlow * PTUnit(PTUnitNum).MSHeatingSpeedRatio(Iter);
@@ -4325,7 +4317,7 @@ namespace PackagedTerminalHeatPump {
                         CoilMaxVolFlowRate = GetCoilMaxWaterFlowRate(state, "Coil:Heating:Water", PTUnit(PTUnitNum).ACHeatCoilName, ErrorsFound);
                         if (CoilMaxVolFlowRate != AutoSize) {
                             rho = GetDensityGlycol(state, PlantLoop(PTUnit(PTUnitNum).HeatCoilLoopNum).FluidName,
-                                                   DataGlobals::HWInitConvTemp,
+                                                   DataGlobalConstants::HWInitConvTemp(),
                                                    PlantLoop(PTUnit(PTUnitNum).HeatCoilLoopNum).FluidIndex,
                                                    RoutineNameSpace);
                             PTUnit(PTUnitNum).MaxHeatCoilFluidFlow = CoilMaxVolFlowRate * rho;
@@ -4363,7 +4355,7 @@ namespace PackagedTerminalHeatPump {
                         CoilMaxVolFlowRate = GetCoilMaxWaterFlowRate(state, "Coil:Heating:Water", PTUnit(PTUnitNum).SuppHeatCoilName, ErrorsFound);
                         if (CoilMaxVolFlowRate != AutoSize) {
                             rho = GetDensityGlycol(state, PlantLoop(PTUnit(PTUnitNum).SuppCoilLoopNum).FluidName,
-                                                   DataGlobals::HWInitConvTemp,
+                                                   DataGlobalConstants::HWInitConvTemp(),
                                                    PlantLoop(PTUnit(PTUnitNum).SuppCoilLoopNum).FluidIndex,
                                                    RoutineNameSpace);
                             PTUnit(PTUnitNum).MaxSuppCoilFluidFlow = CoilMaxVolFlowRate * rho;
@@ -5574,7 +5566,6 @@ namespace PackagedTerminalHeatPump {
         // SUBROUTINE PARAMETER DEFINITIONS:
         int const MaxIte(500);    // maximum number of iterations
         Real64 const MinPLF(0.0); // minimum part load factor allowed
-        static ObjexxFCL::gio::Fmt fmtLD("*");
 
         // INTERFACE BLOCK SPECIFICATIONS
         // na
@@ -6863,7 +6854,7 @@ namespace PackagedTerminalHeatPump {
 
         // FLOW
 
-        ReportingConstant = TimeStepSys * SecInHour;
+        ReportingConstant = TimeStepSys * DataGlobalConstants::SecInHour();
         PTUnit(PTUnitNum).TotCoolEnergy = PTUnit(PTUnitNum).TotCoolEnergyRate * ReportingConstant;
         PTUnit(PTUnitNum).TotHeatEnergy = PTUnit(PTUnitNum).TotHeatEnergyRate * ReportingConstant;
         PTUnit(PTUnitNum).SensCoolEnergy = PTUnit(PTUnitNum).SensCoolEnergyRate * ReportingConstant;
@@ -8115,7 +8106,6 @@ namespace PackagedTerminalHeatPump {
         using SteamCoils::SimulateSteamCoilComponents;
         using TempSolveRoot::SolveRoot;
         using VariableSpeedCoils::SimVariableSpeedCoils;
-        using VariableSpeedCoils::VarSpeedCoil;
         using WaterCoils::SimulateWaterCoilComponents;
         using WaterToAirHeatPumpSimple::SimWatertoAirHPSimple;
 
