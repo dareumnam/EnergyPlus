@@ -302,7 +302,7 @@
     Load Profile 1 Load Schedule,  !- Load Schedule Name
     0.0001,                   !- Peak Flow Rate {m3/s}
     Load Profile 1 Flow Frac Schedule,  !- Flow Rate Fraction Schedule Name
-    3;                       !- Degree of SubCooling
+    5;                       !- Degree of SubCooling
 
   Branch,
     Demand Outlet Branch,    !- Name
@@ -345,7 +345,7 @@
     Any Number,              !- Schedule Type Limits Name
     THROUGH: 12/31,          !- Field 1
     FOR: AllDays,            !- Field 2
-    UNTIL: 24:00,16000;      !- Field 11
+    UNTIL: 24:00,1000;       !- Field 3
 
   Schedule:Compact,
     Load Profile 1 Flow Frac Schedule,  !- Name
