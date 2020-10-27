@@ -89,7 +89,6 @@ namespace PlantLoadProfile {
     // manager (see NonZoneEquipmentManager.cc).
 
     // Using/Aliasing
-    using DataGlobals::BeginEnvrnFlag;
     using DataPlant::PlantLoop;
     using DataPlant::TypeOf_PlantLoadProfile;
     using DataPlant::TypeOf_PlantLoadProfileSteam;
@@ -287,7 +286,7 @@ namespace PlantLoadProfile {
             this->InitSizing = false;
         }
 
-        if (BeginEnvrnFlag && this->Init) {
+        if (state.dataGlobal->BeginEnvrnFlag && this->Init) {
             // Clear node initial conditions
             // DSU? can we centralize these temperature inits
             //    Node(InletNode)%Temp = 0.0
@@ -314,7 +313,7 @@ namespace PlantLoadProfile {
             this->Init = false;
         }
 
-        if (!BeginEnvrnFlag) this->Init = true;
+        if (!state.dataGlobal->BeginEnvrnFlag) this->Init = true;
 
         this->InletTemp = Node(InletNode).Temp;
         this->Power = GetCurrentScheduleValue(this->LoadSchedule);

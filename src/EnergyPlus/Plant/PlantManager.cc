@@ -2328,7 +2328,7 @@ namespace EnergyPlus {
             //*****************************************************************
             // BEGIN ONE TIME ENVIRONMENT INITS
             //*****************************************************************
-            if (SupplyEnvrnFlag && BeginEnvrnFlag) {
+            if (SupplyEnvrnFlag && state.dataGlobal->BeginEnvrnFlag) {
 
                 for (LoopNum = 1; LoopNum <= TotNumLoops; ++LoopNum) {
                     for (LoopSideNum = DemandSide; LoopSideNum <= SupplySide; ++LoopSideNum) {
@@ -2410,7 +2410,7 @@ namespace EnergyPlus {
                 // !END OF ONE TIME ENVIRONMENT INITS
                 //!*****************************************************************
             } //
-            if (!BeginEnvrnFlag) SupplyEnvrnFlag = true;
+            if (!state.dataGlobal->BeginEnvrnFlag) SupplyEnvrnFlag = true;
 
             if (ErrorsFound) ShowFatalError("Preceding errors caused termination");
         }
@@ -2471,7 +2471,7 @@ namespace EnergyPlus {
             // BEGIN ENVIRONMENT INITS
             //*****************************************************************
 
-            if (MyEnvrnFlag && BeginEnvrnFlag) {
+            if (MyEnvrnFlag && state.dataGlobal->BeginEnvrnFlag) {
 
                 for (LoopNum = 1; LoopNum <= TotNumLoops; ++LoopNum) {
                     for (LoopSideNum = DemandSide; LoopSideNum <= SupplySide; ++LoopSideNum) {
@@ -2634,7 +2634,7 @@ namespace EnergyPlus {
                 //*****************************************************************
             }
 
-            if (!BeginEnvrnFlag) MyEnvrnFlag = true;
+            if (!state.dataGlobal->BeginEnvrnFlag) MyEnvrnFlag = true;
 
             // FirstHVACiteration inits
             for (LoopNum = 1; LoopNum <= TotNumLoops; ++LoopNum) {
