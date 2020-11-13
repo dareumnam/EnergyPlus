@@ -103,6 +103,7 @@ namespace PlantLoadProfile {
         Real64 VolFlowRate;       // Volumetric flow rate (m3/s)
         Real64 MassFlowRate;      // Mass flow rate (kg/s)
         Real64 DegOfSubcooling;
+        Real64 LoopSubcoolReturn;
         bool EMSOverrideMassFlow;
         Real64 EMSMassFlowValue;
         // Report variables
@@ -116,7 +117,7 @@ namespace PlantLoadProfile {
         PlantProfileData()
             : WLoopNum(0), WLoopSideNum(0), WLoopBranchNum(0), WLoopCompNum(0), Init(true), InitSizing(true), InletNode(0), InletTemp(0.0),
               OutletNode(0), OutletTemp(0.0), LoadSchedule(0), EMSOverridePower(false), EMSPowerValue(0.0), PeakVolFlowRate(0.0),
-              FlowRateFracSchedule(0), VolFlowRate(0.0), MassFlowRate(0.0), DegOfSubcooling(0.0), EMSOverrideMassFlow(false), 
+              FlowRateFracSchedule(0), VolFlowRate(0.0), MassFlowRate(0.0), DegOfSubcooling(0.0), LoopSubcoolReturn(0.0), EMSOverrideMassFlow(false), 
               EMSMassFlowValue(0.0), Power(0.0), Energy(0.0), HeatingEnergy(0.0), CoolingEnergy(0.0), SetLoopIndexFlag(true)
         {
         }

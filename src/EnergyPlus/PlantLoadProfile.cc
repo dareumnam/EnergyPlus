@@ -54,6 +54,7 @@
 // EnergyPlus Headers
 #include <EnergyPlus/BranchNodeConnections.hh>
 #include <EnergyPlus/Data/EnergyPlusData.hh>
+#include <EnergyPlus/DataEnvironment.hh>
 #include <EnergyPlus/DataHVACGlobals.hh>
 #include <EnergyPlus/DataIPShortCuts.hh>
 #include <EnergyPlus/DataLoopNode.hh>
@@ -153,6 +154,7 @@ namespace PlantLoadProfile {
         // Using/Aliasing
         using FluidProperties::GetSpecificHeatGlycol;
         using DataLoopNode::Node;
+        using DataEnvironment::StdBaroPress;
 
         // Locals
         // SUBROUTINE ARGUMENT DEFINITIONS:
@@ -166,6 +168,7 @@ namespace PlantLoadProfile {
         static std::string const fluidNameSteam("STEAM");
         int FluidIndex;
         Real64 CpWater;
+        Real64 TempWaterAtmPress;
 
         this->InitPlantProfile(state);
 
@@ -214,7 +217,8 @@ namespace PlantLoadProfile {
                 // Here Degree of Subcooling is used to calculate hot water return temperature.
 
                 // Calculating Water outlet temperature
-                this->OutletTemp = this->InletTemp - this->DegOfSubcooling;
+                TempWaterAtmPress = FluidProperties::GetSatTemperatureRefrig(state, fluidNameSteam, StdBaroPress, FluidIndex, RoutineName);
+                this->OutletTemp = TempWaterAtmPress - this->LoopSubcoolReturn;
             }
         }
 
@@ -535,6 +539,8 @@ namespace PlantLoadProfile {
 
             PlantProfile(ProfileSteamNum).DegOfSubcooling = rNumericArgs(2);
 
+            PlantProfile(ProfileSteamNum).LoopSubcoolReturn = rNumericArgs(3);
+
             if (PlantProfile(ProfileSteamNum).FlowRateFracSchedule == 0) {
                 ShowSevereError(state, cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"  The Schedule for " + cAlphaFieldNames(5) + " called " +
                                 cAlphaArgs(5) + " was not found.");
@@ -598,6 +604,14 @@ namespace PlantLoadProfile {
                                 "Cooling",
                                 _,
                                 "Plant");
+
+            SetupOutputVariable(state,
+                                "Load Profile Steam Outlet Temperature",
+                                OutputProcessor::Unit::C,
+                                PlantProfile(ProfileNum).OutletTemp,
+                                "System",
+                                "Average",
+                                PlantProfile(ProfileNum).Name);
 
             if (AnyEnergyManagementSystemInModel) {
                 SetupEMSActuator("Plant Load Profile",
