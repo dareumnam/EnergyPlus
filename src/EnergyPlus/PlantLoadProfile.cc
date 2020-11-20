@@ -177,7 +177,7 @@ namespace PlantLoadProfile {
         if (SELECT_CASE_var == TypeOf_PlantLoadProfile) {
             if (this->MassFlowRate > 0.0) {
                 Real64 Cp =
-                    GetSpecificHeatGlycol(state, PlantLoop(this->WLoopNum).FluidName, this->InletTemp, PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
+                    GetSpecificHeatGlycol(state, PlantLoop(this->LoopNum).FluidName, this->InletTemp, PlantLoop(this->LoopNum).FluidIndex, RoutineName);
                 DeltaTemp = this->Power / (this->MassFlowRate * Cp);
             } else {
                 this->Power = 0.0;
@@ -206,10 +206,10 @@ namespace PlantLoadProfile {
                                      this->MassFlowRate,
                                      this->InletNode,
                                      this->OutletNode,
-                                     this->WLoopNum,
-                                     this->WLoopSideNum,
-                                     this->WLoopBranchNum,
-                                     this->WLoopCompNum);
+                                     this->LoopNum,
+                                     this->LoopSideNum,
+                                     this->LoopBranchNum,
+                                     this->LoopCompNum);
 
                 // In practice Sensible & Superheated heat transfer is negligible compared to latent part.
                 // This is required for outlet water temperature, otherwise it will be saturation temperature.
@@ -268,10 +268,10 @@ namespace PlantLoadProfile {
                 ScanPlantLoopsForObject(state,
                                         this->Name,
                                         this->TypeNum,
-                                        this->WLoopNum,
-                                        this->WLoopSideNum,
-                                        this->WLoopBranchNum,
-                                        this->WLoopCompNum,
+                                        this->LoopNum,
+                                        this->LoopSideNum,
+                                        this->LoopBranchNum,
+                                        this->LoopCompNum,
                                         errFlag,
                                         _,
                                         _,
@@ -298,7 +298,7 @@ namespace PlantLoadProfile {
             Node(OutletNode).Temp = 0.0;
 
             FluidDensityInit =
-                GetDensityGlycol(state, PlantLoop(this->WLoopNum).FluidName, DataGlobalConstants::InitConvTemp(), PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
+                GetDensityGlycol(state, PlantLoop(this->LoopNum).FluidName, DataGlobalConstants::InitConvTemp(), PlantLoop(this->LoopNum).FluidIndex, RoutineName);
 
             Real64 MaxFlowMultiplier = GetScheduleMaxValue(state, this->FlowRateFracSchedule);
 
@@ -306,10 +306,10 @@ namespace PlantLoadProfile {
                                this->PeakVolFlowRate * FluidDensityInit * MaxFlowMultiplier,
                                this->InletNode,
                                this->OutletNode,
-                               this->WLoopNum,
-                               this->WLoopSideNum,
-                               this->WLoopBranchNum,
-                               this->WLoopCompNum);
+                               this->LoopNum,
+                               this->LoopSideNum,
+                               this->LoopBranchNum,
+                               this->LoopCompNum);
 
             this->EMSOverrideMassFlow = false;
             this->EMSMassFlowValue = 0.0;
@@ -325,7 +325,7 @@ namespace PlantLoadProfile {
 
         if (this->EMSOverridePower) this->Power = this->EMSPowerValue;
 
-        FluidDensityInit = GetDensityGlycol(state, PlantLoop(this->WLoopNum).FluidName, this->InletTemp, PlantLoop(this->WLoopNum).FluidIndex, RoutineName);
+        FluidDensityInit = GetDensityGlycol(state, PlantLoop(this->LoopNum).FluidName, this->InletTemp, PlantLoop(this->LoopNum).FluidIndex, RoutineName);
 
         // Get the scheduled mass flow rate
         this->VolFlowRate = this->PeakVolFlowRate * GetCurrentScheduleValue(state, this->FlowRateFracSchedule);
@@ -335,7 +335,7 @@ namespace PlantLoadProfile {
         if (this->EMSOverrideMassFlow) this->MassFlowRate = this->EMSMassFlowValue;
 
         // Request the mass flow rate from the plant component flow utility routine
-        SetComponentFlowRate(state, this->MassFlowRate, InletNode, OutletNode, this->WLoopNum, this->WLoopSideNum, this->WLoopBranchNum, this->WLoopCompNum);
+        SetComponentFlowRate(state, this->MassFlowRate, InletNode, OutletNode, this->LoopNum, this->LoopSideNum, this->LoopBranchNum, this->LoopCompNum);
 
         this->VolFlowRate = this->MassFlowRate / FluidDensityInit;
 

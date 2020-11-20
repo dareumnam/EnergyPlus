@@ -85,10 +85,10 @@ namespace PlantLoadProfile {
         // Members
         std::string Name;   // Name of Plant Load Profile object
         int TypeNum;        // Plant Side Connection: 'TypeOf_Num' assigned in DataPlant  !DSU
-        int WLoopNum;       // water plant loop index number                      !DSU
-        int WLoopSideNum;   // water plant loop side index                        !DSU
-        int WLoopBranchNum; // water plant loop branch index                      !DSU
-        int WLoopCompNum;   // water plant loop component index                   !DSU
+        int LoopNum;       // water plant loop index number                      !DSU
+        int LoopSideNum;   // water plant loop side index                        !DSU
+        int LoopBranchNum; // water plant loop branch index                      !DSU
+        int LoopCompNum;   // water plant loop component index                   !DSU
         bool Init;          // Flag for initialization:  TRUE means do the init
         bool InitSizing;    // Flag for initialization of plant sizing
         int InletNode;
@@ -115,7 +115,7 @@ namespace PlantLoadProfile {
 
         // Default Constructor
         PlantProfileData()
-            : WLoopNum(0), WLoopSideNum(0), WLoopBranchNum(0), WLoopCompNum(0), Init(true), InitSizing(true), InletNode(0), InletTemp(0.0),
+            : LoopNum(0), LoopSideNum(0), LoopBranchNum(0), LoopCompNum(0), Init(true), InitSizing(true), InletNode(0), InletTemp(0.0),
               OutletNode(0), OutletTemp(0.0), LoadSchedule(0), EMSOverridePower(false), EMSPowerValue(0.0), PeakVolFlowRate(0.0),
               FlowRateFracSchedule(0), VolFlowRate(0.0), MassFlowRate(0.0), DegOfSubcooling(0.0), LoopSubcoolReturn(0.0), EMSOverrideMassFlow(false), 
               EMSMassFlowValue(0.0), Power(0.0), Energy(0.0), HeatingEnergy(0.0), CoolingEnergy(0.0), SetLoopIndexFlag(true)
