@@ -124,16 +124,16 @@ namespace PlantLoadProfile {
         return nullptr;
     }
 
-    void PlantProfileData::onInitLoopEquip(EnergyPlusData &state, const PlantLocation &EP_UNUSED(calledFromLocation))
+    void PlantProfileData::onInitLoopEquip(EnergyPlusData &state, [[maybe_unused]] const PlantLocation &calledFromLocation)
     {
         this->InitPlantProfile(state);
     }
 
     void PlantProfileData::simulate(EnergyPlusData &state,
-                                    const PlantLocation &EP_UNUSED(calledFromLocation),
-                                    bool const EP_UNUSED(FirstHVACIteration),
-                                    Real64 &EP_UNUSED(CurLoad),
-                                    bool const EP_UNUSED(RunFlag))
+                                    [[maybe_unused]] const PlantLocation &calledFromLocation,
+                                    [[maybe_unused]] bool const FirstHVACIteration,
+                                    [[maybe_unused]] Real64 &CurLoad,
+                                    [[maybe_unused]] bool const RunFlag)
     {
 
         // SUBROUTINE INFORMATION:
@@ -244,7 +244,6 @@ namespace PlantLoadProfile {
         // actual available flow is set.
 
         // Using/Aliasing
-        using DataGlobals::SysSizingCalc;
         using DataLoopNode::Node;
         using FluidProperties::GetDensityGlycol;
         using PlantUtilities::RegisterPlantCompDesignFlow;
@@ -286,7 +285,7 @@ namespace PlantLoadProfile {
             }
         }
 
-        if (!SysSizingCalc && this->InitSizing) {
+        if (!state.dataGlobal->SysSizingCalc && this->InitSizing) {
             RegisterPlantCompDesignFlow(InletNode, this->PeakVolFlowRate);
             this->InitSizing = false;
         }
@@ -427,7 +426,6 @@ namespace PlantLoadProfile {
 
         // Using/Aliasing
         using BranchNodeConnections::TestCompSet;
-        using DataGlobals::AnyEnergyManagementSystemInModel;
         using NodeInputManager::GetOnlySingleNode;
         using ScheduleManager::GetScheduleIndex;
         using namespace DataLoopNode;
@@ -613,7 +611,7 @@ namespace PlantLoadProfile {
                                 "Average",
                                 PlantProfile(ProfileNum).Name);
 
-            if (AnyEnergyManagementSystemInModel) {
+            if (state.dataGlobal->AnyEnergyManagementSystemInModel) {
                 SetupEMSActuator("Plant Load Profile",
                                  PlantProfile(ProfileNum).Name,
                                  "Mass Flow Rate",

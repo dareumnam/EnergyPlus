@@ -1750,8 +1750,12 @@ namespace CurveManager {
                             std::size_t rowNum = indVarInstance.at("external_file_starting_row_number").get<std::size_t>() - 1;
 
                             if (!state.dataCurveManager->btwxtManager.tableFiles.count(filePath)) {
-                                state.dataCurveManager->btwxtManager.tableFiles.emplace(filePath, TableFile{state, filePath});
+                                TableFile tableFile;
+                                ErrorsFound |= tableFile.load(state, filePath);
+                                state.dataCurveManager->btwxtManager.tableFiles.emplace(filePath, tableFile);
                             }
+
+                            if (ErrorsFound) continue; // Unable to load file so continue on to see if there are other errors before fataling
 
                             axis = state.dataCurveManager->btwxtManager.tableFiles[filePath].getArray(state, {colNum, rowNum});
 
@@ -1830,7 +1834,7 @@ namespace CurveManager {
                     }
 
                 }
-                // Add grid to state.dataCurveManager->btwxtManager
+                // Add grid to btwxtManager
                 state.dataCurveManager->btwxtManager.addGrid(UtilityRoutines::MakeUPPERCase(thisObjectName), Btwxt::GriddedData(gridAxes));
             }
         }
@@ -1940,9 +1944,14 @@ namespace CurveManager {
                     std::size_t colNum = fields.at("external_file_column_number").get<std::size_t>() - 1;
                     std::size_t rowNum = fields.at("external_file_starting_row_number").get<std::size_t>() - 1;
 
+
                     if (!state.dataCurveManager->btwxtManager.tableFiles.count(filePath)) {
-                        state.dataCurveManager->btwxtManager.tableFiles.emplace(filePath, TableFile{state, filePath});
+                        TableFile tableFile;
+                        ErrorsFound |= tableFile.load(state, filePath);
+                        state.dataCurveManager->btwxtManager.tableFiles.emplace(filePath, tableFile);
                     }
+
+                    if (ErrorsFound) continue; // Unable to load file so continue on to see if there are other errors before fataling
 
                     lookupValues = state.dataCurveManager->btwxtManager.tableFiles[filePath].getArray(state, {colNum, rowNum});
 
@@ -2040,19 +2049,15 @@ namespace CurveManager {
         tableFiles.clear();
     }
 
-    TableFile::TableFile(EnergyPlusData &state, std::string path)
-    {
-        load(state, path);
-    }
-
-    void TableFile::load(EnergyPlusData &state, std::string path)
+    bool TableFile::load(EnergyPlusData &state, std::string path)
     {
         filePath = path;
         bool fileFound;
         std::string fullPath;
-        DataSystemVariables::CheckForActualFileName(state, path, fileFound, fullPath);
-        if (!fileFound) {
-            ShowFatalError(state, "File \"" + filePath + "\" : File not found.");
+        std::string contextString = "CurveManager::TableFile::load: ";
+        DataSystemVariables::CheckForActualFileName(state, path, fileFound, fullPath, contextString);
+        if(!fileFound){
+            return true;
         }
         std::ifstream file(fullPath);
         std::string line("");
@@ -2086,6 +2091,7 @@ namespace CurveManager {
                 ++colNum;
             }
         }
+        return false;
     }
 
     std::vector<double>& TableFile::getArray(EnergyPlusData &state, std::pair<std::size_t, std::size_t> colAndRow) {
@@ -2206,34 +2212,34 @@ namespace CurveManager {
                                 state.dataCurveManager->PerfCurve(CurveIndex).Name);
         }
 
-        for (CurveIndex = 1; CurveIndex <= DataBranchAirLoopPlant::NumPressureCurves; ++CurveIndex) {
+        for (CurveIndex = 1; CurveIndex <= state.dataBranchAirLoopPlant->NumPressureCurves; ++CurveIndex) {
             SetupOutputVariable(state, "Performance Curve Input Variable 1 Value",
                                 OutputProcessor::Unit::None,
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).CurveInput1,
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).CurveInput1,
                                 "HVAC",
                                 "Average",
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).Name);
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).Name);
             SetupOutputVariable(state, "Performance Curve Input Variable 2 Value",
                                 OutputProcessor::Unit::None,
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).CurveInput2,
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).CurveInput2,
                                 "HVAC",
                                 "Average",
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).Name);
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).Name);
             SetupOutputVariable(state, "Performance Curve Input Variable 3 Value",
                                 OutputProcessor::Unit::None,
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).CurveInput3,
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).CurveInput3,
                                 "HVAC",
                                 "Average",
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).Name);
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).Name);
             SetupOutputVariable(state, "Performance Curve Output Value",
                                 OutputProcessor::Unit::None,
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).CurveOutput,
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).CurveOutput,
                                 "HVAC",
                                 "Average",
-                                DataBranchAirLoopPlant::PressureCurve(CurveIndex).Name);
+                                state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).Name);
         }
 
-        if (DataGlobals::AnyEnergyManagementSystemInModel) { // provide hook for possible EMS control
+        if (state.dataGlobal->AnyEnergyManagementSystemInModel) { // provide hook for possible EMS control
             for (CurveIndex = 1; CurveIndex <= state.dataCurveManager->NumCurves; ++CurveIndex) {
                 SetupEMSActuator("Curve",
                                  state.dataCurveManager->PerfCurve(CurveIndex).Name,
@@ -2243,14 +2249,14 @@ namespace CurveManager {
                                  state.dataCurveManager->PerfCurve(CurveIndex).EMSOverrideCurveValue);
             } // All performance curves
         }
-        if (DataGlobals::AnyEnergyManagementSystemInModel) { // provide hook for possible EMS control
-            for (CurveIndex = 1; CurveIndex <= DataBranchAirLoopPlant::NumPressureCurves; ++CurveIndex) {
+        if (state.dataGlobal->AnyEnergyManagementSystemInModel) { // provide hook for possible EMS control
+            for (CurveIndex = 1; CurveIndex <= state.dataBranchAirLoopPlant->NumPressureCurves; ++CurveIndex) {
                 SetupEMSActuator("Curve",
-                                 DataBranchAirLoopPlant::PressureCurve(CurveIndex).Name,
+                                 state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).Name,
                                  "Curve Result",
                                  "[unknown]",
-                                 DataBranchAirLoopPlant::PressureCurve(CurveIndex).EMSOverrideOn,
-                                 DataBranchAirLoopPlant::PressureCurve(CurveIndex).EMSOverrideCurveValue);
+                                 state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).EMSOverrideOn,
+                                 state.dataBranchAirLoopPlant->PressureCurve(CurveIndex).EMSOverrideCurveValue);
             } // All pressure curves
         }
     }
@@ -2703,7 +2709,7 @@ namespace CurveManager {
         using namespace DataIPShortCuts;
 
         // SUBROUTINE PARAMETER DEFINITIONS:
-        static std::string const CurveObjectName("Curve:Functional:PressureDrop");
+        constexpr auto CurveObjectName = "Curve:Functional:PressureDrop";
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int NumPressure;
@@ -2716,7 +2722,7 @@ namespace CurveManager {
         int CurveNum;
 
         NumPressure = inputProcessor->getNumObjectsFound(state, CurveObjectName);
-        DataBranchAirLoopPlant::PressureCurve.allocate(NumPressure);
+        state.dataBranchAirLoopPlant->PressureCurve.allocate(NumPressure);
         for (CurveNum = 1; CurveNum <= NumPressure; ++CurveNum) {
             inputProcessor->getObjectItem(state,
                                           CurveObjectName,
@@ -2731,20 +2737,20 @@ namespace CurveManager {
                                           cAlphaFieldNames,
                                           cNumericFieldNames);
             GlobalNames::VerifyUniqueInterObjectName(state, state.dataCurveManager->UniqueCurveNames, Alphas(1), CurveObjectName, cAlphaFieldNames(1), ErrsFound);
-            DataBranchAirLoopPlant::PressureCurve(CurveNum).Name = Alphas(1);
-            DataBranchAirLoopPlant::PressureCurve(CurveNum).EquivDiameter = Numbers(1);
-            DataBranchAirLoopPlant::PressureCurve(CurveNum).MinorLossCoeff = Numbers(2);
-            DataBranchAirLoopPlant::PressureCurve(CurveNum).EquivLength = Numbers(3);
-            DataBranchAirLoopPlant::PressureCurve(CurveNum).EquivRoughness = Numbers(4);
+            state.dataBranchAirLoopPlant->PressureCurve(CurveNum).Name = Alphas(1);
+            state.dataBranchAirLoopPlant->PressureCurve(CurveNum).EquivDiameter = Numbers(1);
+            state.dataBranchAirLoopPlant->PressureCurve(CurveNum).MinorLossCoeff = Numbers(2);
+            state.dataBranchAirLoopPlant->PressureCurve(CurveNum).EquivLength = Numbers(3);
+            state.dataBranchAirLoopPlant->PressureCurve(CurveNum).EquivRoughness = Numbers(4);
             if (NumNumbers > 4 && !lNumericFieldBlanks(5)) {
                 if (Numbers(5) != 0.0) {
-                    DataBranchAirLoopPlant::PressureCurve(CurveNum).ConstantFPresent = true;
-                    DataBranchAirLoopPlant::PressureCurve(CurveNum).ConstantF = Numbers(5);
+                    state.dataBranchAirLoopPlant->PressureCurve(CurveNum).ConstantFPresent = true;
+                    state.dataBranchAirLoopPlant->PressureCurve(CurveNum).ConstantF = Numbers(5);
                 }
             }
         }
 
-        DataBranchAirLoopPlant::NumPressureCurves = NumPressure;
+        state.dataBranchAirLoopPlant->NumPressureCurves = NumPressure;
 
         if (ErrsFound) {
             ShowFatalError(state, "GetPressureCurveInput: Errors found in Curve Objects.  Preceding condition(s) cause termination.");
@@ -2753,7 +2759,7 @@ namespace CurveManager {
 
     void GetPressureCurveTypeAndIndex(EnergyPlusData &state,
                                       std::string const &PressureCurveName, // name of the curve
-                                      int &PressureCurveType,
+                                      DataBranchAirLoopPlant::PressureCurveType &PressureCurveType,
                                       int &PressureCurveIndex)
     {
 
@@ -2768,16 +2774,10 @@ namespace CurveManager {
 
         // METHODOLOGY EMPLOYED:
         // Curve types are:
-        //  PressureCurve_Error       = pressure name was given, but curve is not available
-        //  PressureCurve_None        = no pressure curve for this branch
-        //  PressureCurve_Pressure    = pressure curve based on friction/minor loss
-        //  PressureCurve_Generic     = curvemanager held curve which is function of flow rate
-
-        // Using/Aliasing
-        using DataBranchAirLoopPlant::PressureCurve_Error;
-        using DataBranchAirLoopPlant::PressureCurve_Generic;
-        using DataBranchAirLoopPlant::PressureCurve_None;
-        using DataBranchAirLoopPlant::PressureCurve_Pressure;
+        //  PressureCurveType::Error       = pressure name was given, but curve is not available
+        //  PressureCurveType::None        = no pressure curve for this branch
+        //  PressureCurveType::Pressure    = pressure curve based on friction/minor loss
+        //  PressureCurveType::Generic     = curvemanager held curve which is function of flow rate
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int TempCurveIndex;
@@ -2791,7 +2791,7 @@ namespace CurveManager {
         }
 
         // Initialize
-        PressureCurveType = PressureCurve_None;
+        PressureCurveType = DataBranchAirLoopPlant::PressureCurveType::None;
         PressureCurveIndex = 0;
 
         // Try to retrieve a curve manager object
@@ -2803,7 +2803,7 @@ namespace CurveManager {
             GenericCurveType = state.dataCurveManager->PerfCurve(TempCurveIndex).ObjectType;
             {
                 if (state.dataCurveManager->PerfCurve(TempCurveIndex).NumDims == 1) {
-                    PressureCurveType = PressureCurve_Generic;
+                    PressureCurveType = DataBranchAirLoopPlant::PressureCurveType::Generic;
                     PressureCurveIndex = TempCurveIndex;
                 } else {
                     ShowSevereError(state, "Plant Pressure Simulation: Found error for curve: " + PressureCurveName);
@@ -2817,9 +2817,9 @@ namespace CurveManager {
         }
 
         // Then try to retrieve a pressure curve object
-        if (allocated(DataBranchAirLoopPlant::PressureCurve)) {
-            if (size(DataBranchAirLoopPlant::PressureCurve) > 0) {
-                TempCurveIndex = UtilityRoutines::FindItemInList(PressureCurveName, DataBranchAirLoopPlant::PressureCurve);
+        if (allocated(state.dataBranchAirLoopPlant->PressureCurve)) {
+            if (size(state.dataBranchAirLoopPlant->PressureCurve) > 0) {
+                TempCurveIndex = UtilityRoutines::FindItemInList(PressureCurveName, state.dataBranchAirLoopPlant->PressureCurve);
             } else {
                 TempCurveIndex = 0;
             }
@@ -2827,7 +2827,7 @@ namespace CurveManager {
 
         // See if it is valid
         if (TempCurveIndex > 0) {
-            PressureCurveType = PressureCurve_Pressure;
+            PressureCurveType = DataBranchAirLoopPlant::PressureCurveType::Pressure;
             PressureCurveIndex = TempCurveIndex;
             return;
         }
@@ -2836,12 +2836,12 @@ namespace CurveManager {
 
         // Last check, see if it is blank:
         if (PressureCurveName.empty()) {
-            PressureCurveType = PressureCurve_None;
+            PressureCurveType = DataBranchAirLoopPlant::PressureCurveType::None;
             return;
         }
 
         // At this point, we had a non-blank user entry with no match
-        PressureCurveType = PressureCurve_Error;
+        PressureCurveType = DataBranchAirLoopPlant::PressureCurveType::Error;
     }
 
     Real64 PressureCurveValue(EnergyPlusData &state,
@@ -2881,12 +2881,12 @@ namespace CurveManager {
         Real64 RoughnessRatio;
 
         // Retrieve data from structure
-        Diameter = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).EquivDiameter;
-        MinorLossCoeff = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).MinorLossCoeff;
-        Length = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).EquivLength;
-        Roughness = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).EquivRoughness;
-        IsConstFPresent = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).ConstantFPresent;
-        ConstantF = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).ConstantF;
+        Diameter = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).EquivDiameter;
+        MinorLossCoeff = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).MinorLossCoeff;
+        Length = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).EquivLength;
+        Roughness = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).EquivRoughness;
+        IsConstFPresent = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).ConstantFPresent;
+        ConstantF = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).ConstantF;
 
         // Intermediate calculations
         CrossSectArea = (DataGlobalConstants::Pi() / 4.0) * pow_2(Diameter);
@@ -2897,10 +2897,10 @@ namespace CurveManager {
         // If we don't have any flow then exit out
         if (MassFlow < DataBranchAirLoopPlant::MassFlowTolerance) {
             PressureCurveValue = 0.0;
-            DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveInput1 = MassFlow;
-            DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveInput2 = Density;
-            DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveInput3 = Velocity;
-            DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveOutput = 0.0;
+            state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveInput1 = MassFlow;
+            state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveInput2 = Density;
+            state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveInput3 = Velocity;
+            state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveOutput = 0.0;
             return PressureCurveValue;
         }
 
@@ -2914,12 +2914,12 @@ namespace CurveManager {
         // Pressure drop calculation
         PressureCurveValue = (FrictionFactor * (Length / Diameter) + MinorLossCoeff) * (Density * pow_2(Velocity)) / 2.0;
 
-        if (DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).EMSOverrideOn) PressureCurveValue = DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).EMSOverrideCurveValue;
+        if (state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).EMSOverrideOn) PressureCurveValue = state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).EMSOverrideCurveValue;
 
-        DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveInput1 = MassFlow;
-        DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveInput2 = Density;
-        DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveInput3 = Velocity;
-        DataBranchAirLoopPlant::PressureCurve(PressureCurveIndex).CurveOutput = PressureCurveValue;
+        state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveInput1 = MassFlow;
+        state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveInput2 = Density;
+        state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveInput3 = Velocity;
+        state.dataBranchAirLoopPlant->PressureCurve(PressureCurveIndex).CurveOutput = PressureCurveValue;
 
         return PressureCurveValue;
     }

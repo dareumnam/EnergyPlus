@@ -45,75 +45,26 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// Google Test Headers
+#include <gtest/gtest.h>
+
 // EnergyPlus Headers
-#include <EnergyPlus/DataBranchAirLoopPlant.hh>
-namespace EnergyPlus {
+#include <EnergyPlus/DataSystemVariables.hh>
+#include <EnergyPlus/FileSystem.hh>
 
-namespace DataBranchAirLoopPlant {
+#include "Fixtures/EnergyPlusFixture.hh"
 
-    // Module containing the routines dealing with the <module_name>
+using namespace EnergyPlus;
 
-    // MODULE INFORMATION:
-    //       AUTHOR         Linda Lawrie
-    //       DATE WRITTEN   November 2011
-    //       MODIFIED       na
-    //       RE-ENGINEERED  na
-
-    // PURPOSE OF THIS MODULE:
-    // Certain data needs to be shared from Branch to Airloop to Plant and this module should
-    // alleviate cyclic dependencies.
-
-    // METHODOLOGY EMPLOYED:
-    // na
-
-    // REFERENCES:
-    // na
-
-    // OTHER NOTES:
-    // na
-
-    // USE STATEMENTS:
-    // <use statements for data only modules>
-    // Using/Aliasing
-    // <use statements for access to subroutines in other modules>
-
-    // Data
-    // MODULE PARAMETER DEFINITIONS:
-    // Parameters for tolerance
-    Real64 const MassFlowTolerance(0.000000001); // minimum significant mass flow rate (kg/s)
-
-    // Pressure Curve Type: None, pressure, or generic curve (if generic it will be a postive value which is the curve manager index)
-    int const PressureCurve_Error(-1);
-    int const PressureCurve_None(0);
-    int const PressureCurve_Pressure(1);
-    int const PressureCurve_Generic(2);
-
-    // Parameters for flow Control Types for branch flow resolution inside splitter/mixers
-    int const ControlType_Unknown(0);
-    int const ControlType_Active(1);       // 'Active'
-    int const ControlType_Passive(2);      // 'Passive'
-    int const ControlType_SeriesActive(3); // 'SeriesActive'
-    int const ControlType_Bypass(4);       // 'Bypass
-    Array1D_string const cControlType({0, 4}, {"Unknown", "Active", "Passive", "SeriesActive", "Bypass"});
-
-    // DERIVED TYPE DEFINITIONS:
-
-    // MODULE VARIABLE DECLARATIONS:
-    int NumPressureCurves(0);
-
-    // Object Data
-    Array1D<PlantPressureCurveData> PressureCurve;
-
-    void clear_state()
-    {
-        NumPressureCurves = 0;
-        PressureCurve.deallocate();
-    }
-
-    // SUBROUTINE SPECIFICATIONS FOR MODULE
-
-    //=================================================================================================!
-
-} // namespace DataBranchAirLoopPlant
-
-} // namespace EnergyPlus
+TEST_F(EnergyPlusFixture, File_Not_Found_ERR_Output)
+{
+    std::string filePath = "./NonExistentFile.txt";
+    FileSystem::makeNativePath(filePath);
+    std::string expectedError = FileSystem::getParentDirectoryPath(FileSystem::getAbsolutePath(filePath));
+    bool fileFound = false;
+    std::string fullPath;
+    std::string contextString = "Test File_Not_Found_ERR_Output";
+    DataSystemVariables::CheckForActualFileName(this->state, filePath, fileFound, fullPath, contextString);
+    EXPECT_FALSE(fileFound);
+    EXPECT_TRUE(match_err_stream(expectedError));
+}
