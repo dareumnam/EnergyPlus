@@ -33,7 +33,7 @@ These assumptions can also be applied to the new module.
 
 The algorithm of the steam to hot water heat exchanger module will be similar to the current steam to air coil module. The steam to hot water heat exchanger module will calculate the mass flow rate of steam desired to meet the water loop heating supply setpoint temperature. 
 The load on the heat exchanger is calculated based on the desired water supply setpoint.
-
+![eq1](eq1.png)
 
 
 ## Testing/Validation/Data Sources ##
