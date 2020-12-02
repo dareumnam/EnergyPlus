@@ -33,18 +33,28 @@ These assumptions can also be applied to the new module.
 
 The algorithm of the steam to hot water heat exchanger module will be similar to the current steam to air coil module. The steam to hot water heat exchanger module will calculate the mass flow rate of steam desired to meet the water loop heating supply setpoint temperature. 
 The load on the heat exchanger is calculated based on the desired water supply setpoint.
+
 ![eq1](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq1.PNG)
+
 The steam mass flow rate required by the heat exchanger to meet the setpoint temperature is determined by the following equation.
+
 ![eq2](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq2.PNG)
 
 The control scheme uses a node setpoint.
 The heat exchanger is simulated when the operating conditions are met. Calculate the heating load on the heat exchanger using the water loop heating supply setpoint and inlet water temperatures.
+
 ![eq3](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq3.PNG)
+
 In case the heating load is negative (the setpoint is below the water inlet temperature), the heat exchanger operation needs to be shut off.
+
 ![eq4](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq4.PNG)
+
 If the load is greater than the maximum heat exchanger load calculated at the maximum steam mass flow rate(user input), the heat exchanger can only deliver to the water loop its maximum heating capacity. In this case, the water outlet temperature will be below the setpoint. The water outlet temperature and the mass flow rate of steam are determined based on this maximum heat transfer value. If the mass flow rate of steam is greater than what the splitter can provide to the heat exchanger, set the mass flow rate to the value delivered by the splitter. The heat exchanger heating capacity and the water outlet temperature are recalculated with the steam mass flow rate by the splitter.
+
 ![eq5](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq5.PNG)
+
 If the above two IF and Else block are not true, then the heat exchanger can meet the required setpoint temperature.
+
 ![eq6](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq6.PNG)
 
 ## Testing/Validation/Data Sources ##
