@@ -57,7 +57,7 @@ If the load is greater than the maximum heat exchanger load calculated at the ma
 
 ![eq5](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq5.PNG)
 
-If the above two IF and Else blocks are not true, then the heat exchanger can meet the required setpoint temperature.
+If the above two IF and ELSE IF blocks are not true, then the heat exchanger can meet the required setpoint temperature.
 
 ![eq6](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq6.PNG)
 
