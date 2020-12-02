@@ -21,12 +21,12 @@ The request for this new feature came from Bractlet. There have also been severa
 
 ## Overview ##
 
-The current steam loop in EnergyPlus has five objects: Steam boiler, steam pipe, Steam to air coil, Steam baseboard radiator, and condensate pump. The steam loop has several assumptions that help simplify loop complexity and increase usability.
-- The steam side of the loop operates on constant saturation pressure of steam
-- The water side (condensate) of the loop operates at atmospheric pressure
-- The steam loop is to operate at saturated conditions, no superheated condition
-- The steam loop is assumed to have no transportation losses by friction and heat transfer with surroundings so that it maintains the quality of steam throughout the system constant value of 0 or 1
-- The boiler operation is assumed capable to generate steam at quality equal to 1 every time and steam enters the coils at boiler outlet conditions
+The current steam loop in EnergyPlus has five objects: steam boiler, steam pipe, steam to air coil, steam baseboard radiator, and condensate pump. The steam loop has several assumptions that help simplify loop complexity and increase usability.
+- Steam side of the loop operates on constant saturation pressure of steam
+- Water side (condensate) of the loop operates at atmospheric pressure
+- Steam loop is to operate at saturated conditions, no superheated condition
+- Steam loop is assumed to have no transportation losses by friction and heat transfer with surroundings so that it maintains the quality of steam throughout the system constant value of 0 or 1
+- Boiler operation is assumed to generate steam at quality equal to 1 every time and steam enters the coils at boiler outlet conditions
 - Steam coils are designed with steam traps, which only allow condensed steam to leave the coil; hence the steam always condenses and leaves the coil at quality of 0
 - In steam coil, user-speficied Degree of Subcooling occurs. Ideally a steam trap located at an outlet of the steam coil should remove all the condensate immediately, but there is a delay in actual system which causes the condensate to be subcooled before leaving the coil.
 - Steam coil also has an input of user-speficied Degree of Loop Subcooling. It represents the heat loss to the atmosphere due to uninsulated condensate return piping to the boiler. The condensate is subcooled to certain degree before it is pumped back to the boiler.
