@@ -1,7 +1,9 @@
 Adding Steam to Water Heat Exchanger to EnergyPlus
 ================
 
-**Dareum Nam, National Renewable Energy Laboratory**
+**Dareum Nam, Edwin Lee**
+
+**National Renewable Energy Laboratory**
 
  - Original Date
  - Revision Date
@@ -26,6 +28,8 @@ The current steam loop in EnergyPlus has five objects: Steam boiler, steam pipe,
 - The steam loop is assumed to have no transportation losses by friction and heat transfer with surroundings so that it maintains the quality of steam throughout the system constant value of 0 or 1
 - The boiler operation is assumed capable to generate steam at quality equal to 1 every time and steam enters the coils at boiler outlet conditions
 - Steam coils are designed with steam traps, which only allow condensed steam to leave the coil; hence the steam always condenses and leaves the coil at quality of 0
+- In steam coil, user-speficied Degree of Subcooling occurs. Ideally a steam trap located at an outlet of the steam coil should remove all the condensate immediately, but there is a delay in actual system which causes the condensate to be subcooled before leaving the coil.
+- Steam coil also has an input of user-speficied Degree of Loop Subcooling. It represents the heat loss to the atmosphere due to uninsulated condensate return piping to the boiler. The condensate is subcooled to certain degree before it is pumped back to the boiler.
 
 These assumptions can also be applied to the new module. 
 
@@ -53,7 +57,7 @@ If the load is greater than the maximum heat exchanger load calculated at the ma
 
 ![eq5](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq5.PNG)
 
-If the above two IF and Else block are not true, then the heat exchanger can meet the required setpoint temperature.
+If the above two IF and Else blocks are not true, then the heat exchanger can meet the required setpoint temperature.
 
 ![eq6](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq6.PNG)
 
@@ -66,20 +70,61 @@ TBD
 insert text
 
 ## Input Description ##
-
-insert text
+ 
+      A1 , \field Name
+           \required-field
+           \type alpha
+           \reference-class-name validBranchEquipmentTypes
+           \reference validBranchEquipmentNames
+      A2 , \field Availability Schedule Name
+           \note Availability schedule name for this system. Schedule value > 0 means the system is available.
+           \note If this field is blank, the system is always available.
+           \type object-list
+           \object-list ScheduleNames
+      N1 , \field Maximum Steam Flow Rate
+           \units m3/s
+           \minimum> 0.0
+           \autosizable
+      N2 , \field Degree of SubCooling
+           \units C
+           \minimum 1.0
+           \maximum 5.0
+      N3 , \field Degree of Loop SubCooling
+           \units C
+           \minimum 10.0
+           \default 20.0
+      A3 , \field Condensate Inlet Node Name
+           \required-field
+           \type node
+      A4 , \field Condensate Outlet Node Name
+           \required-field
+           \type node
+      A5 , \field Water Inlet Node Name
+           \required-field
+           \type node
+      A6 , \field Water Outlet Node Name
+           \required-field
+           \type node
+      A7 ; \field Temperature Setpoint Node Name
+           \type node
 
 ## Outputs Description ##
 
-insert text
+ - Steam to Water Heat Exchanger Heat Transfer Energy [J]
+ - Steam to Water Heat Exchanger Heat Transfer Rate [W]
+ - Steam to Water Heat Exchanger Steam Trap Loss Rate [W]
+ - Steam to Water Heat Exchanger Steam Inlet Temperature [C]
+ - Steam to Water Heat Exchanger Steam(Condensate) Outlet Temperature [C]
+ - Steam to Water Heat Exchanger Steam Mass Flow Rate [kg/s]
+ - Steam to Water Heat Exchanger Water Outlet Temperature [C]
 
 ## Engineering Reference ##
 
-insert text
+Subsection will be added to Section 9.10 Steam Systems and Component Models
 
 ## Example File and Transition Changes ##
 
-insert text
+TBD
 
 ## References ##
 
