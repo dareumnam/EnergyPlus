@@ -29,7 +29,7 @@ The current steam loop in EnergyPlus has five objects: steam boiler, steam pipe,
 - Boiler operation is assumed to generate steam at quality equal to 1 every time and steam enters the coils at boiler outlet conditions
 - Steam coils are designed with steam traps, which only allow condensed steam to leave the coil; hence the steam always condenses and leaves the coil at quality of 0
 - In steam coil, user-speficied Degree of Subcooling occurs. Ideally a steam trap located at an outlet of the steam coil should remove all the condensate immediately, but there is a delay in actual system which causes the condensate to be subcooled before leaving the coil.
-- Steam coil also has an input of user-speficied Degree of Loop Subcooling. It represents the heat loss to the atmosphere due to uninsulated condensate return piping to the boiler. The condensate is subcooled to certain degree before it is pumped back to the boiler.
+- Steam coil also has an input of user-speficied Degree of Loop Subcooling. It represents the heat loss to the atmosphere due to uninsulated return piping to the boiler. The condensate is subcooled to certain degree before it is pumped back to the boiler.
 
 These assumptions can also be applied to the new module. 
 
@@ -60,6 +60,8 @@ If the load is greater than the maximum heat exchanger load calculated at the ma
 If the above two IF and ELSE IF blocks are not true, then the heat exchanger can meet the required setpoint temperature.
 
 ![eq6](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/eq6.PNG)
+
+![nom](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/nom.PNG)
 
 ## Testing/Validation/Data Sources ##
 
