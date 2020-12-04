@@ -95,10 +95,10 @@ insert text
            \units C
            \minimum 10.0
            \default 20.0
-      A3 , \field Condensate Inlet Node Name
+      A3 , \field Steam Inlet Node Name
            \required-field
            \type node
-      A4 , \field Condensate Outlet Node Name
+      A4 , \field Steam(Condensate) Outlet Node Name
            \required-field
            \type node
       A5 , \field Water Inlet Node Name
