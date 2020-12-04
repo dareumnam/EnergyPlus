@@ -37,7 +37,7 @@ These assumptions can also be applied to the new module.
 
 Figure 1 describes the loop structure with steam to water heat exchanger.
 
-![figure1](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/figure1.PNG)
+![figure1](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/figure1.png)
 
 Figure 1: Schematic diagram of steam to water heat exchanger 
 
