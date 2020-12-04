@@ -36,7 +36,9 @@ These assumptions can also be applied to the new module.
 ## Approach ##
 
 Figure 1 describes the loop structure with steam to water heat exchanger.
+
 ![figure1](https://github.com/dareumnam/EnergyPlus/blob/SteamOverhaul/design/FY2021/figure1.PNG)
+
 Figure 1: Schematic diagram of steam to water heat exchanger 
 
 The algorithm of the steam to hot water heat exchanger module will be similar to the current steam to air coil module. The steam to hot water heat exchanger module will calculate the mass flow rate of steam desired to meet the water loop heating supply setpoint temperature. 
