@@ -666,7 +666,8 @@ namespace SteamCoils {
         Real64 TempSteamIn(100.0);
         Real64 EnthSteamInDry;
         Real64 EnthSteamOutWet;
-        Real64 LatentHeatSteam;
+        Real64 QualitySteamIn;
+        Real64 DeltaEnthSteam;
         Real64 SteamDensity;
         Real64 RhoAirStd; // density of air at standard conditions
         Real64 CpAirStd;  // specific heat of air at std conditions
@@ -692,6 +693,7 @@ namespace SteamCoils {
         RhoAirStd = PsyRhoAirFnPbTdbW(state, state.dataEnvrn->StdBaroPress, 20.0, 0.0);
         CpAirStd = PsyCpAirFnW(0.0);
         bool coilWasAutosized(false); // coil report
+        QualitySteamIn = state.dataSteamCoils->SteamCoil(CoilNum).InletSteamQuality;
 
         // If this is a steam coil
         // Find the appropriate steam Plant Sizing object
@@ -789,9 +791,9 @@ namespace SteamCoils {
                         // RefrigIndex is set during GetInput for this module
                         EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                         EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                        LatentHeatSteam = EnthSteamInDry - EnthSteamOutWet;
+                        DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
                         SteamDensity = GetSatDensityRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                        // SteamCoil(CoilNum)%MaxSteamVolFlowRate = DesCoilLoad/(SteamDensity * LatentHeatSteam)
+                        // SteamCoil(CoilNum)%MaxSteamVolFlowRate = DesCoilLoad/(SteamDensity * DeltaEnthSteam)
                         //            CpWater  =  GetSpecificHeatGlycol('WATER',  &
                         //                                              TempSteamIn, &
                         //                                              PlantLoop(SteamCoil(CoilNum)%LoopNum)%FluidIndex, &
@@ -799,7 +801,7 @@ namespace SteamCoils {
                         CpWater = GetSatSpecificHeatRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
 
                         state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamVolFlowRate =
-                            DesCoilLoad / (SteamDensity * (LatentHeatSteam + state.dataSteamCoils->SteamCoil(CoilNum).DegOfSubcooling * CpWater));
+                            DesCoilLoad / (SteamDensity * (DeltaEnthSteam + state.dataSteamCoils->SteamCoil(CoilNum).DegOfSubcooling * CpWater));
                         //             PlantSizData(PltSizSteamNum)%DeltaT*CPHW(PlantSizData(PltSizSteamNum)%ExitTemp)))
                     } else {
                         state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamVolFlowRate = 0.0;
@@ -873,9 +875,9 @@ namespace SteamCoils {
                             // RefrigIndex is set during GetInput for this module
                             EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                             EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                            LatentHeatSteam = EnthSteamInDry - EnthSteamOutWet;
+                            DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
                             SteamDensity = GetSatDensityRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                            // SteamCoil(CoilNum)%MaxSteamVolFlowRate = DesCoilLoad/(SteamDensity * LatentHeatSteam)
+                            // SteamCoil(CoilNum)%MaxSteamVolFlowRate = DesCoilLoad/(SteamDensity * DeltaEnthSteam)
                             //           CpWater  =  GetSpecificHeatGlycol('WATER',  &
                             //                                             TempSteamIn, &
                             //                                             PlantLoop(SteamCoil(CoilNum)%LoopNum)%FluidIndex, &
@@ -883,7 +885,7 @@ namespace SteamCoils {
                             CpWater = GetSatSpecificHeatRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
 
                             state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamVolFlowRate =
-                                DesCoilLoad / (SteamDensity * (LatentHeatSteam + state.dataSteamCoils->SteamCoil(CoilNum).DegOfSubcooling * CpWater));
+                                DesCoilLoad / (SteamDensity * (DeltaEnthSteam + state.dataSteamCoils->SteamCoil(CoilNum).DegOfSubcooling * CpWater));
                             //             PlantSizData(PltSizSteamNum)%DeltaT*CPHW(PlantSizData(PltSizSteamNum)%ExitTemp)))
                         } else {
                             state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamVolFlowRate = 0.0;
@@ -1017,7 +1019,7 @@ namespace SteamCoils {
         static Real64 CoilPress(0.0);
         static Real64 EnthSteamInDry(0.0);
         static Real64 EnthSteamOutWet(0.0);
-        static Real64 LatentHeatSteam(0.0);
+        static Real64 DeltaEnthSteam(0.0);
         static Real64 SubcoolDeltaTemp(0.0);
         static Real64 TempSetPoint(0.0);
         static Real64 QCoilReq(0.0);
@@ -1030,6 +1032,7 @@ namespace SteamCoils {
         static Real64 EnthPumpInlet(0.0);
         static Real64 EnthAtAtmPress(0.0);
         static Real64 CpWater(0.0);
+        static Real64 QualitySteamIn(0.0);
 
         QCoilReq = QCoilRequested;
         TempAirIn = state.dataSteamCoils->SteamCoil(CoilNum).InletAirTemp;
@@ -1038,6 +1041,7 @@ namespace SteamCoils {
         CoilPress = state.dataSteamCoils->SteamCoil(CoilNum).InletSteamPress;
         SubcoolDeltaTemp = state.dataSteamCoils->SteamCoil(CoilNum).DegOfSubcooling;
         TempSetPoint = state.dataSteamCoils->SteamCoil(CoilNum).DesiredOutletTemp;
+        QualitySteamIn = state.dataSteamCoils->SteamCoil(CoilNum).InletSteamQuality;
 
         // If there is a fault of coil SAT Sensor
         if (state.dataSteamCoils->SteamCoil(CoilNum).FaultyCoilSATFlag && (!state.dataGlobal->WarmupFlag) && (!state.dataGlobal->DoingSizing) && (!state.dataGlobal->KickOffSimulation)) {
@@ -1086,7 +1090,7 @@ namespace SteamCoils {
                     EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                     EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
 
-                    LatentHeatSteam = EnthSteamInDry - EnthSteamOutWet;
+                    DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
 
                     //          CpWater = GetSpecificHeatGlycol('WATER',  &
                     //                                           TempSteamIn, &
@@ -1096,7 +1100,7 @@ namespace SteamCoils {
                     CpWater = GetSatSpecificHeatRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineNameSizeSteamCoil);
 
                     // Max Heat Transfer
-                    QSteamCoilMaxHT = state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamMassFlowRate * (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                    QSteamCoilMaxHT = state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamMassFlowRate * (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
                     state.dataSteamCoils->SteamCoil(CoilNum).OperatingCapacity = QSteamCoilMaxHT;
 
                     // Determine the Max coil capacity and check for the same.
@@ -1107,7 +1111,7 @@ namespace SteamCoils {
                     }
 
                     // Steam Mass Flow Rate Required
-                    SteamMassFlowRate = QCoilCap / (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                    SteamMassFlowRate = QCoilCap / (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
 
                     SetComponentFlowRate(state, SteamMassFlowRate,
                                          state.dataSteamCoils->SteamCoil(CoilNum).SteamInletNodeNum,
@@ -1118,7 +1122,7 @@ namespace SteamCoils {
                                          state.dataSteamCoils->SteamCoil(CoilNum).CompNum);
 
                     // recalculate if mass flow rate changed in previous call.
-                    QCoilCap = SteamMassFlowRate * (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                    QCoilCap = SteamMassFlowRate * (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
 
                     // In practice Sensible & Superheated heat transfer is negligible compared to latent part.
                     // This is required for outlet water temperature, otherwise it will be saturation temperature.
@@ -1195,7 +1199,7 @@ namespace SteamCoils {
                     // exchanger, subsequently heat exchange is latent heat + subcooling.
                     EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                     EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                    LatentHeatSteam = EnthSteamInDry - EnthSteamOutWet;
+                    DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
 
                     //          CpWater = GetSpecificHeatGlycol('WATER',  &
                     //                                           TempSteamIn, &
@@ -1204,7 +1208,7 @@ namespace SteamCoils {
                     CpWater = GetSatSpecificHeatRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineNameSizeSteamCoil);
 
                     // Max Heat Transfer
-                    QSteamCoilMaxHT = state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamMassFlowRate * (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                    QSteamCoilMaxHT = state.dataSteamCoils->SteamCoil(CoilNum).MaxSteamMassFlowRate * (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
 
                     // Coil Load in case of temperature setpoint
                     QCoilCap = CapacitanceAir * (TempSetPoint - TempAirIn);
@@ -1253,7 +1257,7 @@ namespace SteamCoils {
                         TempWaterOut = TempSteamIn - SubcoolDeltaTemp;
 
                         // Steam Mass Flow Rate Required
-                        SteamMassFlowRate = QCoilCap / (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                        SteamMassFlowRate = QCoilCap / (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
                         SetComponentFlowRate(state, SteamMassFlowRate,
                                              state.dataSteamCoils->SteamCoil(CoilNum).SteamInletNodeNum,
                                              state.dataSteamCoils->SteamCoil(CoilNum).SteamOutletNodeNum,
@@ -1263,7 +1267,7 @@ namespace SteamCoils {
                                              state.dataSteamCoils->SteamCoil(CoilNum).CompNum);
 
                         // recalculate in case previous call changed mass flow rate
-                        QCoilCap = SteamMassFlowRate * (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                        QCoilCap = SteamMassFlowRate * (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
                         TempAirOut = TempAirIn + QCoilCap / (AirMassFlow * PsyCpAirFnW(Win));
 
                         // Total Heat Transfer to air
@@ -1287,7 +1291,7 @@ namespace SteamCoils {
                         TempWaterOut = TempSteamIn - SubcoolDeltaTemp;
 
                         // Steam Mass Flow Rate Required
-                        SteamMassFlowRate = QCoilCap / (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                        SteamMassFlowRate = QCoilCap / (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
                         SetComponentFlowRate(state, SteamMassFlowRate,
                                              state.dataSteamCoils->SteamCoil(CoilNum).SteamInletNodeNum,
                                              state.dataSteamCoils->SteamCoil(CoilNum).SteamOutletNodeNum,
@@ -1297,7 +1301,7 @@ namespace SteamCoils {
                                              state.dataSteamCoils->SteamCoil(CoilNum).CompNum);
 
                         // recalculate in case previous call changed mass flow rate
-                        QCoilCap = SteamMassFlowRate * (LatentHeatSteam + SubcoolDeltaTemp * CpWater);
+                        QCoilCap = SteamMassFlowRate * (DeltaEnthSteam + SubcoolDeltaTemp * CpWater);
                         TempAirOut = TempAirIn + QCoilCap / (AirMassFlow * PsyCpAirFnW(Win));
 
                         // Total Heat Transfer to air

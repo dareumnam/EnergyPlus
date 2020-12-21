@@ -87,6 +87,7 @@ namespace BoilerSteam {
         Real64 BoilerMaxOperPress;     // Max Boiler Pressure
         Real64 BoilerPressCheck;       // Boiler Operating Pressure at Saturation Temperature
         Real64 SizFac;                 // sizing factor
+        Real64 OutletSteamQuality;     // Outlet node steam quality
         int BoilerInletNodeNum;        // Node number at the boiler inlet
         int BoilerOutletNodeNum;       // Node number at the boiler outlet
         Array1D<Real64> FullLoadCoef;  // Coefficients of the fuel consumption/part load ratio curve
@@ -117,7 +118,7 @@ namespace BoilerSteam {
         BoilerSpecs()
             : FuelType(DataGlobalConstants::ResourceType::None), Available(false), ON(false), MissingSetPointErrDone(false), UseLoopSetPoint(false), DesMassFlowRate(0.0),
               MassFlowRate(0.0), NomCap(0.0), NomCapWasAutoSized(false), NomEffic(0.0), MinPartLoadRat(0.0), MaxPartLoadRat(0.0), OptPartLoadRat(0.0),
-              OperPartLoadRat(0.0), TempUpLimitBoilerOut(0.0), BoilerMaxOperPress(0.0), BoilerPressCheck(0.0), SizFac(0.0), BoilerInletNodeNum(0),
+              OperPartLoadRat(0.0), TempUpLimitBoilerOut(0.0), BoilerMaxOperPress(0.0), BoilerPressCheck(0.0), SizFac(0.0), OutletSteamQuality(1.0), BoilerInletNodeNum(0),
               BoilerOutletNodeNum(0), FullLoadCoef(3, 0.0), TypeNum(0), LoopNum(0), LoopSideNum(0), BranchNum(0), CompNum(0), PressErrIndex(0),
               FluidIndex(0), myFlag(true), myEnvrnFlag(true), FuelUsed(0.0), BoilerLoad(0.0), BoilerEff(0.0), BoilerMassFlowRate(0.0), BoilerOutletTemp(0.0),
               BoilerEnergy(0.0), FuelConsumed(0.0), BoilerInletTemp(0.0), BoilerFuelTypeForOutputVariable("")

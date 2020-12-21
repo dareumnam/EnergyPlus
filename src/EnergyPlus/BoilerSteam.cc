@@ -228,6 +228,7 @@ namespace BoilerSteam {
             thisBoiler.FullLoadCoef(3) = DataIPShortCuts::rNumericArgs(10);
             thisBoiler.SizFac = DataIPShortCuts::rNumericArgs(11);
             if (thisBoiler.SizFac <= 0.0) thisBoiler.SizFac = 1.0;
+            thisBoiler.OutletSteamQuality = DataIPShortCuts::rNumericArgs(12);
 
             if ((DataIPShortCuts::rNumericArgs(8) + DataIPShortCuts::rNumericArgs(9) + DataIPShortCuts::rNumericArgs(10)) == 0.0) {
                 ShowSevereError(state, RoutineName + DataIPShortCuts::cCurrentModuleObject + "=\"" + DataIPShortCuts::cAlphaArgs(1) + "\",");
@@ -345,13 +346,14 @@ namespace BoilerSteam {
                 FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->TempUpLimitBoilerOut, 1.0, this->FluidIndex, RoutineName);
             Real64 EnthSteamOutWet =
                 FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->TempUpLimitBoilerOut, 0.0, this->FluidIndex, RoutineName);
-            Real64 LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
+            Real64 DeltaEnthSteam =
+                (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
 
             Real64 CpWater =
                 FluidProperties::GetSatSpecificHeatRefrig(state, fluidNameSteam, this->TempUpLimitBoilerOut, 0.0, this->FluidIndex, RoutineName);
 
             this->DesMassFlowRate =
-                this->NomCap / (LatentEnthSteam + CpWater * (this->TempUpLimitBoilerOut - DataLoopNode::Node(BoilerInletNode).Temp));
+                this->NomCap / (DeltaEnthSteam + CpWater * (this->TempUpLimitBoilerOut - DataLoopNode::Node(BoilerInletNode).Temp));
 
             PlantUtilities::InitComponentNodes(0.0,
                                                this->DesMassFlowRate,
@@ -485,11 +487,12 @@ namespace BoilerSteam {
                 Real64 SteamDensity = FluidProperties::GetSatDensityRefrig(state, fluidNameSteam, SizingTemp, 1.0, this->FluidIndex, RoutineName);
                 Real64 EnthSteamOutDry = FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, SizingTemp, 1.0, this->FluidIndex, RoutineName);
                 Real64 EnthSteamOutWet = FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, SizingTemp, 0.0, this->FluidIndex, RoutineName);
-                Real64 LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
+                Real64 DeltaEnthSteam =
+                    (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
                 Real64 CpWater = FluidProperties::GetSatSpecificHeatRefrig(state, fluidNameSteam, SizingTemp, 0.0, this->FluidIndex, RoutineName);
                 tmpNomCap = (CpWater * SteamDensity * this->SizFac * DataSizing::PlantSizData(PltSizNum).DeltaT *
                                  DataSizing::PlantSizData(PltSizNum).DesVolFlowRate +
-                             DataSizing::PlantSizData(PltSizNum).DesVolFlowRate * SteamDensity * LatentEnthSteam);
+                             DataSizing::PlantSizData(PltSizNum).DesVolFlowRate * SteamDensity * DeltaEnthSteam);
             } else {
                 if (this->NomCapWasAutoSized) tmpNomCap = 0.0;
             }
@@ -640,8 +643,9 @@ namespace BoilerSteam {
                 FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 1.0, this->FluidIndex, RoutineName);
             Real64 const EnthSteamOutWet =
                 FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 0.0, this->FluidIndex, RoutineName);
-            Real64 const LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
-            this->BoilerMassFlowRate = this->BoilerLoad / (LatentEnthSteam + (CpWater * BoilerDeltaTemp));
+            Real64 const DeltaEnthSteam =
+                (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
+            this->BoilerMassFlowRate = this->BoilerLoad / (DeltaEnthSteam + (CpWater * BoilerDeltaTemp));
 
             PlantUtilities::SetComponentFlowRate(state,
                                                  this->BoilerMassFlowRate,
@@ -679,8 +683,9 @@ namespace BoilerSteam {
                     FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 1.0, this->FluidIndex, RoutineName);
                 Real64 const EnthSteamOutWet =
                     FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 0.0, this->FluidIndex, RoutineName);
-                Real64 const LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
-                this->BoilerLoad = (this->BoilerMassFlowRate * LatentEnthSteam);
+                Real64 const DeltaEnthSteam =
+                    (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
+                this->BoilerLoad = (this->BoilerMassFlowRate * DeltaEnthSteam);
 
             } else {
 
@@ -697,9 +702,10 @@ namespace BoilerSteam {
                     FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 1.0, this->FluidIndex, RoutineName);
                 Real64 const EnthSteamOutWet =
                     FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 0.0, this->FluidIndex, RoutineName);
-                Real64 const LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
+                Real64 const DeltaEnthSteam =
+                    (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
                 this->BoilerLoad =
-                    std::abs(this->BoilerMassFlowRate * LatentEnthSteam) + std::abs(this->BoilerMassFlowRate * CpWater * BoilerDeltaTemp);
+                    std::abs(this->BoilerMassFlowRate * DeltaEnthSteam) + std::abs(this->BoilerMassFlowRate * CpWater * BoilerDeltaTemp);
             }
 
             // If load exceeds the distributed load set to the distributed load
@@ -720,9 +726,10 @@ namespace BoilerSteam {
                     FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 1.0, this->FluidIndex, RoutineName);
                 Real64 const EnthSteamOutWet =
                     FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 0.0, this->FluidIndex, RoutineName);
-                Real64 const LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
+                Real64 const DeltaEnthSteam =
+                    (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
                 BoilerDeltaTemp = this->BoilerOutletTemp - DataLoopNode::Node(this->BoilerInletNodeNum).Temp;
-                this->BoilerMassFlowRate = this->BoilerLoad / (LatentEnthSteam + CpWater * BoilerDeltaTemp);
+                this->BoilerMassFlowRate = this->BoilerLoad / (DeltaEnthSteam + CpWater * BoilerDeltaTemp);
 
                 PlantUtilities::SetComponentFlowRate(state,
                                                      this->BoilerMassFlowRate,
@@ -743,9 +750,10 @@ namespace BoilerSteam {
                         FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 1.0, this->FluidIndex, RoutineName);
                     Real64 const EnthSteamOutWet =
                         FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->BoilerOutletTemp, 0.0, this->FluidIndex, RoutineName);
-                    Real64 const LatentEnthSteam = EnthSteamOutDry - EnthSteamOutWet;
+                    Real64 const DeltaEnthSteam =
+                        (EnthSteamOutDry * this->OutletSteamQuality + EnthSteamOutWet * (1 - this->OutletSteamQuality)) - EnthSteamOutWet;
                     BoilerDeltaTemp = this->BoilerOutletTemp - DataLoopNode::Node(this->BoilerInletNodeNum).Temp;
-                    this->BoilerMassFlowRate = this->BoilerLoad / (LatentEnthSteam + CpWater * BoilerDeltaTemp);
+                    this->BoilerMassFlowRate = this->BoilerLoad / (DeltaEnthSteam + CpWater * BoilerDeltaTemp);
 
                     PlantUtilities::SetComponentFlowRate(state,
                                                          this->BoilerMassFlowRate,
@@ -820,7 +828,7 @@ namespace BoilerSteam {
             DataLoopNode::Node(BoilerOutletNode).Temp = this->BoilerOutletTemp;
             DataLoopNode::Node(BoilerInletNode).Press = this->BoilerPressCheck; //???
             DataLoopNode::Node(BoilerOutletNode).Press = DataLoopNode::Node(BoilerInletNode).Press;
-            DataLoopNode::Node(BoilerOutletNode).Quality = 1.0; // Model assumes saturated steam exiting the boiler
+            DataLoopNode::Node(BoilerOutletNode).Quality = this->OutletSteamQuality; 
         }
 
         this->BoilerInletTemp = DataLoopNode::Node(BoilerInletNode).Temp;
