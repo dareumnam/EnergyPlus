@@ -3230,7 +3230,10 @@
     0.1,                     !- Coefficient 2 of Fuel Use Function of Part Load Ratio Curve
     0.1,                     !- Coefficient 3 of Fuel Use Function of Part Load Ratio Curve
     Steam Boiler Plant Boiler Inlet Node,  !- Water Inlet Node Name
-    Steam Boiler Plant Boiler Outlet Node;  !- Steam Outlet Node Name
+    Steam Boiler Plant Boiler Outlet Node,  !- Steam Outlet Node Name
+    ,
+    ,
+    0.95;
 
   SetpointManager:Scheduled,
     Steam Boiler Plant Boiler Setpoint Manager,  !- Name
