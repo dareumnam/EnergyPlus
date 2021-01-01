@@ -590,6 +590,8 @@ SET( SRC
   SteamBaseboardRadiator.hh
   SteamCoils.cc
   SteamCoils.hh
+  SteamToWaterHeatExchanger.cc
+  SteamToWaterHeatExchanger.hh
   StringUtilities.hh
   SurfaceGeometry.cc
   SurfaceGeometry.hh
