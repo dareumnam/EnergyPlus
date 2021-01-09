@@ -261,6 +261,7 @@
 #include <EnergyPlus/SplitterComponent.hh>
 #include <EnergyPlus/SteamBaseboardRadiator.hh>
 #include <EnergyPlus/SteamCoils.hh>
+#include <EnergyPlus/SteamToWaterHeatExchanger.hh>
 #include <EnergyPlus/SurfaceGeometry.hh>
 #include <EnergyPlus/SurfaceGroundHeatExchanger.hh>
 #include <EnergyPlus/SwimmingPool.hh>

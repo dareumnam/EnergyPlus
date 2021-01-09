@@ -249,6 +249,7 @@ namespace EnergyPlus {
         this->dataSplitterComponent = std::make_unique<SplitterComponentData>();
         this->dataSteamBaseboardRadiator = std::make_unique<SteamBaseboardRadiatorData>();
         this->dataSteamCoils = std::make_unique<SteamCoilsData>();
+        this->dataSteamToWaterHeatExchanger = std::make_unique<SteamToWaterHeatExchangerData>();
         this->dataStrGlobals = std::make_unique<DataStringGlobalsData>();
         this->dataSurfColor = std::make_unique<SurfaceColorData>();
         this->dataSurfLists = std::make_unique<SurfaceListsData>();
@@ -493,6 +494,7 @@ namespace EnergyPlus {
         this->dataSplitterComponent->clear_state();
         this->dataSteamBaseboardRadiator->clear_state();
         this->dataSteamCoils->clear_state();
+        this->dataSteamToHeatExchanger->clear_state();
         this->dataStrGlobals->clear_state();
         this->dataSurfColor->clear_state();
         this->dataSurfLists->clear_state();

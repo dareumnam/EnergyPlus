@@ -112,6 +112,7 @@
 #include <EnergyPlus/ScheduleManager.hh>
 #include <EnergyPlus/SetPointManager.hh>
 #include <EnergyPlus/SolarCollectors.hh>
+#include <EnergyPlus/SteamToWaterHeatExchanger.hh>
 #include <EnergyPlus/SurfaceGroundHeatExchanger.hh>
 #include <EnergyPlus/SystemAvailabilityManager.hh>
 #include <EnergyPlus/UserDefinedComponents.hh>
@@ -1394,6 +1395,14 @@ namespace EnergyPlus {
                             } else if (UtilityRoutines::SameString(this_comp_type, "SwimmingPool:Indoor")) {
                                 this_comp.TypeOf_Num = TypeOf_SwimmingPool_Indoor;
                                 this_comp.CurOpSchemeType = DemandOpSchemeType;
+                            } else if (UtilityRoutines::SameString(this_comp_type, "HeatExchanger:SteamToWater")) {
+                                this_comp.TypeOf_Num = TypeOf_SteamToWaterHeatExchanger;
+                                if (LoopSideNum == DemandSide) {
+                                    this_comp.CurOpSchemeType = DemandOpSchemeType;
+                                } else if (LoopSideNum == SupplySide) {
+                                    this_comp.CurOpSchemeType = UnknownStatusOpSchemeType;
+                                }
+                                this_comp.compPtr = SteamToWaterHeatExchanger::HeatExchangerSpecs::factory(state, CompNames(CompNum));
                             } else {
                                 // discover unsupported equipment on branches.
                                 ShowSevereError(state, "GetPlantInput: Branch=\"" + BranchNames(BranchNum) +
@@ -4190,6 +4199,15 @@ namespace EnergyPlus {
                                     } else {
                                         this_component.FlowPriority = LoopFlowStatus_NeedyIfLoopOn;
                                         this_component.HowLoadServed = HowMet_ByNominalCap;
+                                    }
+                                } else if (SELECT_CASE_var == TypeOf_SteamToWaterHeatExchanger) { //          = 97
+                                    this_component.FlowCtrl = DataBranchAirLoopPlant::ControlTypeEnum::Active;
+                                    if (LoopSideCtr == DemandSide) {
+                                        this_component.FlowPriority = LoopFlowStatus_NeedyAndTurnsLoopOn;
+                                        this_component.HowLoadServed = HowMet_NoneDemand;
+                                    } else {
+                                        this_component.FlowPriority = LoopFlowStatus_TakesWhatGets;
+                                        this_component.HowLoadServed = HowMet_PassiveCap;
                                     }
                                 } else {
                                     ShowSevereError(state,

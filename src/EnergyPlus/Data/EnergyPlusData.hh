@@ -260,6 +260,7 @@ struct SolarShadingData;
 struct SplitterComponentData;
 struct SteamBaseboardRadiatorData;
 struct SteamCoilsData;
+struct SteamToWaterHeatExchangerData;
 struct SurfaceColorData;
 struct SurfaceGeometryData;
 struct SurfaceGroundHeatExchangersData;
@@ -508,6 +509,7 @@ struct EnergyPlusData : BaseGlobalStruct {
     std::unique_ptr<SplitterComponentData> dataSplitterComponent;
     std::unique_ptr<SteamBaseboardRadiatorData> dataSteamBaseboardRadiator;
     std::unique_ptr<SteamCoilsData> dataSteamCoils;
+    std::unique_ptr<SteamToWaterHeatExchangerData> dataSteamToWaterHeatExchanger;
     std::unique_ptr<SurfaceColorData> dataSurfColor;
     std::unique_ptr<SurfaceGeometryData> dataSurfaceGeometry;
     std::unique_ptr<SurfaceGroundHeatExchangersData> dataSurfaceGroundHeatExchangers;

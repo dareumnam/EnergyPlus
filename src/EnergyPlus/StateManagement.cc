@@ -173,6 +173,7 @@
 #include <EnergyPlus/RuntimeLanguageProcessor.hh>
 #include <EnergyPlus/ScheduleManager.hh>
 #include <EnergyPlus/SimAirServingZones.hh>
+#include <EnergyPlus/SteamToWaterHeatExchanger.hh>
 
 void EnergyPlus::clearAllStates(EnergyPlusData &state)
 {
@@ -304,5 +305,6 @@ void EnergyPlus::clearAllStates(EnergyPlusData &state)
     RuntimeLanguageProcessor::clear_state();
     ScheduleManager::clear_state();
     SimAirServingZones::clear_state();
+    SteamToWaterHeatExchanger::clear_state();
     ResultsFramework::clear_state();
 }
