@@ -68,28 +68,37 @@ namespace SteamToWaterHeatExchanger {
        
     extern int NumberOfSteamToWaterHXs;
 
-    struct PlantConnectionStruct : PlantLocation
+    struct PlantLoopConnection : PlantLocation
     {
         // Members
         int inletNodeNum;                      // plant loop inlet node index
         int outletNodeNum;                     // plant loop outlet node index
         Real64 MassFlowRateMin;                // minimum (hardware) flow rate for component [kg/s]
         Real64 MassFlowRateMax;                // maximum (hardware) flow rate for component [kg/s]
+        Real64 VolFlowRateMax;
         Real64 DesignVolumeFlowRate;           // design flow rate [m3/s]
         bool DesignVolumeFlowRateWasAutoSized; // true if design flow rate was autosize on input
+        Real64 DesignOutletTemp;
         Real64 MyLoad;                         // current load request of supply equip for op scheme control[W]
         Real64 MinLoad;                        // reports back size for load dispatch routines [W]
         Real64 MaxLoad;                        // reports back size for load dispatch [W]
         Real64 OptLoad;                        // reports back size for load dispatch [W]
         Real64 InletTemp;                      // current inlet fluid temperature [C]
-        Real64 InletMassFlowRate;              // current inlet mass flow rate [kg/s]
         Real64 OutletTemp;                     // component outlet temperature [C]
+        Real64 InletMassFlowRate;              // current inlet mass flow rate [kg/s]
+        Real64 OutletMassFlowRate;
+        Real64 InletEnthalpy;
+        Real64 OutletEnthalpy;
+        Real64 InletQuality;                   // for Steam
+        Real64 OutletQuality;
+        Real64 InletPress;
+
 
         // Default Constructor
-        PlantConnectionStruct()
-            : inletNodeNum(0), outletNodeNum(0), MassFlowRateMin(0.0), MassFlowRateMax(0.0), DesignVolumeFlowRate(0.0),
-              DesignVolumeFlowRateWasAutoSized(false), MyLoad(0.0), MinLoad(0.0), MaxLoad(0.0), OptLoad(0.0), InletTemp(0.0), InletMassFlowRate(0.0),
-              OutletTemp(0.0)
+        PlantLoopConnection()
+            : inletNodeNum(0), outletNodeNum(0), MassFlowRateMin(0.0), MassFlowRateMax(0.0), VolFlowRateMax(0.0), DesignVolumeFlowRate(0.0),
+              DesignVolumeFlowRateWasAutoSized(false), MyLoad(0.0), MinLoad(0.0), MaxLoad(0.0), OptLoad(0.0), InletTemp(0.0), OutletTemp(0.0),
+              InletMassFlowRate(0.0), OutletMassFlowRate(0.0), InletQuality(1.0), OutletQuality(0.0), InletPress(0.0)
         {
         }
     };
@@ -99,14 +108,8 @@ namespace SteamToWaterHeatExchanger {
         // Members
         std::string Name;           // Name of the SteamCoil
         int AvailSchedNum;
-        Real64 InletWaterMassFlowRate;      // MassFlow through the SteamCoil being Simulated [kg/s]
-        Real64 OutletAirMassFlowRate;     // MassFlow throught the SteamCoil being Simulated[kg/s]
-        Real64 InletAirTemp;              // Inlet Air Temperature Operating Condition [C]
-        Real64 OutletAirTemp;             // Outlet Air Temperature Operating Condition [C]
-        Real64 InletAirHumRat;            // Inlet Air Humidity Ratio Operating Condition
-        Real64 OutletAirHumRat;           // Outlet Air Humidity Ratio Calculated Condition
-        Real64 InletAirEnthalpy;          // Inlet Air enthalpy [J/kg]
-        Real64 OutletAirEnthalpy;         // Outlet Air enthalpy [J/kg]
+        PlantLoopConnection DemandSideOfSteamLoop; // Plant connections and data. HX is situated on the demand side of steam loop. 
+        PlantLoopConnection SupplySideOfWaterLoop;
         Real64 TotSteamCoilLoad;          // Total Load on the Coil [W]
         Real64 SenSteamCoilLoad;          // Sensible Load on the Coil [W]
         Real64 TotHeatTransferEnergy;     // Total Heating Coil energy of the Coil [J]
@@ -123,17 +126,8 @@ namespace SteamToWaterHeatExchanger {
         Real64 OutletSteamMassFlowRate;   // Outlet Steam Mass Flow Rate [Kg/s]
         Real64 MaxSteamVolFlowRate;       // Maximum water Volume flow rate [m3/s]
         Real64 MaxSteamMassFlowRate;      // Maximum water mass flow rate [Kg/s]
-        Real64 InletSteamEnthalpy;        // Inlet Water Enthalpy (J/Kg)
-        Real64 OutletWaterEnthalpy;       // Outlet Water Enthalpy (J/kg)
-        Real64 InletSteamPress;           // Pressure at steam inlet (Pa)
-        Real64 InletSteamQuality;         // Quality of steam at inlet
-        Real64 OutletSteamQuality;        // Quality of steam at outlet
         Real64 DegOfSubcooling;
         Real64 LoopSubcoolReturn;
-        int WaterInletNodeNum;            // Inlet node number at air side
-        int WaterOutletNodeNum;           // Outlet node number at air side
-        int SteamInletNodeNum;          // SteamInletNodeNum
-        int SteamOutletNodeNum;         // SteamOutletNodeNum
         int TempSetPointNodeNum;        // If applicable : node number that the temp setpoint exists.
         int FluidIndex;                 // Fluid index for FluidProperties (Steam)
         int LoopNum;                    // index for plant loop with steam coil
@@ -148,8 +142,7 @@ namespace SteamToWaterHeatExchanger {
 
         // Default Constructor
         HeatExchangerSpecs()
-            : OutletAirMassFlowRate(0.0), InletAirTemp(0.0), OutletAirTemp(0.0), InletAirHumRat(0.0), OutletAirHumRat(0.0), InletAirEnthalpy(0.0),
-              OutletAirEnthalpy(0.0), TotSteamCoilLoad(0.0), SenSteamCoilLoad(0.0), TotHeatTransferEnergy(0.0), TotHeatTransferRate(0.0),
+            : TotSteamCoilLoad(0.0), SenSteamCoilLoad(0.0), TotHeatTransferEnergy(0.0), TotHeatTransferRate(0.0),
               LoopLoss(0.0), TotSteamCoolingCoilRate(0.0), SenSteamCoolingCoilRate(0.0),
               LeavingRelHum(0.0), DesiredOutletTemp(0.0), DesiredOutletHumRat(0.0), InletSteamTemp(0.0), OutletSteamTemp(0.0),
               InletSteamMassFlowRate(0.0), OutletSteamMassFlowRate(0.0), MaxSteamVolFlowRate(0.0), MaxSteamMassFlowRate(0.0), InletSteamEnthalpy(0.0),
