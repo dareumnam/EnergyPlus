@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -50,6 +50,8 @@
 // Google Test Headers
 #include <gtest/gtest.h>
 
+#include "Fixtures/EnergyPlusFixture.hh"
+#include <EnergyPlus/Data/EnergyPlusData.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
 #include <EnergyPlus/DataSurfaces.hh>
 #include <EnergyPlus/HeatBalanceManager.hh>
@@ -61,12 +63,8 @@
 #include <EnergyPlus/PlantPipingSystemsManager.hh>
 #include <EnergyPlus/SurfaceGeometry.hh>
 
-#include "Fixtures/EnergyPlusFixture.hh"
-#include <EnergyPlus/Data/EnergyPlusData.hh>
-
 using namespace EnergyPlus;
 using namespace PlantPipingSystemsManager;
-using DataSurfaces::Surface;
 using HeatBalanceManager::GetMaterialData;
 using SurfaceGeometry::GetOSCMData;
 
@@ -123,9 +121,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_CorrectInputs) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -133,7 +131,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_CorrectInputs) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_FALSE(errorsFound);
@@ -192,9 +190,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadOSCMName) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -202,7 +200,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadOSCMName) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -261,9 +259,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadSlabLocation) {
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -271,7 +269,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadSlabLocation) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -330,9 +328,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadSlabMaterialName) 
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -340,7 +338,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadSlabMaterialName) 
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -399,9 +397,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadHorizInsSelection)
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -409,7 +407,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadHorizInsSelection)
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -468,9 +466,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadHorizInsMaterialNa
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -478,7 +476,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadHorizInsMaterialNa
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -537,9 +535,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadHorizInsExtentsSel
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -547,7 +545,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadHorizInsExtentsSel
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -606,9 +604,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_PerimeterInsulationWi
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -616,7 +614,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_PerimeterInsulationWi
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -675,9 +673,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadVertInsSelection) 
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -685,7 +683,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadVertInsSelection) 
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -744,9 +742,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadVertInsMaterialNam
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -754,7 +752,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadVertInsMaterialNam
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -813,9 +811,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadVertInsDepth) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -823,7 +821,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainSlab_CheckInputs_BadVertInsDepth) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -882,9 +880,9 @@ TEST_F(EnergyPlusFixture, DISABLED_SiteGroundDomainSlab_CheckInputs_BadTimeStepS
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -892,7 +890,7 @@ TEST_F(EnergyPlusFixture, DISABLED_SiteGroundDomainSlab_CheckInputs_BadTimeStepS
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadZoneCoupledDomainInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -951,9 +949,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_CorrectInputs) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -961,7 +959,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_CorrectInputs) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_FALSE(errorsFound);
@@ -1020,9 +1018,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadOSCMName) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1030,7 +1028,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadOSCMName) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1089,9 +1087,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadHorizInsSelect
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1099,7 +1097,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadHorizInsSelect
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1158,9 +1156,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadHorizInsMateri
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1168,7 +1166,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadHorizInsMateri
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1227,9 +1225,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadHorizInsExtent
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1237,7 +1235,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadHorizInsExtent
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1296,9 +1294,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadBasementDepth)
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1306,7 +1304,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadBasementDepth)
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1365,9 +1363,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadFloorOSCMName)
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1375,7 +1373,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadFloorOSCMName)
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1434,9 +1432,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadVertInsSelecti
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1444,7 +1442,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadVertInsSelecti
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1503,9 +1501,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadVertInsName) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1513,7 +1511,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadVertInsName) {
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1572,9 +1570,9 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadTimestepSelect
     EXPECT_FALSE(process_idf(idf_objects, false));
 
     // Dummy surface
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
 
     bool errorsFound = false;
 
@@ -1582,7 +1580,7 @@ TEST_F(EnergyPlusFixture, SiteGroundDomainBasement_CheckInputs_BadTimestepSelect
     GetOSCMData(*state, errorsFound);
     GetMaterialData(*state, errorsFound);
 
-    PlantPipingSystemsManager::domains.resize(1);
+    state->dataPlantPipingSysMgr->domains.resize(1);
     ReadBasementInputs(*state, 1, 1, errorsFound);
 
     EXPECT_TRUE(errorsFound);
@@ -1703,26 +1701,26 @@ TEST_F(EnergyPlusFixture, PipingSystemFullSimulation) {
     ASSERT_TRUE(process_idf(idf_objects));
 
     // Setup the plant itself manually
-    DataPlant::TotNumLoops = 1;
-    DataPlant::PlantLoop.allocate(1);
-    DataPlant::PlantLoop(1).LoopSide.allocate(2);
-    DataPlant::PlantLoop(1).LoopSide(1).TotalBranches = 1;
-    DataPlant::PlantLoop(1).LoopSide(1).Branch.allocate(1);
-    DataPlant::PlantLoop(1).LoopSide(1).Branch(1).TotalComponents = 1;
-    DataPlant::PlantLoop(1).LoopSide(1).Branch(1).Comp.allocate(1);
-    DataPlant::PlantLoop(1).LoopSide(2).TotalBranches = 1;
-    DataPlant::PlantLoop(1).LoopSide(2).Branch.allocate(1);
-    DataPlant::PlantLoop(1).LoopSide(2).Branch(1).TotalComponents = 1;
-    DataPlant::PlantLoop(1).LoopSide(2).Branch(1).Comp.allocate(1);
-    DataPlant::PlantLoop(1).LoopSide(2).Branch(1).Comp(1).TypeOf_Num = DataPlant::TypeOf_PipingSystemPipeCircuit;
-    DataPlant::PlantLoop(1).LoopSide(2).Branch(1).Comp(1).Name = "MY PIPE CIRCUIT";
-    DataPlant::PlantLoop(1).LoopSide(2).Branch(1).Comp(1).NodeNumIn = 1;
+    state->dataPlnt->TotNumLoops = 1;
+    state->dataPlnt->PlantLoop.allocate(1);
+    state->dataPlnt->PlantLoop(1).LoopSide.allocate(2);
+    state->dataPlnt->PlantLoop(1).LoopSide(1).TotalBranches = 1;
+    state->dataPlnt->PlantLoop(1).LoopSide(1).Branch.allocate(1);
+    state->dataPlnt->PlantLoop(1).LoopSide(1).Branch(1).TotalComponents = 1;
+    state->dataPlnt->PlantLoop(1).LoopSide(1).Branch(1).Comp.allocate(1);
+    state->dataPlnt->PlantLoop(1).LoopSide(2).TotalBranches = 1;
+    state->dataPlnt->PlantLoop(1).LoopSide(2).Branch.allocate(1);
+    state->dataPlnt->PlantLoop(1).LoopSide(2).Branch(1).TotalComponents = 1;
+    state->dataPlnt->PlantLoop(1).LoopSide(2).Branch(1).Comp.allocate(1);
+    state->dataPlnt->PlantLoop(1).LoopSide(2).Branch(1).Comp(1).TypeOf_Num = DataPlant::TypeOf_PipingSystemPipeCircuit;
+    state->dataPlnt->PlantLoop(1).LoopSide(2).Branch(1).Comp(1).Name = "MY PIPE CIRCUIT";
+    state->dataPlnt->PlantLoop(1).LoopSide(2).Branch(1).Comp(1).NodeNumIn = 1;
 
     // Dummy surface
-    DataSurfaces::TotSurfaces = 1;
-    Surface.allocate(1);
-    Surface(1).OSCMPtr = 1;
-    Surface(1).Area = 100;
+    state->dataSurface->TotSurfaces = 1;
+    state->dataSurface->Surface.allocate(1);
+    state->dataSurface->Surface(1).OSCMPtr = 1;
+    state->dataSurface->Surface(1).Area = 100;
     HeatBalanceSurfaceManager::AllocateSurfaceHeatBalArrays(*state);
 
     // Other necessary inputs
@@ -1735,17 +1733,17 @@ TEST_F(EnergyPlusFixture, PipingSystemFullSimulation) {
     PlantComponent *thisCircuit = PlantPipingSystemsManager::Circuit::factory(*state, DataPlant::TypeOf_PipingSystemPipeCircuit,
                                                                               "MY PIPE CIRCUIT");
 
-    EXPECT_EQ(2u, PlantPipingSystemsManager::domains.size());
+    EXPECT_EQ(2u, state->dataPlantPipingSysMgr->domains.size());
 
-    EXPECT_TRUE(PlantPipingSystemsManager::domains[0].HasAPipeCircuit);
-    EXPECT_EQ(2, PlantPipingSystemsManager::domains[0].Mesh.X.RegionMeshCount);
-    EXPECT_EQ(2, PlantPipingSystemsManager::domains[0].Mesh.Y.RegionMeshCount);
-    EXPECT_EQ(6, PlantPipingSystemsManager::domains[0].Mesh.Z.RegionMeshCount);
+    EXPECT_TRUE(state->dataPlantPipingSysMgr->domains[0].HasAPipeCircuit);
+    EXPECT_EQ(2, state->dataPlantPipingSysMgr->domains[0].Mesh.X.RegionMeshCount);
+    EXPECT_EQ(2, state->dataPlantPipingSysMgr->domains[0].Mesh.Y.RegionMeshCount);
+    EXPECT_EQ(6, state->dataPlantPipingSysMgr->domains[0].Mesh.Z.RegionMeshCount);
 
-    EXPECT_FALSE(PlantPipingSystemsManager::domains[1].HasAPipeCircuit);
-    EXPECT_EQ(4, PlantPipingSystemsManager::domains[1].Mesh.X.RegionMeshCount);
-    EXPECT_EQ(4, PlantPipingSystemsManager::domains[1].Mesh.Y.RegionMeshCount);
-    EXPECT_EQ(4, PlantPipingSystemsManager::domains[1].Mesh.Z.RegionMeshCount);
+    EXPECT_FALSE(state->dataPlantPipingSysMgr->domains[1].HasAPipeCircuit);
+    EXPECT_EQ(4, state->dataPlantPipingSysMgr->domains[1].Mesh.X.RegionMeshCount);
+    EXPECT_EQ(4, state->dataPlantPipingSysMgr->domains[1].Mesh.Y.RegionMeshCount);
+    EXPECT_EQ(4, state->dataPlantPipingSysMgr->domains[1].Mesh.Z.RegionMeshCount);
 
     // second call, turn off initLoopEquip so it tries to do a simulation
     initLoopEquip = false;

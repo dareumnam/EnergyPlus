@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -120,15 +120,15 @@ namespace DataHVACGlobals {
     int const Other(4);
     int const RAB(5);
     // parameters describing fan types
-    int const NumAllFanTypes(6); // cpw22Aug2010 (was 4)
+    int const NumAllFanTypes(6);
 
     // fan types
     int const FanType_SimpleConstVolume(1);
     int const FanType_SimpleVAV(2);
     int const FanType_SimpleOnOff(3);
     int const FanType_ZoneExhaust(4);
-    int const FanType_ComponentModel(5);    // cpw22Aug2010
-    int const FanType_SystemModelObject(6); // new for V8.7, simple versatile fan object
+    int const FanType_ComponentModel(5);
+    int const FanType_SystemModelObject(6);
 
     // Fan Minimum Flow Fraction Input Method
     int const MinFrac(1);
@@ -444,6 +444,7 @@ namespace DataHVACGlobals {
     Real64 DXElecCoolingPower(0.0);       // Electric power consumed by DX cooling coil last DX simulation
     Real64 DXElecHeatingPower(0.0);       // Electric power consumed by DX heating coil last DX simulation
     Real64 ElecHeatingCoilPower(0.0);     // Electric power consumed by electric heating coil
+    Real64 SuppHeatingCoilPower(0.0);     // Electric power consumed by electric supplemental heating coil
     Real64 AirToAirHXElecPower(0.0);      // Electric power consumed by Heat Exchanger:Air To Air (Generic or Flat Plate)
     // from last simulation in HeatRecovery.cc
     Real64 UnbalExhMassFlow(0.0);      // unbalanced zone exhaust from a zone equip component [kg/s]
@@ -643,6 +644,7 @@ namespace DataHVACGlobals {
         DXElecCoolingPower = 0.0;
         DXElecHeatingPower = 0.0;
         ElecHeatingCoilPower = 0.0;
+        SuppHeatingCoilPower = 0.0;
         AirToAirHXElecPower = 0.0;
         UnbalExhMassFlow = 0.0;
         BalancedExhMassFlow = 0.0;

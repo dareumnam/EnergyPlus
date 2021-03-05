@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -247,7 +247,7 @@ namespace EMSManager {
         int tmpInteger;
         //  INTEGER  :: ProgramNum
 
-        // FLOW:
+
         anyProgramRan = false;
         if (!state.dataGlobal->AnyEnergyManagementSystemInModel) return; // quick return if nothing to do
 
@@ -356,7 +356,6 @@ namespace EMSManager {
         // collect routines needed to initialize EMS
 
         // Using/Aliasing
-        using DataZoneControls::GetZoneAirStatsInputFlag;
         using RuntimeLanguageProcessor::InitializeRuntimeLanguage;
         using RuntimeLanguageProcessor::SetErlValueNumber;
         using ScheduleManager::GetCurrentScheduleValue;
@@ -378,7 +377,7 @@ namespace EMSManager {
             state.dataEMSMgr->GetEMSUserInput = false;
         }
 
-        if (!GetZoneAirStatsInputFlag && !state.dataEMSMgr->ZoneThermostatActuatorsHaveBeenSetup) {
+        if (!state.dataZoneCtrls->GetZoneAirStatsInputFlag && !state.dataEMSMgr->ZoneThermostatActuatorsHaveBeenSetup) {
             SetupThermostatActuators(state);
             state.dataEMSMgr->ZoneThermostatActuatorsHaveBeenSetup = true;
         }
@@ -517,7 +516,7 @@ namespace EMSManager {
         static int TotalArgs(0);       // argument for call to GetObjectDefMaxArgs
         bool errFlag;
 
-        // FLOW:
+
         cCurrentModuleObject = "EnergyManagementSystem:Sensor";
         inputProcessor->getObjectDefMaxArgs(state, cCurrentModuleObject, TotalArgs, NumAlphas, NumNums);
         MaxNumNumbers = NumNums;
@@ -1163,9 +1162,9 @@ namespace EMSManager {
 
                 // Warn if actuator applied to an air boundary surface
                 if (UtilityRoutines::SameString(state.dataRuntimeLang->EMSActuatorUsed(ActuatorNum).ComponentTypeName, "AIRFLOW NETWORK WINDOW/DOOR OPENING")) {
-                    int actuatedSurfNum = UtilityRoutines::FindItemInList(state.dataRuntimeLang->EMSActuatorUsed(ActuatorNum).UniqueIDName, DataSurfaces::Surface);
+                    int actuatedSurfNum = UtilityRoutines::FindItemInList(state.dataRuntimeLang->EMSActuatorUsed(ActuatorNum).UniqueIDName, state.dataSurface->Surface);
                     if (actuatedSurfNum > 0) {
-                        if (DataSurfaces::Surface(actuatedSurfNum).IsAirBoundarySurf) {
+                        if (state.dataSurface->Surface(actuatedSurfNum).IsAirBoundarySurf) {
                             ShowWarningError(state,
                                 "GetEMSInput: EnergyManagementSystem:Actuator=" + state.dataRuntimeLang->EMSActuatorUsed(ActuatorNum).Name +
                                 " actuates an opening attached to an air boundary surface.");
@@ -1261,7 +1260,7 @@ namespace EMSManager {
         Array1D_int KeyIndex;
         bool Found;
 
-        // FLOW:
+
         VarType = 0;
         VarIndex = 0;
         Found = false;
@@ -1416,30 +1415,12 @@ namespace EMSManager {
         // METHODOLOGY EMPLOYED:
         // Loop over node structures and make calls to SetupEMSActuator
         // the pattern for the basic node setpoints is a little different in that the actuators directly
-        // affect the node variables, rather than using seperate logical override flag and ems values
-
-        // REFERENCES:
-        // na
+        // affect the node variables, rather than using separate logical override flag and ems values
 
         // Using/Aliasing
         using DataLoopNode::Node;
         using DataLoopNode::NodeID;
         using DataLoopNode::NumOfNodes;
-        using OutAirNodeManager::NumOutsideAirNodes;
-        using OutAirNodeManager::OutsideAirNodeList;
-
-        // Locals
-        // SUBROUTINE ARGUMENT DEFINITIONS:
-        // na
-
-        // SUBROUTINE PARAMETER DEFINITIONS:
-        // na
-
-        // INTERFACE BLOCK SPECIFICATIONS:
-        // na
-
-        // DERIVED TYPE DEFINITIONS:
-        // na
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int LoopNode;       // local do loop index
@@ -1493,9 +1474,9 @@ namespace EMSManager {
 
         } // NumOfNodes > 0
 
-        if (NumOutsideAirNodes > 0) {
-            for (OutsideAirNodeNum = 1; OutsideAirNodeNum <= NumOutsideAirNodes; ++OutsideAirNodeNum) {
-                NodeNum = OutsideAirNodeList(OutsideAirNodeNum);
+        if (state.dataOutAirNodeMgr->NumOutsideAirNodes > 0) {
+            for (OutsideAirNodeNum = 1; OutsideAirNodeNum <= state.dataOutAirNodeMgr->NumOutsideAirNodes; ++OutsideAirNodeNum) {
+                NodeNum = state.dataOutAirNodeMgr->OutsideAirNodeList(OutsideAirNodeNum);
                 SetupEMSActuator(state, "Outdoor Air System Node",
                                  NodeID(NodeNum),
                                  "Drybulb Temperature",
@@ -1854,66 +1835,46 @@ namespace EMSManager {
         // METHODOLOGY EMPLOYED:
         // Loop thru SurfaceWindow and register any shading controls
 
-        // REFERENCES:
-        // na
-
         // Using/Aliasing
         using DataSurfaces::ExternalEnvironment;
-        using DataSurfaces::Surface;
-        using DataSurfaces::TotSurfaces;
-        using DataSurfaces::WindowShadingControl;
-        using DataSurfaces::WSC_ST_SwitchableGlazing;
-        using DataSurfaces::WSC_ST_ExteriorScreen;
-
-        // Locals
-        // SUBROUTINE ARGUMENT DEFINITIONS:
-        // na
-
-        // SUBROUTINE PARAMETER DEFINITIONS:
-        // na
-
-        // INTERFACE BLOCK SPECIFICATIONS:
-        // na
-
-        // DERIVED TYPE DEFINITIONS:
-        // na
+        using DataSurfaces::WinShadingType;
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         static int loopSurfNum(0); // local do loop index
 
-        for (loopSurfNum = 1; loopSurfNum <= TotSurfaces; ++loopSurfNum) {
+        for (loopSurfNum = 1; loopSurfNum <= state.dataSurface->TotSurfaces; ++loopSurfNum) {
 
-            if (Surface(loopSurfNum).Class != DataSurfaces::SurfaceClass::Window) continue;
-            if (Surface(loopSurfNum).ExtBoundCond != ExternalEnvironment) continue;
-            if (!Surface(loopSurfNum).HasShadeControl) continue;
+            if (state.dataSurface->Surface(loopSurfNum).Class != DataSurfaces::SurfaceClass::Window) continue;
+            if (state.dataSurface->Surface(loopSurfNum).ExtBoundCond != ExternalEnvironment) continue;
+            if (!state.dataSurface->Surface(loopSurfNum).HasShadeControl) continue;
 
-            if (DataSurfaces::SurfWinHasShadeOrBlindLayer(loopSurfNum)) {
+            if (state.dataSurface->SurfWinHasShadeOrBlindLayer(loopSurfNum)) {
                 SetupEMSActuator(state, "Window Shading Control",
-                                 Surface(loopSurfNum).Name,
+                                 state.dataSurface->Surface(loopSurfNum).Name,
                                  "Control Status",
                                  "[ShadeStatus]",
-                                 DataSurfaces::SurfWinShadingFlagEMSOn(loopSurfNum),
-                                 DataSurfaces::SurfWinShadingFlagEMSValue(loopSurfNum));
-                if (DataSurfaces::SurfWinMovableSlats(loopSurfNum)) {
+                                 state.dataSurface->SurfWinShadingFlagEMSOn(loopSurfNum),
+                                 state.dataSurface->SurfWinShadingFlagEMSValue(loopSurfNum));
+                if (state.dataSurface->SurfWinMovableSlats(loopSurfNum)) {
                     SetupEMSActuator(state, "Window Shading Control",
-                                     Surface(loopSurfNum).Name,
+                                     state.dataSurface->Surface(loopSurfNum).Name,
                                      "Slat Angle",
                                      "[degrees]",
-                                     DataSurfaces::SurfWinSlatAngThisTSDegEMSon(loopSurfNum),
-                                     DataSurfaces::SurfWinSlatAngThisTSDegEMSValue(loopSurfNum));
+                                     state.dataSurface->SurfWinSlatAngThisTSDegEMSon(loopSurfNum),
+                                     state.dataSurface->SurfWinSlatAngThisTSDegEMSValue(loopSurfNum));
                 }
-            } else if (WindowShadingControl(Surface(loopSurfNum).activeWindowShadingControl).ShadingType == WSC_ST_ExteriorScreen) {
+            } else if (state.dataSurface->WindowShadingControl(state.dataSurface->Surface(loopSurfNum).activeWindowShadingControl).ShadingType == WinShadingType::ExtScreen) {
                 SetupEMSActuator(state, "Window Shading Control",
-                                 Surface(loopSurfNum).Name,
+                                 state.dataSurface->Surface(loopSurfNum).Name,
                                  "Control Status",
                                  "[ShadeStatus]",
-                                 DataSurfaces::SurfWinShadingFlagEMSOn(loopSurfNum),
-                                 DataSurfaces::SurfWinShadingFlagEMSValue(loopSurfNum));
+                                 state.dataSurface->SurfWinShadingFlagEMSOn(loopSurfNum),
+                                 state.dataSurface->SurfWinShadingFlagEMSValue(loopSurfNum));
             } else {
-                if (WindowShadingControl(Surface(loopSurfNum).activeWindowShadingControl).ShadingType != WSC_ST_SwitchableGlazing) {
+                if (state.dataSurface->WindowShadingControl(state.dataSurface->Surface(loopSurfNum).activeWindowShadingControl).ShadingType != WinShadingType::SwitchableGlazing) {
                     ShowSevereError(state, "Missing shade or blind layer in window construction name = '" +
-                                    state.dataConstruction->Construct(Surface(loopSurfNum).activeShadedConstruction).Name + "', surface name = '" +
-                                    Surface(loopSurfNum).Name + "'.");
+                                    state.dataConstruction->Construct(state.dataSurface->Surface(loopSurfNum).activeShadedConstruction).Name + "', surface name = '" +
+                                    state.dataSurface->Surface(loopSurfNum).Name + "'.");
                     ShowContinueError(state, "...'Control Status' or 'Slat Angle' EMS Actuator cannot be set for a construction that does not have a shade "
                                       "or a blind layer.");
                     ShowContinueError(state, "...Add shade or blind layer to this construction in order to be able to apply EMS Actuator.");
@@ -1959,49 +1920,49 @@ namespace EMSManager {
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         static int Loop(0); // local do loop index
 
-        for (Loop = 1; Loop <= NumTempControlledZones; ++Loop) {
+        for (Loop = 1; Loop <= state.dataZoneCtrls->NumTempControlledZones; ++Loop) {
             SetupEMSActuator(state, "Zone Temperature Control",
-                             TempControlledZone(Loop).ZoneName,
+                             state.dataZoneCtrls->TempControlledZone(Loop).ZoneName,
                              "Heating Setpoint",
                              "[C]",
-                             TempControlledZone(Loop).EMSOverrideHeatingSetPointOn,
-                             TempControlledZone(Loop).EMSOverrideHeatingSetPointValue);
+                             state.dataZoneCtrls->TempControlledZone(Loop).EMSOverrideHeatingSetPointOn,
+                             state.dataZoneCtrls->TempControlledZone(Loop).EMSOverrideHeatingSetPointValue);
             SetupEMSActuator(state, "Zone Temperature Control",
-                             TempControlledZone(Loop).ZoneName,
+                             state.dataZoneCtrls->TempControlledZone(Loop).ZoneName,
                              "Cooling Setpoint",
                              "[C]",
-                             TempControlledZone(Loop).EMSOverrideCoolingSetPointOn,
-                             TempControlledZone(Loop).EMSOverrideCoolingSetPointValue);
+                             state.dataZoneCtrls->TempControlledZone(Loop).EMSOverrideCoolingSetPointOn,
+                             state.dataZoneCtrls->TempControlledZone(Loop).EMSOverrideCoolingSetPointValue);
         }
 
-        for (Loop = 1; Loop <= NumHumidityControlZones; ++Loop) {
+        for (Loop = 1; Loop <= state.dataZoneCtrls->NumHumidityControlZones; ++Loop) {
             SetupEMSActuator(state, "Zone Humidity Control",
-                             HumidityControlZone(Loop).ZoneName,
+                             state.dataZoneCtrls->HumidityControlZone(Loop).ZoneName,
                              "Relative Humidity Humidifying Setpoint",
                              "[%]",
-                             HumidityControlZone(Loop).EMSOverrideHumidifySetPointOn,
-                             HumidityControlZone(Loop).EMSOverrideHumidifySetPointValue);
+                             state.dataZoneCtrls->HumidityControlZone(Loop).EMSOverrideHumidifySetPointOn,
+                             state.dataZoneCtrls->HumidityControlZone(Loop).EMSOverrideHumidifySetPointValue);
             SetupEMSActuator(state, "Zone Humidity Control",
-                             HumidityControlZone(Loop).ZoneName,
+                             state.dataZoneCtrls->HumidityControlZone(Loop).ZoneName,
                              "Relative Humidity Dehumidifying Setpoint",
                              "[%]",
-                             HumidityControlZone(Loop).EMSOverrideDehumidifySetPointOn,
-                             HumidityControlZone(Loop).EMSOverrideDehumidifySetPointValue);
+                             state.dataZoneCtrls->HumidityControlZone(Loop).EMSOverrideDehumidifySetPointOn,
+                             state.dataZoneCtrls->HumidityControlZone(Loop).EMSOverrideDehumidifySetPointValue);
         }
 
-        for (Loop = 1; Loop <= NumComfortControlledZones; ++Loop) {
+        for (Loop = 1; Loop <= state.dataZoneCtrls->NumComfortControlledZones; ++Loop) {
             SetupEMSActuator(state, "Zone Comfort Control",
-                             ComfortControlledZone(Loop).ZoneName,
+                             state.dataZoneCtrls->ComfortControlledZone(Loop).ZoneName,
                              "Heating Setpoint",
                              "[]",
-                             ComfortControlledZone(Loop).EMSOverrideHeatingSetPointOn,
-                             ComfortControlledZone(Loop).EMSOverrideHeatingSetPointValue);
+                             state.dataZoneCtrls->ComfortControlledZone(Loop).EMSOverrideHeatingSetPointOn,
+                             state.dataZoneCtrls->ComfortControlledZone(Loop).EMSOverrideHeatingSetPointValue);
             SetupEMSActuator(state, "Zone Comfort Control",
-                             ComfortControlledZone(Loop).ZoneName,
+                             state.dataZoneCtrls->ComfortControlledZone(Loop).ZoneName,
                              "Cooling Setpoint",
                              "[]",
-                             ComfortControlledZone(Loop).EMSOverrideCoolingSetPointOn,
-                             ComfortControlledZone(Loop).EMSOverrideCoolingSetPointValue);
+                             state.dataZoneCtrls->ComfortControlledZone(Loop).EMSOverrideCoolingSetPointOn,
+                             state.dataZoneCtrls->ComfortControlledZone(Loop).EMSOverrideCoolingSetPointValue);
         }
     }
 
@@ -2017,45 +1978,22 @@ namespace EMSManager {
         // PURPOSE OF THIS SUBROUTINE:
         // Setup EMS actuators available for surface convection coefficients
 
-        // METHODOLOGY EMPLOYED:
-        // access public data and loop over it.
-
-        // REFERENCES:
-        // na
-
-        // Using/Aliasing
-        using DataSurfaces::Surface;
-        using DataSurfaces::TotSurfaces;
-
-        // Locals
-        // SUBROUTINE ARGUMENT DEFINITIONS:
-        // na
-
-        // SUBROUTINE PARAMETER DEFINITIONS:
-        // na
-
-        // INTERFACE BLOCK SPECIFICATIONS:
-        // na
-
-        // DERIVED TYPE DEFINITIONS:
-        // na
-
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int SurfNum; // local loop index.
 
-        for (SurfNum = 1; SurfNum <= TotSurfaces; ++SurfNum) {
+        for (SurfNum = 1; SurfNum <= state.dataSurface->TotSurfaces; ++SurfNum) {
             SetupEMSActuator(state, "Surface",
-                             Surface(SurfNum).Name,
+                             state.dataSurface->Surface(SurfNum).Name,
                              "Interior Surface Convection Heat Transfer Coefficient",
                              "[W/m2-K]",
-                             Surface(SurfNum).EMSOverrideIntConvCoef,
-                             Surface(SurfNum).EMSValueForIntConvCoef);
+                             state.dataSurface->Surface(SurfNum).EMSOverrideIntConvCoef,
+                             state.dataSurface->Surface(SurfNum).EMSValueForIntConvCoef);
             SetupEMSActuator(state, "Surface",
-                             Surface(SurfNum).Name,
+                             state.dataSurface->Surface(SurfNum).Name,
                              "Exterior Surface Convection Heat Transfer Coefficient",
                              "[W/m2-K]",
-                             Surface(SurfNum).EMSOverrideExtConvCoef,
-                             Surface(SurfNum).EMSValueForExtConvCoef);
+                             state.dataSurface->Surface(SurfNum).EMSOverrideExtConvCoef,
+                             state.dataSurface->Surface(SurfNum).EMSValueForExtConvCoef);
         }
     }
 
@@ -2071,51 +2009,27 @@ namespace EMSManager {
         // PURPOSE OF THIS SUBROUTINE:
         // setup EMS actuators available for surface construction
 
-        // METHODOLOGY EMPLOYED:
-        // <description>
-
-        // REFERENCES:
-        // na
-
-        // Using/Aliasing
-        using DataHeatBalance::TotConstructs;
-        using DataSurfaces::Surface;
-        using DataSurfaces::TotSurfaces;
-
-        // Locals
-        // SUBROUTINE ARGUMENT DEFINITIONS:
-        // na
-
-        // SUBROUTINE PARAMETER DEFINITIONS:
-        // na
-
-        // INTERFACE BLOCK SPECIFICATIONS:
-        // na
-
-        // DERIVED TYPE DEFINITIONS:
-        // na
-
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int SurfNum; // local loop index.
 
-        for (SurfNum = 1; SurfNum <= TotSurfaces; ++SurfNum) {
+        for (SurfNum = 1; SurfNum <= state.dataSurface->TotSurfaces; ++SurfNum) {
 
-            if (!Surface(SurfNum).HeatTransSurf) continue;
+            if (!state.dataSurface->Surface(SurfNum).HeatTransSurf) continue;
 
             SetupEMSActuator(state, "Surface",
-                             Surface(SurfNum).Name,
+                             state.dataSurface->Surface(SurfNum).Name,
                              "Construction State",
                              "[ ]",
-                             Surface(SurfNum).EMSConstructionOverrideON,
-                             Surface(SurfNum).EMSConstructionOverrideValue);
+                             state.dataSurface->Surface(SurfNum).EMSConstructionOverrideON,
+                             state.dataSurface->Surface(SurfNum).EMSConstructionOverrideValue);
         }
 
         // Setup error checking storage
 
-        if (!allocated(state.dataRuntimeLang->EMSConstructActuatorChecked)) state.dataRuntimeLang->EMSConstructActuatorChecked.allocate(TotConstructs, TotSurfaces);
+        if (!allocated(state.dataRuntimeLang->EMSConstructActuatorChecked)) state.dataRuntimeLang->EMSConstructActuatorChecked.allocate(state.dataHeatBal->TotConstructs, state.dataSurface->TotSurfaces);
         state.dataRuntimeLang->EMSConstructActuatorChecked = false;
 
-        if (!allocated(state.dataRuntimeLang->EMSConstructActuatorIsOkay)) state.dataRuntimeLang->EMSConstructActuatorIsOkay.allocate(TotConstructs, TotSurfaces);
+        if (!allocated(state.dataRuntimeLang->EMSConstructActuatorIsOkay)) state.dataRuntimeLang->EMSConstructActuatorIsOkay.allocate(state.dataHeatBal->TotConstructs, state.dataSurface->TotSurfaces);
         state.dataRuntimeLang->EMSConstructActuatorIsOkay = false;
     }
 
@@ -2134,61 +2048,51 @@ namespace EMSManager {
         // METHODOLOGY EMPLOYED:
         // loop through all surfaces, cycle if not heat transfer or outdoors BC
 
-        // REFERENCES:
-        // na
-
         // Using/Aliasing
         using DataSurfaces::ExternalEnvironment;
-        using DataSurfaces::Surface;
-        using DataSurfaces::TotSurfaces;
-
-        // Locals
-        // SUBROUTINE ARGUMENT DEFINITIONS:
-        // na
-
-        // SUBROUTINE PARAMETER DEFINITIONS:
-        // na
-
-        // INTERFACE BLOCK SPECIFICATIONS:
-        // na
-
-        // DERIVED TYPE DEFINITIONS:
-        // na
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int SurfNum; // local loop index.
 
-        for (SurfNum = 1; SurfNum <= TotSurfaces; ++SurfNum) {
+        for (SurfNum = 1; SurfNum <= state.dataSurface->TotSurfaces; ++SurfNum) {
 
-            if (!Surface(SurfNum).HeatTransSurf) continue;
-            if (Surface(SurfNum).ExtBoundCond != ExternalEnvironment) continue;
+            if (!state.dataSurface->Surface(SurfNum).HeatTransSurf) continue;
+            if (state.dataSurface->Surface(SurfNum).ExtBoundCond != ExternalEnvironment) continue;
+
+            SetupEMSActuator(state,
+                             "Surface",
+                             state.dataSurface->Surface(SurfNum).Name,
+                             "View Factor To Ground",
+                             "[ ]",
+                             state.dataSurface->Surface(SurfNum).ViewFactorGroundEMSOverrideOn,
+                             state.dataSurface->Surface(SurfNum).ViewFactorGroundEMSOverrideValue);
 
             SetupEMSActuator(state, "Surface",
-                             Surface(SurfNum).Name,
+                             state.dataSurface->Surface(SurfNum).Name,
                              "Outdoor Air Drybulb Temperature",
                              "[C]",
-                             Surface(SurfNum).OutDryBulbTempEMSOverrideOn,
-                             Surface(SurfNum).OutDryBulbTempEMSOverrideValue);
+                             state.dataSurface->Surface(SurfNum).OutDryBulbTempEMSOverrideOn,
+                             state.dataSurface->Surface(SurfNum).OutDryBulbTempEMSOverrideValue);
 
             SetupEMSActuator(state, "Surface",
-                             Surface(SurfNum).Name,
+                             state.dataSurface->Surface(SurfNum).Name,
                              "Outdoor Air Wetbulb Temperature",
                              "[C]",
-                             Surface(SurfNum).OutWetBulbTempEMSOverrideOn,
-                             Surface(SurfNum).OutWetBulbTempEMSOverrideValue);
-            if (Surface(SurfNum).ExtWind) {
+                             state.dataSurface->Surface(SurfNum).OutWetBulbTempEMSOverrideOn,
+                             state.dataSurface->Surface(SurfNum).OutWetBulbTempEMSOverrideValue);
+            if (state.dataSurface->Surface(SurfNum).ExtWind) {
                 SetupEMSActuator(state, "Surface",
-                                 Surface(SurfNum).Name,
+                                 state.dataSurface->Surface(SurfNum).Name,
                                  "Outdoor Air Wind Speed",
                                  "[m/s]",
-                                 Surface(SurfNum).WindSpeedEMSOverrideOn,
-                                 Surface(SurfNum).WindSpeedEMSOverrideValue);
+                                 state.dataSurface->Surface(SurfNum).WindSpeedEMSOverrideOn,
+                                 state.dataSurface->Surface(SurfNum).WindSpeedEMSOverrideValue);
                 SetupEMSActuator(state, "Surface",
-                                 Surface(SurfNum).Name,
+                                 state.dataSurface->Surface(SurfNum).Name,
                                  "Outdoor Air Wind Direction",
                                  "[degree]",
-                                 Surface(SurfNum).WindDirEMSOverrideOn,
-                                 Surface(SurfNum).WindDirEMSOverrideValue);
+                                 state.dataSurface->Surface(SurfNum).WindDirEMSOverrideOn,
+                                 state.dataSurface->Surface(SurfNum).WindDirEMSOverrideValue);
             }
         }
     }
@@ -2212,7 +2116,6 @@ namespace EMSManager {
         // na
 
         // Using/Aliasing
-        using DataHeatBalance::Zone;
 
         // Locals
         // SUBROUTINE ARGUMENT DEFINITIONS:
@@ -2230,6 +2133,7 @@ namespace EMSManager {
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
         int ZoneNum;
+        auto &Zone(state.dataHeatBal->Zone);
 
         if (allocated(Zone)) {
             for (ZoneNum = 1; ZoneNum <= state.dataGlobal->NumOfZones; ++ZoneNum) {
@@ -2261,10 +2165,10 @@ namespace EMSManager {
         // na
 
         // Using/Aliasing
-        using DataHeatBalance::Zone;
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         int ZoneNum; // local loop index.
+        auto &Zone(state.dataHeatBal->Zone);
 
         for (ZoneNum = 1; ZoneNum <= state.dataGlobal->NumOfZones; ++ZoneNum) {
 

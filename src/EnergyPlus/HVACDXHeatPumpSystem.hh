@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -64,34 +64,14 @@ struct EnergyPlusData;
 
 namespace HVACDXHeatPumpSystem {
 
-    // Using/Aliasing
-
-    // Data
     // MODULE PARAMETER DEFINITIONS
-    extern Real64 const MinAirMassFlow;
+    constexpr Real64 MinAirMassFlow(0.001);
+
     // Compressor operation
-    extern int const On;  // normal compressor operation
-    extern int const Off; // signal DXCoil that compressor shouldn't run
-
-    // DERIVED TYPE DEFINITIONS
-
-    // MODULE VARIABLE DECLARATIONS:
-    extern int NumDXHeatPumpSystems; // The Number of DXHeatPumpSystems found in the Input
-    extern bool EconomizerFlag;      // holds air loop economizer status
-    extern bool GetInputFlag;        // Flag to get input only once
-
-    // Make this type allocatable
-    extern Array1D_bool CheckEquipName;
-
-    // Subroutine Specifications for the Module
-    // Driver/Manager Routines
-
-    // Get Input routines for module
-
-    // Update routine to check convergence and update nodes
+    constexpr int On(1);  // normal compressor operation
+    constexpr int Off(0); // signal DXCoil that compressor shouldn't run
 
     // Types
-
     struct DXHeatPumpSystemStruct
     {
         // Members
@@ -134,13 +114,6 @@ namespace HVACDXHeatPumpSystem {
         {
         }
     };
-
-    // Object Data
-    extern Array1D<DXHeatPumpSystemStruct> DXHeatPumpSystem;
-
-    // Functions
-
-    void clear_state();
 
     void SimDXHeatPumpSystem(EnergyPlusData &state, std::string const &DXHeatPumpSystemName,   // Name of DXSystem:Airloop object
                              bool const FirstHVACIteration,             // True when first HVAC iteration
@@ -205,10 +178,20 @@ namespace HVACDXHeatPumpSystem {
 } // namespace HVACDXHeatPumpSystem
 
 struct HVACDXHeatPumpSystemData : BaseGlobalStruct {
+        
+    int NumDXHeatPumpSystems = 0; // The Number of DXHeatPumpSystems found in the Input
+    bool EconomizerFlag = false;      // holds air loop economizer status
+    bool GetInputFlag = true;  // Flag to get input only once
+    Array1D_bool CheckEquipName;
+    Array1D<HVACDXHeatPumpSystem::DXHeatPumpSystemStruct> DXHeatPumpSystem;
 
     void clear_state() override
     {
-
+        this->GetInputFlag = true;
+        this->NumDXHeatPumpSystems = 0;
+        this->EconomizerFlag = false;
+        this->CheckEquipName.deallocate();
+        this->DXHeatPumpSystem.deallocate();
     }
 };
 

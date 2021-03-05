@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -176,7 +176,7 @@ void CoilCoolingDXCurveFitOperatingMode::size(EnergyPlus::EnergyPlusData &state)
         Psychrometrics::PsyRhoAirFnPbTdbW(state, state.dataEnvrn->StdBaroPress, ratedInletAirTemp, ratedInletAirHumRat, RoutineName);
 
     std::string SizingString = "Rated Gross Total Cooling Capacity [W]";
-    DataSizing::DataFlowUsedForSizing = this->ratedEvapAirFlowRate; // TODO: This is volume flow, right?
+    state.dataSize->DataFlowUsedForSizing = this->ratedEvapAirFlowRate; // TODO: This is volume flow, right?
     TempSize = this->original_input_specs.gross_rated_total_cooling_capacity;
     CoolingCapacitySizer sizerCoolingCapacity;
     sizerCoolingCapacity.overrideSizingString(SizingString);
@@ -184,8 +184,8 @@ void CoilCoolingDXCurveFitOperatingMode::size(EnergyPlus::EnergyPlusData &state)
     this->ratedGrossTotalCap = sizerCoolingCapacity.size(state, TempSize, errorsFound);
 
     // Auto size condenser air flow to Total Capacity * 0.000114 m3/s/w (850 cfm/ton)
-    DataSizing::DataConstantUsedForSizing = this->ratedGrossTotalCap;
-    DataSizing::DataFractionUsedForSizing = 0.000114;
+    state.dataSize->DataConstantUsedForSizing = this->ratedGrossTotalCap;
+    state.dataSize->DataFractionUsedForSizing = 0.000114;
     TempSize = this->original_input_specs.rated_condenser_air_flow_rate;
 
     AutoCalculateSizer sizerCondAirFlow;
@@ -199,8 +199,8 @@ void CoilCoolingDXCurveFitOperatingMode::size(EnergyPlus::EnergyPlusData &state)
     if (this->condenserType != AIRCOOLED) {
         // Auto size Nominal Evaporative Condenser Pump Power to Total Capacity * 0.004266 w/w (15 W/ton)
         AutoCalculateSizer sizerCondEvapPumpPower;
-        DataSizing::DataConstantUsedForSizing = this->ratedGrossTotalCap;
-        DataSizing::DataFractionUsedForSizing = 0.004266;
+        state.dataSize->DataConstantUsedForSizing = this->ratedGrossTotalCap;
+        state.dataSize->DataFractionUsedForSizing = 0.004266;
         stringOverride = "Nominal Evaporative Condenser Pump Power [W]";
         sizerCondEvapPumpPower.overrideSizingString(stringOverride);
         TempSize = this->original_input_specs.nominal_evap_condenser_pump_power;

@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -110,7 +110,6 @@ namespace SystemAvailabilityManager {
     // Use statements for data only modules
     using namespace DataHVACGlobals;
     using namespace ScheduleManager;
-    using DataHeatBalance::ZoneList;
 
     Real64 CurrentEndTime(0.0);     // Current end time
     Real64 CurrentEndTimeLast(0.0); // last end time
@@ -130,7 +129,6 @@ namespace SystemAvailabilityManager {
         // Manage the simulation of the System Availability Managers
 
         using DataZoneEquipment::NumValidSysAvailZoneComponents;
-        using DataZoneEquipment::ZoneEquipAvail;
         using namespace DataLoopNode;
         using namespace DataAirLoop;
         using namespace DataPlant;
@@ -197,29 +195,29 @@ namespace SystemAvailabilityManager {
             for (ZoneInSysNum = 1; ZoneInSysNum <= state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).NumZonesCooled; ++ZoneInSysNum) {
 
                 CtrldZoneNum = state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).CoolCtrlZoneNums(ZoneInSysNum);
-                ZoneEquipAvail(CtrldZoneNum) = state.dataAirLoop->PriAirSysAvailMgr(PriAirSysNum).AvailStatus;
+                state.dataZoneEquip->ZoneEquipAvail(CtrldZoneNum) = state.dataAirLoop->PriAirSysAvailMgr(PriAirSysNum).AvailStatus;
             }
 
         } // end of primary air system loop
 
         for (PlantNum = 1; PlantNum <= NumPlantLoops; ++PlantNum) {
 
-            PreviousStatus = PlantAvailMgr(PlantNum).AvailStatus; // Save the previous status for differential thermostat
-            PlantAvailMgr(PlantNum).AvailStatus = NoAction;       // Initialize the availability to "take no action"
+            PreviousStatus = state.dataPlnt->PlantAvailMgr(PlantNum).AvailStatus; // Save the previous status for differential thermostat
+            state.dataPlnt->PlantAvailMgr(PlantNum).AvailStatus = NoAction;       // Initialize the availability to "take no action"
 
-            for (PlantAvailMgrNum = 1; PlantAvailMgrNum <= PlantAvailMgr(PlantNum).NumAvailManagers;
+            for (PlantAvailMgrNum = 1; PlantAvailMgrNum <= state.dataPlnt->PlantAvailMgr(PlantNum).NumAvailManagers;
                  ++PlantAvailMgrNum) { // loop over the avail managers in plant
 
                 SimSysAvailManager(state,
-                                   PlantAvailMgr(PlantNum).AvailManagerType(PlantAvailMgrNum),
-                                   PlantAvailMgr(PlantNum).AvailManagerName(PlantAvailMgrNum),
-                                   PlantAvailMgr(PlantNum).AvailManagerNum(PlantAvailMgrNum),
+                                   state.dataPlnt->PlantAvailMgr(PlantNum).AvailManagerType(PlantAvailMgrNum),
+                                   state.dataPlnt->PlantAvailMgr(PlantNum).AvailManagerName(PlantAvailMgrNum),
+                                   state.dataPlnt->PlantAvailMgr(PlantNum).AvailManagerNum(PlantAvailMgrNum),
                                    PlantNum,
                                    PreviousStatus,
                                    AvailStatus);
 
                 if (AvailStatus != NoAction) {
-                    PlantAvailMgr(PlantNum).AvailStatus = AvailStatus;
+                    state.dataPlnt->PlantAvailMgr(PlantNum).AvailStatus = AvailStatus;
                     break; // First manager to do anything other than "NoAction" gets to set the availability
                 }
 
@@ -301,9 +299,6 @@ namespace SystemAvailabilityManager {
         // Uses InputProcessor "Get" routines to obtain data.
 
         // Using/Aliasing
-        using DataHeatBalance::NumOfZoneLists;
-        using DataHeatBalance::Zone;
-        using DataHeatBalance::ZoneList;
         using NodeInputManager::GetOnlySingleNode;
         using NodeInputManager::MarkNode;
         using namespace DataLoopNode;
@@ -614,20 +609,20 @@ namespace SystemAvailabilityManager {
                 // Control zone or zonelist
                 if (!lAlphaFieldBlanks(6)) {
                     state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZoneListName = cAlphaArgs(6);
-                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(6), Zone);
+                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(6), state.dataHeatBal->Zone);
                     if (ZoneNum > 0) {
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfCtrlZones = 1;
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs.allocate(1);
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs(1) = ZoneNum;
                     } else {
                         int ZoneListNum = 0;
-                        if (NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(6), ZoneList);
+                        if (state.dataHeatBal->NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(6), state.dataHeatBal->ZoneList);
                         if (ZoneListNum > 0) {
-                            int NumZones = ZoneList(ZoneListNum).NumOfZones;
+                            int NumZones = state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfCtrlZones = NumZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs.allocate(NumZones);
                             for (int ZoneNumInList = 1; ZoneNumInList <= NumZones; ++ZoneNumInList) {
-                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs(ZoneNumInList) = ZoneList(ZoneListNum).Zone(ZoneNumInList);
+                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs(ZoneNumInList) = state.dataHeatBal->ZoneList(ZoneListNum).Zone(ZoneNumInList);
                             }
                         } else {
                             ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(6) + "=\"" +
@@ -640,20 +635,20 @@ namespace SystemAvailabilityManager {
                 // Cooling zone or zonelist
                 if (!lAlphaFieldBlanks(7)) {
                     state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CoolingZoneListName = cAlphaArgs(7);
-                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(7), Zone);
+                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(7), state.dataHeatBal->Zone);
                     if (ZoneNum > 0) {
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfCoolingZones = 1;
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CoolingZonePtrs.allocate(1);
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CoolingZonePtrs(1) = ZoneNum;
                     } else {
                         int ZoneListNum = 0;
-                        if (NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(7), ZoneList);
+                        if (state.dataHeatBal->NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(7), state.dataHeatBal->ZoneList);
                         if (ZoneListNum > 0) {
-                            int NumZones = ZoneList(ZoneListNum).NumOfZones;
+                            int NumZones = state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfCoolingZones = NumZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CoolingZonePtrs.allocate(NumZones);
                             for (int ZoneNumInList = 1; ZoneNumInList <= NumZones; ++ZoneNumInList) {
-                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CoolingZonePtrs(ZoneNumInList) = ZoneList(ZoneListNum).Zone(ZoneNumInList);
+                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CoolingZonePtrs(ZoneNumInList) = state.dataHeatBal->ZoneList(ZoneListNum).Zone(ZoneNumInList);
                             }
                         } else {
                             ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(7) + "=\"" +
@@ -666,20 +661,20 @@ namespace SystemAvailabilityManager {
                 // Heating zone or zonelist
                 if (!lAlphaFieldBlanks(8)) {
                     state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatingZoneListName = cAlphaArgs(8);
-                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(8), Zone);
+                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(8), state.dataHeatBal->Zone);
                     if (ZoneNum > 0) {
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfHeatingZones = 1;
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatingZonePtrs.allocate(1);
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatingZonePtrs(1) = ZoneNum;
                     } else {
                         int ZoneListNum = 0;
-                        if (NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(8), ZoneList);
+                        if (state.dataHeatBal->NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(8), state.dataHeatBal->ZoneList);
                         if (ZoneListNum > 0) {
-                            int NumZones = ZoneList(ZoneListNum).NumOfZones;
+                            int NumZones = state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfHeatingZones = NumZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatingZonePtrs.allocate(NumZones);
                             for (int ZoneNumInList = 1; ZoneNumInList <= NumZones; ++ZoneNumInList) {
-                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatingZonePtrs(ZoneNumInList) = ZoneList(ZoneListNum).Zone(ZoneNumInList);
+                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatingZonePtrs(ZoneNumInList) = state.dataHeatBal->ZoneList(ZoneListNum).Zone(ZoneNumInList);
                             }
                         } else {
                             ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(8) + "=\"" +
@@ -692,20 +687,20 @@ namespace SystemAvailabilityManager {
                 // HeatZnFan zone or zonelist
                 if (!lAlphaFieldBlanks(9)) {
                     state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatZnFanZoneListName = cAlphaArgs(9);
-                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(9), Zone);
+                    int ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(9), state.dataHeatBal->Zone);
                     if (ZoneNum > 0) {
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfHeatZnFanZones = 1;
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatZnFanZonePtrs.allocate(1);
                         state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatZnFanZonePtrs(1) = ZoneNum;
                     } else {
                         int ZoneListNum = 0;
-                        if (NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(9), ZoneList);
+                        if (state.dataHeatBal->NumOfZoneLists > 0) ZoneListNum = UtilityRoutines::FindItemInList(cAlphaArgs(9), state.dataHeatBal->ZoneList);
                         if (ZoneListNum > 0) {
-                            int NumZones = ZoneList(ZoneListNum).NumOfZones;
+                            int NumZones = state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfHeatZnFanZones = NumZones;
                             state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatZnFanZonePtrs.allocate(NumZones);
                             for (int ZoneNumInList = 1; ZoneNumInList <= NumZones; ++ZoneNumInList) {
-                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatZnFanZonePtrs(ZoneNumInList) = ZoneList(ZoneListNum).Zone(ZoneNumInList);
+                                state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).HeatZnFanZonePtrs(ZoneNumInList) = state.dataHeatBal->ZoneList(ZoneListNum).Zone(ZoneNumInList);
                             }
                         } else {
                             ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(9) + "=\"" +
@@ -783,7 +778,7 @@ namespace SystemAvailabilityManager {
 
                 if (state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).CtrlType == state.dataSystemAvailabilityManager->ControlZone) {
                     state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).CtrlZoneName = cAlphaArgs(5);
-                    state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(5), Zone);
+                    state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(5), state.dataHeatBal->Zone);
                     if (state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneNum == 0) {
                         ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\", invalid");
                         ShowSevereError(state, "not found: " + cAlphaFieldNames(5) + "=\"" + cAlphaArgs(5) + "\".");
@@ -793,16 +788,16 @@ namespace SystemAvailabilityManager {
 
                 if (state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).CtrlType == state.dataSystemAvailabilityManager->MaximumOfZoneList) {
                     state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneListName = cAlphaArgs(6);
-                    for (ZoneListNum = 1; ZoneListNum <= NumOfZoneLists; ++ZoneListNum) {
-                        if (ZoneList(ZoneListNum).Name == cAlphaArgs(6)) {
-                            state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones = ZoneList(ZoneListNum).NumOfZones;
-                            state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs.allocate(ZoneList(ZoneListNum).NumOfZones);
-                            for (ZoneNumInList = 1; ZoneNumInList <= ZoneList(ZoneListNum).NumOfZones; ++ZoneNumInList) {
-                                state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs(ZoneNumInList) = ZoneList(ZoneListNum).Zone(ZoneNumInList);
+                    for (ZoneListNum = 1; ZoneListNum <= state.dataHeatBal->NumOfZoneLists; ++ZoneListNum) {
+                        if (state.dataHeatBal->ZoneList(ZoneListNum).Name == cAlphaArgs(6)) {
+                            state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones = state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones;
+                            state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs.allocate(state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones);
+                            for (ZoneNumInList = 1; ZoneNumInList <= state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones; ++ZoneNumInList) {
+                                state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs(ZoneNumInList) = state.dataHeatBal->ZoneList(ZoneListNum).Zone(ZoneNumInList);
                             }
                         }
                     }
-                    state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones = UtilityRoutines::FindItemInList(cAlphaArgs(6), ZoneList);
+                    state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones = UtilityRoutines::FindItemInList(cAlphaArgs(6), state.dataHeatBal->ZoneList);
                     if (state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones == 0) {
                         ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\", invalid");
                         ShowSevereError(state, "not found: " + cAlphaFieldNames(6) + "=\"" + cAlphaArgs(6) + "\".");
@@ -1180,7 +1175,7 @@ namespace SystemAvailabilityManager {
                 state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).VentTempLowLim = rNumericArgs(2);
                 state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).VentFlowFrac = rNumericArgs(3);
                 state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).CtrlZoneName = cAlphaArgs(5);
-                state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(5), Zone);
+                state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).ZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(5), state.dataHeatBal->Zone);
                 if (state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).ZoneNum == 0) {
                     ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\", invalid");
                     ShowContinueError(state, "not found: " + cAlphaFieldNames(5) + "=\"" + cAlphaArgs(5) + "\".");
@@ -1340,32 +1335,32 @@ namespace SystemAvailabilityManager {
             state.dataSystemAvailabilityManager->GetAvailListsInput = false;
         }
 
-        if (!allocated(PlantAvailMgr)) {
-            PlantAvailMgr.allocate(NumPlantLoops);
+        if (!allocated(state.dataPlnt->PlantAvailMgr)) {
+            state.dataPlnt->PlantAvailMgr.allocate(NumPlantLoops);
         }
 
         Found = 0;
         if (state.dataSystemAvailabilityManager->NumAvailManagerLists > 0) Found = UtilityRoutines::FindItemInList(AvailabilityListName, state.dataSystemAvailabilityManager->SysAvailMgrListData);
 
         if (Found != 0) {
-            PlantAvailMgr(Loop).NumAvailManagers = state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).NumItems;
-            PlantAvailMgr(Loop).AvailStatus = NoAction;
-            PlantAvailMgr(Loop).StartTime = 0;
-            PlantAvailMgr(Loop).StopTime = 0;
-            PlantAvailMgr(Loop).AvailManagerName.allocate(PlantAvailMgr(Loop).NumAvailManagers);
-            PlantAvailMgr(Loop).AvailManagerType.allocate(PlantAvailMgr(Loop).NumAvailManagers);
-            PlantAvailMgr(Loop).AvailManagerNum.allocate(PlantAvailMgr(Loop).NumAvailManagers);
-            for (Num = 1; Num <= PlantAvailMgr(Loop).NumAvailManagers; ++Num) {
-                PlantAvailMgr(Loop).AvailManagerName(Num) = state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerName(Num);
-                PlantAvailMgr(Loop).AvailManagerNum(Num) = 0;
-                PlantAvailMgr(Loop).AvailManagerType(Num) = state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerType(Num);
-                if (PlantAvailMgr(Loop).AvailManagerType(Num) == 0) {
+            state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers = state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).NumItems;
+            state.dataPlnt->PlantAvailMgr(Loop).AvailStatus = NoAction;
+            state.dataPlnt->PlantAvailMgr(Loop).StartTime = 0;
+            state.dataPlnt->PlantAvailMgr(Loop).StopTime = 0;
+            state.dataPlnt->PlantAvailMgr(Loop).AvailManagerName.allocate(state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers);
+            state.dataPlnt->PlantAvailMgr(Loop).AvailManagerType.allocate(state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers);
+            state.dataPlnt->PlantAvailMgr(Loop).AvailManagerNum.allocate(state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers);
+            for (Num = 1; Num <= state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers; ++Num) {
+                state.dataPlnt->PlantAvailMgr(Loop).AvailManagerName(Num) = state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerName(Num);
+                state.dataPlnt->PlantAvailMgr(Loop).AvailManagerNum(Num) = 0;
+                state.dataPlnt->PlantAvailMgr(Loop).AvailManagerType(Num) = state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerType(Num);
+                if (state.dataPlnt->PlantAvailMgr(Loop).AvailManagerType(Num) == 0) {
                     ShowSevereError(state, "GetPlantLoopData/GetPlantAvailabilityManager: Invalid System Availability Manager Type entered=\"" +
                                     state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).cAvailManagerType(Num) + "\".");
                     ShowContinueError(state, "Occurs in AvailabilityManagerAssignmentList=\"" + AvailabilityListName + "\".");
                     ErrorsFound = true;
                 }
-                if (state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerType(Num) == state.dataSystemAvailabilityManager->SysAvailMgr_DiffThermo && Num != PlantAvailMgr(Loop).NumAvailManagers) {
+                if (state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerType(Num) == state.dataSystemAvailabilityManager->SysAvailMgr_DiffThermo && Num != state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers) {
                     ShowWarningError(state, "GetPlantLoopData/GetPlantAvailabilityManager: AvailabilityManager:DifferentialThermostat=\"" +
                                      state.dataSystemAvailabilityManager->SysAvailMgrListData(Found).AvailManagerName(Num) + "\".");
                     ShowContinueError(state,
@@ -1387,11 +1382,11 @@ namespace SystemAvailabilityManager {
                 ShowWarningError(state, "GetPlantLoopData/GetPlantAvailabilityManager: AvailabilityManagerAssignmentList=" + AvailabilityListName +
                                  " not found in lists.  No availability will be used.");
             }
-            PlantAvailMgr(Loop).NumAvailManagers = 0;
-            PlantAvailMgr(Loop).AvailStatus = NoAction;
-            PlantAvailMgr(Loop).AvailManagerName.allocate(PlantAvailMgr(Loop).NumAvailManagers);
-            PlantAvailMgr(Loop).AvailManagerType.allocate(PlantAvailMgr(Loop).NumAvailManagers);
-            PlantAvailMgr(Loop).AvailManagerNum.allocate(PlantAvailMgr(Loop).NumAvailManagers);
+            state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers = 0;
+            state.dataPlnt->PlantAvailMgr(Loop).AvailStatus = NoAction;
+            state.dataPlnt->PlantAvailMgr(Loop).AvailManagerName.allocate(state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers);
+            state.dataPlnt->PlantAvailMgr(Loop).AvailManagerType.allocate(state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers);
+            state.dataPlnt->PlantAvailMgr(Loop).AvailManagerNum.allocate(state.dataPlnt->PlantAvailMgr(Loop).NumAvailManagers);
         }
     }
 
@@ -1565,7 +1560,6 @@ namespace SystemAvailabilityManager {
         // Uses the status flags to trigger initializations.
 
         using DataZoneEquipment::NumValidSysAvailZoneComponents;
-        using DataZoneEquipment::ZoneEquipConfig;
 
         int SysAvailNum; // DO loop indes for Sys Avail Manager objects
         int ZoneEquipType;
@@ -1581,8 +1575,8 @@ namespace SystemAvailabilityManager {
                     // set the controlled zone numbers
                     for (int index = 1; index <= state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).NumOfCtrlZones; ++index) {
                         for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                            if (allocated(ZoneEquipConfig)) {
-                                if (ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs(index)) {
+                            if (allocated(state.dataZoneEquip->ZoneEquipConfig)) {
+                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs(index)) {
                                     state.dataSystemAvailabilityManager->NCycSysAvailMgrData(SysAvailNum).CtrlZonePtrs(index) = ControlledZoneNum;
                                     break;
                                 }
@@ -1598,8 +1592,8 @@ namespace SystemAvailabilityManager {
                     if (SELECT_CASE_var == state.dataSystemAvailabilityManager->ControlZone) {
                         // set the controlled zone numbers
                         for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                            if (allocated(ZoneEquipConfig)) {
-                                if (ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneNum) {
+                            if (allocated(state.dataZoneEquip->ZoneEquipConfig)) {
+                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneNum) {
                                     state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ControlledZoneNum = ControlledZoneNum;
                                     break;
                                 }
@@ -1607,14 +1601,14 @@ namespace SystemAvailabilityManager {
                         }
                     } else if (SELECT_CASE_var == state.dataSystemAvailabilityManager->MaximumOfZoneList) {
                         // a zone list
-                        ZoneListNum = UtilityRoutines::FindItemInList(state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneListName, ZoneList);
+                        ZoneListNum = UtilityRoutines::FindItemInList(state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZoneListName, state.dataHeatBal->ZoneList);
                         if (ZoneListNum > 0) {
-                            state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones = ZoneList(ZoneListNum).NumOfZones;
+                            state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).NumOfZones = state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones;
                             if (!allocated(state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs)) {
-                                state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs.allocate({1, ZoneList(ZoneListNum).NumOfZones});
+                                state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs.allocate({1, state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones});
                             }
-                            for (ScanZoneListNum = 1; ScanZoneListNum <= ZoneList(ZoneListNum).NumOfZones; ++ScanZoneListNum) {
-                                ZoneNum = ZoneList(ZoneListNum).Zone(ScanZoneListNum);
+                            for (ScanZoneListNum = 1; ScanZoneListNum <= state.dataHeatBal->ZoneList(ZoneListNum).NumOfZones; ++ScanZoneListNum) {
+                                ZoneNum = state.dataHeatBal->ZoneList(ZoneListNum).Zone(ScanZoneListNum);
                                 state.dataSystemAvailabilityManager->OptStartSysAvailMgrData(SysAvailNum).ZonePtrs(ScanZoneListNum) = ZoneNum;
                             }
                         }
@@ -1625,8 +1619,8 @@ namespace SystemAvailabilityManager {
             for (SysAvailNum = 1; SysAvailNum <= state.dataSystemAvailabilityManager->NumNVentSysAvailMgrs; ++SysAvailNum) {
                 // set the controlled zone numbers
                 for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                    if (allocated(ZoneEquipConfig)) {
-                        if (ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).ZoneNum) {
+                    if (allocated(state.dataZoneEquip->ZoneEquipConfig)) {
+                        if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).ZoneNum) {
                             state.dataSystemAvailabilityManager->NVentSysAvailMgrData(SysAvailNum).ControlledZoneNum = ControlledZoneNum;
                             break;
                         }
@@ -1946,7 +1940,6 @@ namespace SystemAvailabilityManager {
         using DataHeatBalFanSys::TempZoneThermostatSetPoint;
         using DataHeatBalFanSys::ZoneThermostatSetPointHi;
         using DataHeatBalFanSys::ZoneThermostatSetPointLo;
-        using DataZoneEquipment::ZoneEquipConfig;
 
         int StartTime;
         int StopTime;
@@ -2102,7 +2095,7 @@ namespace SystemAvailabilityManager {
                              ++ZoneInSysNum) { // loop over zones in system
 
                             CtrldZoneNum = state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).CoolCtrlZoneNums(ZoneInSysNum);
-                            ZoneNum = ZoneEquipConfig(CtrldZoneNum).ActualZoneNum;
+                            ZoneNum = state.dataZoneEquip->ZoneEquipConfig(CtrldZoneNum).ActualZoneNum;
 
                             {
                                 auto const SELECT_CASE_var1(TempControlType(ZoneNum)); // select on thermostat control
@@ -2297,9 +2290,6 @@ namespace SystemAvailabilityManager {
         using DataHeatBalFanSys::TempZoneThermostatSetPoint;
         using DataHeatBalFanSys::ZoneThermostatSetPointHi;
         using DataHeatBalFanSys::ZoneThermostatSetPointLo;
-        using DataZoneControls::OccRoomTSetPointCool;
-        using DataZoneControls::OccRoomTSetPointHeat;
-        using DataZoneEquipment::ZoneEquipConfig;
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
 
@@ -2443,12 +2433,12 @@ namespace SystemAvailabilityManager {
 
             // Pass the start time to ZoneTempPredictorCorrector
             for (int counter = 1; counter <= state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).NumZonesCooled; ++counter) {
-                int actZoneNum = ZoneEquipConfig(state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).CoolCtrlZoneNums(counter)).ActualZoneNum;
+                int actZoneNum = state.dataZoneEquip->ZoneEquipConfig(state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).CoolCtrlZoneNums(counter)).ActualZoneNum;
                 OptStartData.OccStartTime(actZoneNum) = FanStartTime;
                 OptStartData.ActualZoneNum(actZoneNum) = actZoneNum;
             }
             for (int counter = 1; counter <= state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).NumZonesHeated; ++counter) {
-                int actZoneNum = ZoneEquipConfig(state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).HeatCtrlZoneNums(counter)).ActualZoneNum;
+                int actZoneNum = state.dataZoneEquip->ZoneEquipConfig(state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).HeatCtrlZoneNums(counter)).ActualZoneNum;
                 OptStartData.OccStartTime(actZoneNum) = FanStartTime;
                 OptStartData.ActualZoneNum(actZoneNum) = actZoneNum;
             }
@@ -2517,9 +2507,9 @@ namespace SystemAvailabilityManager {
                             TempDiff = 0.0;
                         } else {
                             if (!CycleOnFlag) {
-                                if (allocated(OccRoomTSetPointHeat) && allocated(OccRoomTSetPointCool)) {
-                                    TempDiffHi = TempTstatAir(ZoneNum) - OccRoomTSetPointCool(ZoneNum);
-                                    TempDiffLo = TempTstatAir(ZoneNum) - OccRoomTSetPointHeat(ZoneNum);
+                                if (allocated(state.dataZoneCtrls->OccRoomTSetPointHeat) && allocated(state.dataZoneCtrls->OccRoomTSetPointCool)) {
+                                    TempDiffHi = TempTstatAir(ZoneNum) - state.dataZoneCtrls->OccRoomTSetPointCool(ZoneNum);
+                                    TempDiffLo = TempTstatAir(ZoneNum) - state.dataZoneCtrls->OccRoomTSetPointHeat(ZoneNum);
                                 } else {
                                     TempDiffHi = 0.0;
                                     TempDiffLo = 0.0;
@@ -2592,7 +2582,7 @@ namespace SystemAvailabilityManager {
                                 AvailStatus = NoAction;
                                 CycleOnFlag = false;
                             }
-                        } else if (OccRoomTSetPointCool(ZoneNum) < 50.0) { // Cooling Mode
+                        } else if (state.dataZoneCtrls->OccRoomTSetPointCool(ZoneNum) < 50.0) { // Cooling Mode
                             TempDiff = TempDiffHi;
                             DeltaTime = TempDiff / OptStartMgr.ConstTGradCool;
                             if (DeltaTime > OptStartMgr.MaxOptStartTime) {
@@ -2661,13 +2651,13 @@ namespace SystemAvailabilityManager {
                             TempDiff = 0.0;
                         } else {
                             if (!CycleOnFlag) {
-                                if (allocated(OccRoomTSetPointHeat) && allocated(OccRoomTSetPointCool)) {
+                                if (allocated(state.dataZoneCtrls->OccRoomTSetPointHeat) && allocated(state.dataZoneCtrls->OccRoomTSetPointCool)) {
                                     TempDiffHi = 0.0;
                                     TempDiffLo = 0.0;
                                     for (ZoneNum = 1; ZoneNum <= NumOfZonesInList; ++ZoneNum) {
-                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - OccRoomTSetPointCool(OptStartMgr.ZonePtrs(ZoneNum));
+                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - state.dataZoneCtrls->OccRoomTSetPointCool(OptStartMgr.ZonePtrs(ZoneNum));
                                         TempDiffHi = max(TempDiffHi, TempDiff);
-                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - OccRoomTSetPointHeat(OptStartMgr.ZonePtrs(ZoneNum));
+                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - state.dataZoneCtrls->OccRoomTSetPointHeat(OptStartMgr.ZonePtrs(ZoneNum));
                                         TempDiffLo = min(TempDiffLo, TempDiff);
                                     }
                                 } else {
@@ -2817,9 +2807,9 @@ namespace SystemAvailabilityManager {
                             TempDiff = 0.0;
                         } else {
                             if (!CycleOnFlag) {
-                                if (allocated(OccRoomTSetPointHeat) && allocated(OccRoomTSetPointCool)) {
-                                    TempDiffHi = TempTstatAir(ZoneNum) - OccRoomTSetPointCool(ZoneNum);
-                                    TempDiffLo = TempTstatAir(ZoneNum) - OccRoomTSetPointHeat(ZoneNum);
+                                if (allocated(state.dataZoneCtrls->OccRoomTSetPointHeat) && allocated(state.dataZoneCtrls->OccRoomTSetPointCool)) {
+                                    TempDiffHi = TempTstatAir(ZoneNum) - state.dataZoneCtrls->OccRoomTSetPointCool(ZoneNum);
+                                    TempDiffLo = TempTstatAir(ZoneNum) - state.dataZoneCtrls->OccRoomTSetPointHeat(ZoneNum);
                                 } else {
                                     TempDiffHi = 0.0;
                                     TempDiffLo = 0.0;
@@ -2886,7 +2876,7 @@ namespace SystemAvailabilityManager {
                                                 ATGUpdateTemp1 = TempTstatAir(ZoneNum);
                                                 ATGUpdateFlag1 = false;
                                             }
-                                            if (TempTstatAir(ZoneNum) >= OccRoomTSetPointHeat(ZoneNum) && ATGUpdateFlag2) {
+                                            if (TempTstatAir(ZoneNum) >= state.dataZoneCtrls->OccRoomTSetPointHeat(ZoneNum) && ATGUpdateFlag2) {
                                                 ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                                 ATGUpdateTemp2 = TempTstatAir(ZoneNum);
                                                 ATGUpdateFlag2 = false;
@@ -2930,7 +2920,7 @@ namespace SystemAvailabilityManager {
                                                 ATGUpdateTemp1 = TempTstatAir(ZoneNum);
                                                 ATGUpdateFlag1 = false;
                                             }
-                                            if (TempTstatAir(ZoneNum) >= OccRoomTSetPointHeat(ZoneNum) && ATGUpdateFlag2) {
+                                            if (TempTstatAir(ZoneNum) >= state.dataZoneCtrls->OccRoomTSetPointHeat(ZoneNum) && ATGUpdateFlag2) {
                                                 ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                                 ATGUpdateTemp2 = TempTstatAir(ZoneNum);
                                                 ATGUpdateFlag2 = false;
@@ -2963,7 +2953,7 @@ namespace SystemAvailabilityManager {
                                 AvailStatus = NoAction;
                                 CycleOnFlag = false;
                             }
-                        } else if (OccRoomTSetPointCool(ZoneNum) < 50.0) { // Cooling Mode
+                        } else if (state.dataZoneCtrls->OccRoomTSetPointCool(ZoneNum) < 50.0) { // Cooling Mode
                             TempDiff = TempDiffHi;
                             DeltaTime = TempDiff / AdaTempGradCool;
                             if (DeltaTime > OptStartMgr.MaxOptStartTime) {
@@ -2996,7 +2986,7 @@ namespace SystemAvailabilityManager {
                                             ATGUpdateTemp1 = TempTstatAir(ZoneNum);
                                             ATGUpdateFlag1 = false;
                                         }
-                                        if (TempTstatAir(ZoneNum) <= OccRoomTSetPointCool(ZoneNum) && ATGUpdateFlag2) {
+                                        if (TempTstatAir(ZoneNum) <= state.dataZoneCtrls->OccRoomTSetPointCool(ZoneNum) && ATGUpdateFlag2) {
                                             ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                             ATGUpdateTemp2 = TempTstatAir(ZoneNum);
                                             ATGUpdateFlag2 = false;
@@ -3032,7 +3022,7 @@ namespace SystemAvailabilityManager {
                                             ATGUpdateTemp1 = TempTstatAir(ZoneNum);
                                             ATGUpdateFlag1 = false;
                                         }
-                                        if (TempTstatAir(ZoneNum) <= OccRoomTSetPointCool(ZoneNum) && ATGUpdateFlag2) {
+                                        if (TempTstatAir(ZoneNum) <= state.dataZoneCtrls->OccRoomTSetPointCool(ZoneNum) && ATGUpdateFlag2) {
                                             ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                             ATGUpdateTemp2 = TempTstatAir(ZoneNum);
                                             ATGUpdateFlag2 = false;
@@ -3074,19 +3064,19 @@ namespace SystemAvailabilityManager {
                             TempDiff = 0.0;
                         } else {
                             if (!CycleOnFlag) {
-                                if (allocated(OccRoomTSetPointHeat) && allocated(OccRoomTSetPointCool)) {
+                                if (allocated(state.dataZoneCtrls->OccRoomTSetPointHeat) && allocated(state.dataZoneCtrls->OccRoomTSetPointCool)) {
                                     TempDiffHi = 0.0;
                                     TempDiffLo = 0.0;
                                     ATGWCZoneNumHi = OptStartMgr.ZonePtrs(1);
                                     ATGWCZoneNumLo = OptStartMgr.ZonePtrs(1);
                                     for (ZoneNum = 1; ZoneNum <= NumOfZonesInList; ++ZoneNum) {
-                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - OccRoomTSetPointCool(OptStartMgr.ZonePtrs(ZoneNum));
+                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - state.dataZoneCtrls->OccRoomTSetPointCool(OptStartMgr.ZonePtrs(ZoneNum));
                                         TempDiffHi = max(TempDiffHi, TempDiff);
                                         // Store the worse case zone number for actual temperature gradient calculation
                                         if (TempDiff == TempDiffHi) {
                                             ATGWCZoneNumHi = OptStartMgr.ZonePtrs(ZoneNum);
                                         }
-                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - OccRoomTSetPointHeat(OptStartMgr.ZonePtrs(ZoneNum));
+                                        TempDiff = TempTstatAir(OptStartMgr.ZonePtrs(ZoneNum)) - state.dataZoneCtrls->OccRoomTSetPointHeat(OptStartMgr.ZonePtrs(ZoneNum));
                                         TempDiffLo = min(TempDiffLo, TempDiff);
                                         if (TempDiff == TempDiffLo) {
                                             ATGWCZoneNumLo = OptStartMgr.ZonePtrs(ZoneNum);
@@ -3158,7 +3148,7 @@ namespace SystemAvailabilityManager {
                                             ATGUpdateTemp1 = TempTstatAir(ATGWCZoneNumLo);
                                             ATGUpdateFlag1 = false;
                                         }
-                                        if (TempTstatAir(ATGWCZoneNumLo) >= OccRoomTSetPointHeat(ATGWCZoneNumLo) && ATGUpdateFlag2) {
+                                        if (TempTstatAir(ATGWCZoneNumLo) >= state.dataZoneCtrls->OccRoomTSetPointHeat(ATGWCZoneNumLo) && ATGUpdateFlag2) {
                                             ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                             ATGUpdateTemp2 = TempTstatAir(ATGWCZoneNumLo);
                                             ATGUpdateFlag2 = false;
@@ -3200,7 +3190,7 @@ namespace SystemAvailabilityManager {
                                             ATGUpdateTemp1 = TempTstatAir(ATGWCZoneNumLo);
                                             ATGUpdateFlag1 = false;
                                         }
-                                        if (TempTstatAir(ATGWCZoneNumLo) >= OccRoomTSetPointHeat(ATGWCZoneNumLo) && ATGUpdateFlag2) {
+                                        if (TempTstatAir(ATGWCZoneNumLo) >= state.dataZoneCtrls->OccRoomTSetPointHeat(ATGWCZoneNumLo) && ATGUpdateFlag2) {
                                             ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                             ATGUpdateTemp2 = TempTstatAir(ATGWCZoneNumLo);
                                             ATGUpdateFlag2 = false;
@@ -3265,7 +3255,7 @@ namespace SystemAvailabilityManager {
                                             ATGUpdateTemp1 = TempTstatAir(ATGWCZoneNumHi);
                                             ATGUpdateFlag1 = false;
                                         }
-                                        if (TempTstatAir(ATGWCZoneNumHi) <= OccRoomTSetPointCool(ATGWCZoneNumHi) && ATGUpdateFlag2) {
+                                        if (TempTstatAir(ATGWCZoneNumHi) <= state.dataZoneCtrls->OccRoomTSetPointCool(ATGWCZoneNumHi) && ATGUpdateFlag2) {
                                             ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                             ATGUpdateTemp2 = TempTstatAir(ATGWCZoneNumHi);
                                             ATGUpdateFlag2 = false;
@@ -3308,7 +3298,7 @@ namespace SystemAvailabilityManager {
                                             ATGUpdateTemp1 = TempTstatAir(ATGWCZoneNumHi);
                                             ATGUpdateFlag1 = false;
                                         }
-                                        if (TempTstatAir(ATGWCZoneNumHi) <= OccRoomTSetPointCool(ATGWCZoneNumHi) && ATGUpdateFlag2) {
+                                        if (TempTstatAir(ATGWCZoneNumHi) <= state.dataZoneCtrls->OccRoomTSetPointCool(ATGWCZoneNumHi) && ATGUpdateFlag2) {
                                             ATGUpdateTime2 = state.dataGlobal->CurrentTime;
                                             ATGUpdateTemp2 = TempTstatAir(ATGWCZoneNumHi);
                                             ATGUpdateFlag2 = false;
@@ -3381,11 +3371,11 @@ namespace SystemAvailabilityManager {
         // Set the OptStartFlag true for all zones on the air loop
         auto const &thisAirToZoneNodeInfo(state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum));
         for (int counter = 1; counter <= thisAirToZoneNodeInfo.NumZonesCooled; ++counter) {
-            int actZoneNum = DataZoneEquipment::ZoneEquipConfig(thisAirToZoneNodeInfo.CoolCtrlZoneNums(counter)).ActualZoneNum;
+            int actZoneNum = state.dataZoneEquip->ZoneEquipConfig(thisAirToZoneNodeInfo.CoolCtrlZoneNums(counter)).ActualZoneNum;
             OptStartData.OptStartFlag(actZoneNum) = true;
         }
         for (int counter = 1; counter <= thisAirToZoneNodeInfo.NumZonesHeated; ++counter) {
-            int actZoneNum = DataZoneEquipment::ZoneEquipConfig(thisAirToZoneNodeInfo.HeatCtrlZoneNums(counter)).ActualZoneNum;
+            int actZoneNum = state.dataZoneEquip->ZoneEquipConfig(thisAirToZoneNodeInfo.HeatCtrlZoneNums(counter)).ActualZoneNum;
             OptStartData.OptStartFlag(actZoneNum) = true;
         }
     }
@@ -3420,7 +3410,6 @@ namespace SystemAvailabilityManager {
         using DataHeatBalFanSys::TempZoneThermostatSetPoint;
         using DataHeatBalFanSys::ZoneThermostatSetPointHi;
         using DataHeatBalFanSys::ZoneThermostatSetPointLo;
-        using DataZoneEquipment::ZoneEquipConfig;
 
         int ZoneInSysNum;
         int CtrldZoneNum;
@@ -3457,7 +3446,7 @@ namespace SystemAvailabilityManager {
                 for (ZoneInSysNum = 1; ZoneInSysNum <= state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).NumZonesCooled; ++ZoneInSysNum) { // loop over zones in system
 
                     CtrldZoneNum = state.dataAirLoop->AirToZoneNodeInfo(PriAirSysNum).CoolCtrlZoneNums(ZoneInSysNum);
-                    ZoneNum = ZoneEquipConfig(CtrldZoneNum).ActualZoneNum;
+                    ZoneNum = state.dataZoneEquip->ZoneEquipConfig(CtrldZoneNum).ActualZoneNum;
                     // if the room temperature is greater than the vent temp sched value, set the vent temp check to TRUE
                     if (TempTstatAir(ZoneNum) > VentTemp) {
                         TempCheck = true;
@@ -3511,7 +3500,6 @@ namespace SystemAvailabilityManager {
 
         // Using/Aliasing
         using DataLoopNode::Node;
-        using DataPlant::PlantAvailMgr;
 
         Real64 DeltaTemp;
 
@@ -3688,7 +3676,6 @@ namespace SystemAvailabilityManager {
         // PURPOSE OF THIS SUBROUTINE:
         // Manage the simulation of the Hybrid Ventilation Control System Availability Managers
 
-        using DataZoneEquipment::ZoneEquipConfig;
         using namespace DataLoopNode;
         using namespace DataAirLoop;
 
@@ -3735,9 +3722,6 @@ namespace SystemAvailabilityManager {
         // Uses InputProcessor "Get" routines to obtain data.
 
         // Using/Aliasing
-        using DataHeatBalance::TotVentilation;
-        using DataHeatBalance::Ventilation;
-        using DataHeatBalance::Zone;
         using NodeInputManager::GetOnlySingleNode;
         using NodeInputManager::MarkNode;
         using namespace DataLoopNode;
@@ -3804,7 +3788,7 @@ namespace SystemAvailabilityManager {
             }
             state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlZoneName = cAlphaArgs(3);
             // Check zone number
-            state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(3), Zone);
+            state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum = UtilityRoutines::FindItemInList(cAlphaArgs(3), state.dataHeatBal->Zone);
             if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum == 0) {
                 ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\" invalid");
                 ShowContinueError(state, "not found: " + cAlphaFieldNames(3) + "=\"" + cAlphaArgs(3) + "\".");
@@ -4072,8 +4056,8 @@ namespace SystemAvailabilityManager {
 
             if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr > 0) {
                 state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationName = cAlphaArgs(10);
-                if (TotVentilation > 0) {
-                    state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr = UtilityRoutines::FindItemInList(cAlphaArgs(10), Ventilation);
+                if (state.dataHeatBal->TotVentilation > 0) {
+                    state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr = UtilityRoutines::FindItemInList(cAlphaArgs(10), state.dataHeatBal->Ventilation);
                     HybridVentSysAvailMaster(SysAvailNum) = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
                     SchedMax = GetScheduleMaxValue(state, state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr);
                     if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr <= 0 && int(SchedMax) == 1) {
@@ -4087,10 +4071,10 @@ namespace SystemAvailabilityManager {
             // Check simple airflow object
             if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr > 0 && state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr > 0) {
                 if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum !=
-                    Ventilation(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr).ZonePtr) {
+                    state.dataHeatBal->Ventilation(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr).ZonePtr) {
                     ShowSevereError(state, RoutineName + cCurrentModuleObject + "=\"" + cAlphaArgs(1) + "\"");
                     ShowContinueError(state, "The Zone name specified in the Ventilation object " +
-                                      Zone(Ventilation(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr).ZonePtr).Name);
+                                      state.dataHeatBal->Zone(state.dataHeatBal->Ventilation(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr).ZonePtr).Name);
                     ShowContinueError(state, "is not equal to the " + cAlphaFieldNames(3) + "=\"" + cAlphaArgs(3) + "\".");
                     ErrorsFound = true;
                 }
@@ -4259,11 +4243,7 @@ namespace SystemAvailabilityManager {
         // Uses the status flags to trigger initializations.
 
         // Using/Aliasing
-        using DataHeatBalance::AdaptiveComfortRequested_ASH55;
-        using DataHeatBalance::TotVentilation;
-        using DataHeatBalance::Ventilation;
         using DataZoneEquipment::NumValidSysAvailZoneComponents;
-        using DataZoneEquipment::ZoneEquipConfig;
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         static bool MyOneTimeFlag(true); // One time flag
@@ -4280,14 +4260,14 @@ namespace SystemAvailabilityManager {
         int HybridVentNum;
 
         // One time initializations
-        if (MyOneTimeFlag && allocated(ZoneEquipConfig) && allocated(state.dataAirSystemsData->PrimaryAirSystems)) {
+        if (MyOneTimeFlag && allocated(state.dataZoneEquip->ZoneEquipConfig) && allocated(state.dataAirSystemsData->PrimaryAirSystems)) {
 
             // Ensure the controlled zone is listed and defined in an HVAC Air Loop
             for (SysAvailNum = 1; SysAvailNum <= NumHybridVentSysAvailMgrs; ++SysAvailNum) {
-                if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr > 0 && TotVentilation > 0 &&
+                if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr > 0 && state.dataHeatBal->TotVentilation > 0 &&
                     state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr == 0) {
                     state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr =
-                        UtilityRoutines::FindItemInList(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationName, Ventilation);
+                        UtilityRoutines::FindItemInList(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationName, state.dataHeatBal->Ventilation);
                     HybridVentSysAvailMaster(SysAvailNum) = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
                     SchedMax = GetScheduleMaxValue(state, state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr);
                     if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr <= 0 && int(SchedMax) == 1) {
@@ -4308,13 +4288,13 @@ namespace SystemAvailabilityManager {
 
                 // set the controlled zone numbers
                 for (ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                    if (ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum) {
+                    if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum == state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum) {
                         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlledZoneNum = ControlledZoneNum;
                         bool zoneFound = false;
                         if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).HybridVentMgrConnectedToAirLoop) {
                             if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlledZoneNum > 0) {
-                                for (int zoneInNode = 1; zoneInNode <= ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++zoneInNode) {
-                                    if (ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode) ==
+                                for (int zoneInNode = 1; zoneInNode <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++zoneInNode) {
+                                    if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode) ==
                                         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopNum) {
                                         zoneFound = true;
                                         break;
@@ -4334,15 +4314,15 @@ namespace SystemAvailabilityManager {
                             state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData.begin(),
                             state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData.end(),
                             [](SystemAvailabilityManager::DefineHybridVentSysAvailManager const &e) { return e.HybridVentMgrConnectedToAirLoop; })) {
-                        for (int zoneInNode = 1; zoneInNode <= ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++zoneInNode) {
-                            if (ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode) ==
+                        for (int zoneInNode = 1; zoneInNode <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++zoneInNode) {
+                            if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode) ==
                                     state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopNum &&
                                 state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopNum > 0) {
                                 for (HybridVentNum = 1; HybridVentNum <= NumHybridVentSysAvailMgrs; ++HybridVentNum) {
                                     if (!state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(HybridVentNum).HybridVentMgrConnectedToAirLoop && (HybridVentNum != SysAvailNum)) {
-                                        if (ZoneEquipConfig(ControlledZoneNum).ActualZoneNum ==
+                                        if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum ==
                                                 state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(HybridVentNum).ActualZoneNum &&
-                                            ZoneEquipConfig(ControlledZoneNum).ActualZoneNum > 0) {
+                                            state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum > 0) {
                                             ShowWarningError(state, "AvailabilityManager:HybridVentilation = \"" +
                                                              state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(HybridVentNum).Name + "\" has the controlled zone name = \"" +
                                                              state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(HybridVentNum).ControlZoneName + "\".");
@@ -4373,12 +4353,16 @@ namespace SystemAvailabilityManager {
                 // check schedule value for adaptive temperature control
                 if (CheckScheduleValue(state, state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlModeSchedPtr, 5.0) ||
                     CheckScheduleValue(state, state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlModeSchedPtr, 6.0)) {
-                    if (!AdaptiveComfortRequested_ASH55) {
+                    if (!state.dataHeatBal->AdaptiveComfortRequested_ASH55) {
                         ShowSevereError(state, "GetHybridVentilationInputs: AvailabilityManager:HybridVentilation =\"" +
                                         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).Name + "\"");
-                        ShowContinueError(state, "Ventilation Control Mode Schedule Name =\"" +
-                                          Schedule(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlModeSchedPtr).Name +
-                                          "\", When the schedule value is 5 or 6, operative temperature control is requested. ");
+                        ShowContinueError(
+                            state,
+                            "Ventilation Control Mode Schedule Name =\"" +
+                                state.dataScheduleMgr
+                                    ->Schedule(state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlModeSchedPtr)
+                                    .Name +
+                                "\", When the schedule value is 5 or 6, operative temperature control is requested. ");
                         ShowContinueError(state, "However, AdaptiveASH55 is not entered in the Thermal Comfort Model Type fields in the People object.");
                         ErrorsFound = true;
                     }
@@ -4495,22 +4479,13 @@ namespace SystemAvailabilityManager {
         using DataHeatBalance::HybridControlTypeClose;
         using DataHeatBalance::HybridControlTypeGlobal;
         using DataHeatBalance::HybridControlTypeIndiv;
-        using DataHeatBalance::Mixing;
-        using DataHeatBalance::MRT;
-        using DataHeatBalance::TotMixing;
-        using DataHeatBalance::TotVentilation;
-        using DataHeatBalance::Ventilation;
-        using DataHeatBalance::Zone;
         using DataHeatBalFanSys::MAT;
         using DataHeatBalFanSys::TempControlType;
         using DataHeatBalFanSys::TempZoneThermostatSetPoint;
         using DataHeatBalFanSys::ZoneAirHumRat;
         using DataHeatBalFanSys::ZoneThermostatSetPointHi;
         using DataHeatBalFanSys::ZoneThermostatSetPointLo;
-        using DataZoneControls::HumidityControlZone;
-        using DataZoneControls::NumHumidityControlZones;
         using DataZoneEquipment::NumValidSysAvailZoneComponents;
-        using DataZoneEquipment::ZoneEquipConfig;
         using Psychrometrics::PsyHFnTdbW;
         using Psychrometrics::PsyRhFnTdbWPb;
         using Psychrometrics::PsyTdpFnWPb;
@@ -4523,8 +4498,7 @@ namespace SystemAvailabilityManager {
         Real64 ZoneAirDewPoint; // Zone air dew point temperature
         Real64 ZoneAirRH;       // Zone air relative humidity
         Real64 TempExt;         // Outdoor dry bulb temperature at zone height
-        Real64 WindExt;         // Outdoor wind spped at zone height
-        // unused  REAL(r64)    :: RHSetPoint      ! RH setpoint from a given schedule
+        Real64 WindExt;         // Outdoor wind speed at zone height
         Real64 WSetPoint;                   // Humidity ratio setpoint from a given RH setpoint schedule
         Real64 OASetPoint;                  // Outdoor air setpoint from a given OA setpoint schedule
         Real64 ACH;                         // Zone air change per hour
@@ -4558,8 +4532,8 @@ namespace SystemAvailabilityManager {
 
         ZoneNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum;
         if (!KeepStatus) state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationCtrl = state.dataSystemAvailabilityManager->HybridVentCtrl_NoAction;
-        TempExt = Zone(ZoneNum).OutDryBulbTemp;
-        WindExt = Zone(ZoneNum).WindSpeed;
+        TempExt = state.dataHeatBal->Zone(ZoneNum).OutDryBulbTemp;
+        WindExt = state.dataHeatBal->Zone(ZoneNum).WindSpeed;
         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).OperativeTemp = 0.0;
         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).minAdaTem = 0.0;
         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).maxAdaTem = 0.0;
@@ -4621,7 +4595,7 @@ namespace SystemAvailabilityManager {
 
                 } else if (SELECT_CASE_var == state.dataSystemAvailabilityManager->HybridVentMode_OperT80) {
                     if (state.dataThermalComforts->runningAverageASH >= 10.0 && state.dataThermalComforts->runningAverageASH <= 33.5) {
-                        state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).OperativeTemp = 0.5 * (MAT(ZoneNum) + MRT(ZoneNum));
+                        state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).OperativeTemp = 0.5 * (MAT(ZoneNum) + state.dataHeatBal->MRT(ZoneNum));
                         minAdaTem = 0.31 * state.dataThermalComforts->runningAverageASH + 14.3;
                         maxAdaTem = 0.31 * state.dataThermalComforts->runningAverageASH + 21.3;
                         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).minAdaTem = minAdaTem;
@@ -4638,7 +4612,7 @@ namespace SystemAvailabilityManager {
 
                 } else if (SELECT_CASE_var == state.dataSystemAvailabilityManager->HybridVentMode_OperT90) {
                     if (state.dataThermalComforts->runningAverageASH >= 10.0 && state.dataThermalComforts->runningAverageASH <= 33.5) {
-                        state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).OperativeTemp = 0.5 * (MAT(ZoneNum) + MRT(ZoneNum));
+                        state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).OperativeTemp = 0.5 * (MAT(ZoneNum) + state.dataHeatBal->MRT(ZoneNum));
                         minAdaTem = 0.31 * state.dataThermalComforts->runningAverageASH + 15.3;
                         maxAdaTem = 0.31 * state.dataThermalComforts->runningAverageASH + 20.3;
                         state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).minAdaTem = minAdaTem;
@@ -4744,7 +4718,7 @@ namespace SystemAvailabilityManager {
                 if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ControlMode == state.dataSystemAvailabilityManager->HybridVentMode_DewPoint) {
                     ZoneAirRH = PsyRhFnTdbWPb(state, MAT(ZoneNum), ZoneAirHumRat(ZoneNum), state.dataEnvrn->OutBaroPress) * 100.0;
                     ZoneAirDewPoint = PsyTdpFnWPb(state, ZoneAirHumRat(ZoneNum), state.dataEnvrn->OutBaroPress);
-                    if (NumHumidityControlZones == 0) {
+                    if (state.dataZoneCtrls->NumHumidityControlZones == 0) {
                         ++state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).DewPointNoRHErrCount;
                         if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).DewPointNoRHErrCount < 2) {
                             ShowWarningError(state, "Hybrid ventilation control: Dew point control mode is selected, but no ZoneControl:Humidistat object=" +
@@ -4761,11 +4735,11 @@ namespace SystemAvailabilityManager {
                         }
                     }
                     found = false;
-                    for (HStatZoneNum = 1; HStatZoneNum <= NumHumidityControlZones; ++HStatZoneNum) {
-                        if (HumidityControlZone(HStatZoneNum).ActualZoneNum == ZoneNum) {
+                    for (HStatZoneNum = 1; HStatZoneNum <= state.dataZoneCtrls->NumHumidityControlZones; ++HStatZoneNum) {
+                        if (state.dataZoneCtrls->HumidityControlZone(HStatZoneNum).ActualZoneNum == ZoneNum) {
                             found = true;
-                            ZoneRHHumidifyingSetPoint = GetCurrentScheduleValue(state, HumidityControlZone(HStatZoneNum).HumidifyingSchedIndex);
-                            ZoneRHDehumidifyingSetPoint = GetCurrentScheduleValue(state, HumidityControlZone(HStatZoneNum).DehumidifyingSchedIndex);
+                            ZoneRHHumidifyingSetPoint = GetCurrentScheduleValue(state, state.dataZoneCtrls->HumidityControlZone(HStatZoneNum).HumidifyingSchedIndex);
+                            ZoneRHDehumidifyingSetPoint = GetCurrentScheduleValue(state, state.dataZoneCtrls->HumidityControlZone(HStatZoneNum).DehumidifyingSchedIndex);
                             if (ZoneAirRH > ZoneRHDehumidifyingSetPoint) { // Need dehumidification
                                 WSetPoint = PsyWFnTdbRhPb(state, MAT(ZoneNum), (ZoneRHDehumidifyingSetPoint / 100.0), state.dataEnvrn->OutBaroPress);
                                 if (WSetPoint < state.dataEnvrn->OutHumRat) state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationCtrl = state.dataSystemAvailabilityManager->HybridVentCtrl_Close;
@@ -4777,13 +4751,13 @@ namespace SystemAvailabilityManager {
                             }
                         }
                     }
-                    if (!found && NumHumidityControlZones > 0) {
+                    if (!found && state.dataZoneCtrls->NumHumidityControlZones > 0) {
                         ++state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).DewPointErrCount;
                         if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).DewPointErrCount < 2) {
                             ShowWarningError(state, "Hybrid ventilation control: The zone for dew point control mode is different from the zone for "
                                              "ZoneControl:Humidistat=" +
                                              state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopName);
-                            ShowContinueError(state, "The Zone name for hybrid control is " + Zone(ZoneNum).Name + ". Humidistat has no impact");
+                            ShowContinueError(state, "The Zone name for hybrid control is " + state.dataHeatBal->Zone(ZoneNum).Name + ". Humidistat has no impact");
                             ShowContinueError(state, "HVAC system may turn off when outdoor dewpoint is between min and max dewpoint.");
                             ShowContinueErrorTimeStamp(state, "");
                         } else {
@@ -4832,32 +4806,32 @@ namespace SystemAvailabilityManager {
         if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopNum > 0 && state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr > 0) {
             SimpleControlType = GetCurrentScheduleValue(state, state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr);
             for (ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                for (int zoneInNode = 1; zoneInNode <= ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++zoneInNode) {
-                    if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopNum == ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode)) {
+                for (int zoneInNode = 1; zoneInNode <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++zoneInNode) {
+                    if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).AirLoopNum == state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode)) {
                         // Setup flag for ventilation objects
-                        for (i = 1; i <= TotVentilation; ++i) {
-                            if (Ventilation(i).ZonePtr == ZoneEquipConfig(ControlledZoneNum).ActualZoneNum) {
-                                Ventilation(i).HybridControlType = HybridControlTypeIndiv;
+                        for (i = 1; i <= state.dataHeatBal->TotVentilation; ++i) {
+                            if (state.dataHeatBal->Ventilation(i).ZonePtr == state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum) {
+                                state.dataHeatBal->Ventilation(i).HybridControlType = HybridControlTypeIndiv;
                                 if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationCtrl == state.dataSystemAvailabilityManager->HybridVentCtrl_Close) {
-                                    Ventilation(i).HybridControlType = HybridControlTypeClose;
+                                    state.dataHeatBal->Ventilation(i).HybridControlType = HybridControlTypeClose;
                                 } else {
                                     if (SimpleControlType == 1) {
-                                        Ventilation(i).HybridControlType = HybridControlTypeGlobal;
-                                        Ventilation(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
+                                        state.dataHeatBal->Ventilation(i).HybridControlType = HybridControlTypeGlobal;
+                                        state.dataHeatBal->Ventilation(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
                                     }
                                 }
                             }
                         }
                         // Setup flag for Mixing objects
-                        for (i = 1; i <= TotMixing; ++i) {
-                            if (Mixing(i).ZonePtr == ZoneEquipConfig(ControlledZoneNum).ActualZoneNum) {
-                                Mixing(i).HybridControlType = HybridControlTypeIndiv;
+                        for (i = 1; i <= state.dataHeatBal->TotMixing; ++i) {
+                            if (state.dataHeatBal->Mixing(i).ZonePtr == state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum) {
+                                state.dataHeatBal->Mixing(i).HybridControlType = HybridControlTypeIndiv;
                                 if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationCtrl == state.dataSystemAvailabilityManager->HybridVentCtrl_Close) {
-                                    Mixing(i).HybridControlType = HybridControlTypeClose;
+                                    state.dataHeatBal->Mixing(i).HybridControlType = HybridControlTypeClose;
                                 } else {
                                     if (SimpleControlType == 1) {
-                                        Mixing(i).HybridControlType = HybridControlTypeGlobal;
-                                        Mixing(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
+                                        state.dataHeatBal->Mixing(i).HybridControlType = HybridControlTypeGlobal;
+                                        state.dataHeatBal->Mixing(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
                                     }
                                 }
                             }
@@ -4869,29 +4843,29 @@ namespace SystemAvailabilityManager {
             SimpleControlType = GetCurrentScheduleValue(state, state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).SimpleControlTypeSchedPtr);
             // Hybrid ventilation manager is applied to zone component
             // setup flag for ventilation objects
-            for (i = 1; i <= TotVentilation; ++i) {
-                if (Ventilation(i).ZonePtr == state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum) {
-                    Ventilation(i).HybridControlType = HybridControlTypeIndiv;
+            for (i = 1; i <= state.dataHeatBal->TotVentilation; ++i) {
+                if (state.dataHeatBal->Ventilation(i).ZonePtr == state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum) {
+                    state.dataHeatBal->Ventilation(i).HybridControlType = HybridControlTypeIndiv;
                     if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationCtrl == state.dataSystemAvailabilityManager->HybridVentCtrl_Close) {
-                        Ventilation(i).HybridControlType = HybridControlTypeClose;
+                        state.dataHeatBal->Ventilation(i).HybridControlType = HybridControlTypeClose;
                     } else {
                         if (SimpleControlType == 1) {
-                            Ventilation(i).HybridControlType = HybridControlTypeGlobal;
-                            Ventilation(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
+                            state.dataHeatBal->Ventilation(i).HybridControlType = HybridControlTypeGlobal;
+                            state.dataHeatBal->Ventilation(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
                         }
                     }
                 }
             }
             // Setup flag for Mixing objects
-            for (i = 1; i <= TotMixing; ++i) {
-                if (Mixing(i).ZonePtr == state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum) {
-                    Mixing(i).HybridControlType = HybridControlTypeIndiv;
+            for (i = 1; i <= state.dataHeatBal->TotMixing; ++i) {
+                if (state.dataHeatBal->Mixing(i).ZonePtr == state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).ActualZoneNum) {
+                    state.dataHeatBal->Mixing(i).HybridControlType = HybridControlTypeIndiv;
                     if (state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationCtrl == state.dataSystemAvailabilityManager->HybridVentCtrl_Close) {
-                        Mixing(i).HybridControlType = HybridControlTypeClose;
+                        state.dataHeatBal->Mixing(i).HybridControlType = HybridControlTypeClose;
                     } else {
                         if (SimpleControlType == 1) {
-                            Mixing(i).HybridControlType = HybridControlTypeGlobal;
-                            Mixing(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
+                            state.dataHeatBal->Mixing(i).HybridControlType = HybridControlTypeGlobal;
+                            state.dataHeatBal->Mixing(i).HybridControlMasterNum = state.dataSystemAvailabilityManager->HybridVentSysAvailMgrData(SysAvailNum).VentilationPtr;
                         }
                     }
                 }

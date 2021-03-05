@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -726,14 +726,14 @@ void CoilCoolingDXCurveFitPerformance::calcStandardRatings(EnergyPlus::EnergyPlu
         //        }
         //
         //        if (countStaticInputs == NumDXMulSpeedCoils) {
-        //            OutputReportPredefined::addFootNoteSubTable(state.dataOutRptPredefined->pdstVAVDXCoolCoil, "Packaged VAV unit ratings per ANSI/AHRI
+        //            OutputReportPredefined::addFootNoteSubTable(pdstVAVDXCoolCoil, "Packaged VAV unit ratings per ANSI/AHRI
         //            Standard 340/360-2007 with Addenda 1 and 2");
         //        } else if (countStaticInputs == 0) {
-        //            OutputReportPredefined::addFootNoteSubTable(state.dataOutRptPredefined->pdstVAVDXCoolCoil,
+        //            OutputReportPredefined::addFootNoteSubTable(pdstVAVDXCoolCoil,
         //                                "Indoor-coil-only unit ratings per ANSI/AHRI Standard 340/360-2007 with Addenda 1 and 2, with "
         //                                "supply fan specific power at 365 {W/1000cfm} (773.3 {W/(m3/s)})");
         //        } else { // both
-        //            OutputReportPredefined::addFootNoteSubTable(state.dataOutRptPredefined->pdstVAVDXCoolCoil,
+        //            OutputReportPredefined::addFootNoteSubTable(pdstVAVDXCoolCoil,
         //                                "Packaged VAV unit ratings per ANSI/AHRI Standard 340/360-2007 with Addenda 1 and 2, "
         //                                "indoor-coil-only units with supply fan specific power at 365 {W/1000cfm} (773.3 {W/(m3/s)})");
         //        }

@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -259,7 +259,7 @@ CoilCoolingDXCurveFitSpeed::CoilCoolingDXCurveFitSpeed(EnergyPlus::EnergyPlusDat
       PLR(0.0),                  // coil operating part load ratio
       CondInletTemp(0.0),        // condenser inlet temperature {C}
       AirFF(0.0),                // ratio of air mass flow rate to rated air mass flow rate
-                                 //	RatedTotCap( 0.0 ), // rated total capacity at speed {W}
+                                 // RatedTotCap( 0.0 ), // rated total capacity at speed {W}
 
       fullLoadPower(0.0),     // full load power at speed {W}
       fullLoadWasteHeat(0.0), // full load waste heat at speed {W}
@@ -359,23 +359,23 @@ void CoilCoolingDXCurveFitSpeed::size(EnergyPlus::EnergyPlusData &state)
 
     //  DataSizing::DataEMSOverrideON = DXCoil( DXCoilNum ).RatedSHREMSOverrideOn( Mode );
     //  DataSizing::DataEMSOverride = DXCoil( DXCoilNum ).RatedSHREMSOverrideValue( Mode );
-    DataSizing::DataFlowUsedForSizing = this->evap_air_flow_rate;
-    DataSizing::DataCapacityUsedForSizing = this->rated_total_capacity;
+    state.dataSize->DataFlowUsedForSizing = this->evap_air_flow_rate;
+    state.dataSize->DataCapacityUsedForSizing = this->rated_total_capacity;
     bool errorFound = false;
     CoolingSHRSizer sizerCoolingSHR;
     sizerCoolingSHR.initializeWithinEP(state, CompType, CompName, PrintFlag, RoutineName);
     if (this->grossRatedSHR == DataSizing::AutoSize && this->parentOperatingMode == 2) {
-        DataSizing::DataSizingFraction = 0.667;
+        state.dataSize->DataSizingFraction = 0.667;
         this->grossRatedSHR = sizerCoolingSHR.size(state, this->grossRatedSHR, errorFound);
     } else if (this->grossRatedSHR == DataSizing::AutoSize && this->parentOperatingMode == 3) {
-        DataSizing::DataSizingFraction = 0.333;
+        state.dataSize->DataSizingFraction = 0.333;
         this->grossRatedSHR = sizerCoolingSHR.size(state, this->grossRatedSHR, errorFound);
     } else {
         this->grossRatedSHR = sizerCoolingSHR.size(state, this->grossRatedSHR, errorFound);
     }
-    DataSizing::DataFlowUsedForSizing = 0.0;
-    DataSizing::DataCapacityUsedForSizing = 0.0;
-    DataSizing::DataSizingFraction = 1.0;
+    state.dataSize->DataFlowUsedForSizing = 0.0;
+    state.dataSize->DataCapacityUsedForSizing = 0.0;
+    state.dataSize->DataSizingFraction = 1.0;
     //  DataSizing::DataEMSOverrideON = false;
     //  DataSizing::DataEMSOverride = 0.0;
 

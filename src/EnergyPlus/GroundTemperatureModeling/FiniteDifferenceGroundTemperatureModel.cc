@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -721,8 +721,8 @@ void FiniteDiffGroundTempsModel::updateBottomCellTemperature()
 
     // REFERENCES:
     // Fridleifsson, I.B., R. Bertani, E.Huenges, J.W. Lund, A. Ragnarsson, L. Rybach. 2008
-    //	'The possible role and contribution of geothermal energy to the mitigation of climate change.'
-    //	IPCC scoping meeting on renewable energy sources: 59-80.
+    //  'The possible role and contribution of geothermal energy to the mitigation of climate change.'
+    //  IPCC scoping meeting on renewable energy sources: 59-80.
 
     // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
     Real64 numerator(0.0);

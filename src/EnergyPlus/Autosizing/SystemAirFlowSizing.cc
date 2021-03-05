@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -58,6 +58,9 @@ namespace EnergyPlus {
 
 Real64 SystemAirFlowSizer::size(EnergyPlusData &state, Real64 _originalValue, bool &errorsFound)
 {
+
+    auto &SysSizPeakDDNum(state.dataSize->SysSizPeakDDNum);
+
     if (!this->checkInitialized(state, errorsFound)) {
         return 0.0;
     }
@@ -739,16 +742,16 @@ Real64 SystemAirFlowSizer::size(EnergyPlusData &state, Real64 _originalValue, bo
                             this->autoSizedValue = std::max(this->unitarySysEqSizing(this->curSysNum).CoolingAirVolFlow,
                                                             this->unitarySysEqSizing(this->curSysNum).HeatingAirVolFlow);
                             if (this->autoSizedValue == this->unitarySysEqSizing(this->curSysNum).CoolingAirVolFlow) {
-                                if (DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
-                                    DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
-                                    DDNameFanPeak = state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
+                                if (SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
+                                    SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
+                                    DDNameFanPeak = state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
                                     dateTimeFanPeak = format(
                                         "{}/{} {}",
-                                        state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
-                                        state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
+                                        state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
+                                        state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
                                         coilSelectionReportObj->getTimeText(state,
-                                            DataSizing::SysSizPeakDDNum(this->curSysNum)
-                                                .TimeStepAtCoolFlowPk(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
+                                            SysSizPeakDDNum(this->curSysNum)
+                                                .TimeStepAtCoolFlowPk(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
                                 }
 
                             } else if (this->autoSizedValue == this->unitarySysEqSizing(this->curSysNum).HeatingAirVolFlow) {
@@ -764,16 +767,16 @@ Real64 SystemAirFlowSizer::size(EnergyPlusData &state, Real64 _originalValue, bo
                             }
                         } else if (this->unitarySysEqSizing(this->curSysNum).CoolingAirFlow) {
                             this->autoSizedValue = this->unitarySysEqSizing(this->curSysNum).CoolingAirVolFlow;
-                            if (DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
-                                DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
-                                DDNameFanPeak = state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
+                            if (SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
+                                SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
+                                DDNameFanPeak = state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
                                 dateTimeFanPeak = format(
                                     "{}/{} {}",
-                                    state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
-                                    state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
+                                    state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
+                                    state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
                                     coilSelectionReportObj->getTimeText(state,
-                                        DataSizing::SysSizPeakDDNum(this->curSysNum)
-                                            .TimeStepAtCoolFlowPk(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
+                                        SysSizPeakDDNum(this->curSysNum)
+                                            .TimeStepAtCoolFlowPk(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
                             }
                         } else if (this->unitarySysEqSizing(this->curSysNum).HeatingAirFlow) {
                             this->autoSizedValue = this->unitarySysEqSizing(this->curSysNum).HeatingAirVolFlow;
@@ -800,16 +803,16 @@ Real64 SystemAirFlowSizer::size(EnergyPlusData &state, Real64 _originalValue, bo
                                                coilSelectionReportObj->getTimeText(state, this->finalSysSizing(this->curSysNum).SysHeatAirTimeStepPk));
                                 }
                             } else if (this->autoSizedValue == this->finalSysSizing(this->curSysNum).DesCoolVolFlow) {
-                                if (DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
-                                    DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
-                                    DDNameFanPeak = state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
+                                if (SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
+                                    SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
+                                    DDNameFanPeak = state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
                                     dateTimeFanPeak = format(
                                         "{}/{} {}",
-                                        state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
-                                        state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
+                                        state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
+                                        state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
                                         coilSelectionReportObj->getTimeText(state,
-                                            DataSizing::SysSizPeakDDNum(this->curSysNum)
-                                                .TimeStepAtCoolFlowPk(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
+                                            SysSizPeakDDNum(this->curSysNum)
+                                                .TimeStepAtCoolFlowPk(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
                                 }
                             }
                         }
@@ -826,16 +829,16 @@ Real64 SystemAirFlowSizer::size(EnergyPlusData &state, Real64 _originalValue, bo
                                            coilSelectionReportObj->getTimeText(state, this->finalSysSizing(this->curSysNum).SysHeatAirTimeStepPk));
                             }
                         } else if (this->autoSizedValue == this->finalSysSizing(this->curSysNum).DesCoolVolFlow) {
-                            if (DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
-                                DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
-                                DDNameFanPeak = state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
+                            if (SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD > 0 &&
+                                SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD <= state.dataEnvrn->TotDesDays) {
+                                DDNameFanPeak = state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Title;
                                 dateTimeFanPeak = format(
                                     "{}/{} {}",
-                                    state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
-                                    state.dataWeatherManager->DesDayInput(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
+                                    state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).Month,
+                                    state.dataWeatherManager->DesDayInput(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD).DayOfMonth,
                                     coilSelectionReportObj->getTimeText(state,
-                                        DataSizing::SysSizPeakDDNum(this->curSysNum)
-                                            .TimeStepAtCoolFlowPk(DataSizing::SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
+                                        SysSizPeakDDNum(this->curSysNum)
+                                            .TimeStepAtCoolFlowPk(SysSizPeakDDNum(this->curSysNum).CoolFlowPeakDD)));
                             }
                         }
                     }

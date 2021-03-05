@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -429,14 +429,14 @@ namespace FaultsManager {
 
                 if (UtilityRoutines::SameString(SELECT_CASE_VAR, "EvaporativeCooler:Indirect:WetCoil")) {
                     // Read in evaporative cooler is not done yet
-                    if (EvaporativeCoolers::GetInputEvapComponentsFlag) {
+                    if (state.dataEvapCoolers->GetInputEvapComponentsFlag) {
                         EvaporativeCoolers::GetEvapInput(state);
-                        EvaporativeCoolers::GetInputEvapComponentsFlag = false;
+                        state.dataEvapCoolers->GetInputEvapComponentsFlag = false;
                     }
 
                     // Check whether the evaporative cooler  name and type match each other;
                     EvapCoolerNum = UtilityRoutines::FindItemInList(FaultsEvapCoolerFouling(jFault_EvapCoolerFouling).EvapCoolerName,
-                                                                    EvaporativeCoolers::EvapCond,
+                                                                    state.dataEvapCoolers->EvapCond,
                                                                     &EvaporativeCoolers::EvapConditions::EvapCoolerName);
                     if (EvapCoolerNum <= 0) {
                         ShowSevereError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
@@ -444,8 +444,8 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
                         // Link the boiler with the fault model
-                        EvaporativeCoolers::EvapCond(EvapCoolerNum).FaultyEvapCoolerFoulingFlag = true;
-                        EvaporativeCoolers::EvapCond(EvapCoolerNum).FaultyEvapCoolerFoulingIndex = jFault_EvapCoolerFouling;
+                        state.dataEvapCoolers->EvapCond(EvapCoolerNum).FaultyEvapCoolerFoulingFlag = true;
+                        state.dataEvapCoolers->EvapCond(EvapCoolerNum).FaultyEvapCoolerFoulingIndex = jFault_EvapCoolerFouling;
                     }
                 }
             }
@@ -539,7 +539,7 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
 
-                        if (state.dataPlantChillers->ElectricChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WATERCOOLED) {
+                        if (state.dataPlantChillers->ElectricChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WaterCooled) {
                             // The fault model is only applicable to the chillers with water based condensers
                             ShowWarningError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                              cAlphaArgs(5) +
@@ -568,7 +568,7 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
 
-                        if (state.dataChillerElectricEIR->ElectricEIRChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WATERCOOLED) {
+                        if (state.dataChillerElectricEIR->ElectricEIRChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WaterCooled) {
                             // The fault model is only applicable to the chillers with water based condensers
                             ShowWarningError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                              cAlphaArgs(5) +
@@ -598,7 +598,7 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
 
-                        if (state.dataChillerReformulatedEIR->ElecReformEIRChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WATERCOOLED) {
+                        if (state.dataChillerReformulatedEIR->ElecReformEIRChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WaterCooled) {
                             // The fault model is only applicable to the chillers with water based condensers
                             ShowWarningError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                              cAlphaArgs(5) +
@@ -627,7 +627,7 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
 
-                        if (state.dataPlantChillers->ConstCOPChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WATERCOOLED) {
+                        if (state.dataPlantChillers->ConstCOPChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WaterCooled) {
                             // The fault model is only applicable to the chillers with water based condensers
                             ShowWarningError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                              cAlphaArgs(5) +
@@ -656,7 +656,7 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
 
-                        if (state.dataPlantChillers->EngineDrivenChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WATERCOOLED) {
+                        if (state.dataPlantChillers->EngineDrivenChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WaterCooled) {
                             // The fault model is only applicable to the chillers with water based condensers
                             ShowWarningError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                              cAlphaArgs(5) +
@@ -685,7 +685,7 @@ namespace FaultsManager {
                         ErrorsFound = true;
                     } else {
 
-                        if (state.dataPlantChillers->GTChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WATERCOOLED) {
+                        if (state.dataPlantChillers->GTChiller(ChillerNum).CondenserType != DataPlant::CondenserType::WaterCooled) {
                             // The fault model is only applicable to the chillers with water based condensers
                             ShowWarningError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                              cAlphaArgs(5) +
@@ -973,22 +973,22 @@ namespace FaultsManager {
                     }
                 } else if (UtilityRoutines::SameString(SELECT_CASE_VAR, "CoilSystem:Heating:DX")) {
                     // Read in DXCoolingSystem input if not done yet
-                    if (HVACDXHeatPumpSystem::GetInputFlag) {
+                    if (state.dataHVACDXHeatPumpSys->GetInputFlag) {
                         HVACDXHeatPumpSystem::GetDXHeatPumpSystemInput(state);
-                        HVACDXHeatPumpSystem::GetInputFlag = false;
+                        state.dataHVACDXHeatPumpSys->GetInputFlag = false;
                     }
 
                     // Check the coil name and coil type
                     int CoilSysNum =
-                        UtilityRoutines::FindItemInList(FaultsCoilSATSensor(jFault_CoilSAT).CoilName, HVACDXHeatPumpSystem::DXHeatPumpSystem);
+                        UtilityRoutines::FindItemInList(FaultsCoilSATSensor(jFault_CoilSAT).CoilName, state.dataHVACDXHeatPumpSys->DXHeatPumpSystem);
                     if (CoilSysNum <= 0) {
                         ShowSevereError(state, cFaultCurrentObject + " = \"" + cAlphaArgs(1) + "\" invalid " + cAlphaFieldNames(5) + " = \"" +
                                         cAlphaArgs(5) + "\" not found.");
                         ErrorsFound = true;
                     } else {
                         // Link the coil system with the fault model
-                        HVACDXHeatPumpSystem::DXHeatPumpSystem(CoilSysNum).FaultyCoilSATFlag = true;
-                        HVACDXHeatPumpSystem::DXHeatPumpSystem(CoilSysNum).FaultyCoilSATIndex = jFault_CoilSAT;
+                        state.dataHVACDXHeatPumpSys->DXHeatPumpSystem(CoilSysNum).FaultyCoilSATFlag = true;
+                        state.dataHVACDXHeatPumpSys->DXHeatPumpSystem(CoilSysNum).FaultyCoilSATIndex = jFault_CoilSAT;
                     }
                 } else if (UtilityRoutines::SameString(SELECT_CASE_VAR, "AirLoopHVAC:UnitarySystem")) {
                     // UnitarySystem model connects to FaultManager via function call to FaultsManager::SetFaultyCoilSATSensor
@@ -1951,7 +1951,7 @@ namespace FaultsManager {
         Real64 FoulingFactor(
             1.0); // Actual Nominal Fouling Factor, ratio between the nominal capacity or efficiency at fouling case and that at fault free case
 
-        // FLOW
+
 
         // Check fault availability schedules
         if (GetCurrentScheduleValue(state, this->AvaiSchedPtr) > 0.0) {
@@ -1989,7 +1989,7 @@ namespace FaultsManager {
         Real64 FaultFac(0.0);             // fault modification factor
         Real64 UAReductionFactorAct(1.0); // actual UA Reduction Factor, ratio between the UA value at fouling case and that at fault free case
 
-        // FLOW
+
 
         // Check fault availability schedules
         if (GetCurrentScheduleValue(state, this->AvaiSchedPtr) > 0.0) {
@@ -2114,7 +2114,7 @@ namespace FaultsManager {
         std::string const FanName = this->FaultyAirFilterFanName; // name of the fan
         int const FanCurvePtr = this->FaultyAirFilterFanCurvePtr; // pointer of the fan curve
 
-        // FLOW
+
 
         FanFound = false;
 

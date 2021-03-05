@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -1276,13 +1276,6 @@ namespace HeatRecovery {
         // METHODOLOGY EMPLOYED:
         // Uses the status flags to trigger initializations.
 
-        // REFERENCES:
-        // na
-
-        // Using/Aliasing
-        using DXCoils::DXCoilFullLoadOutAirHumRat;
-        using DXCoils::DXCoilFullLoadOutAirTemp;
-
         //  USE DataZoneEquipment,  ONLY: ZoneEquipInputsFilled,CheckZoneEquipmentList
         using EMSManager::CheckIfNodeSetPointManagedByEMS;
 
@@ -1568,14 +1561,14 @@ namespace HeatRecovery {
 
                     if (CompanionCoilType_Num == DataHVACGlobals::CoilDX_CoolingSingleSpeed ||
                         CompanionCoilType_Num == DataHVACGlobals::CoilDX_CoolingTwoStageWHumControl) {
-                        if (DXCoilFullLoadOutAirTemp(CompanionCoilIndex) == 0.0 || DXCoilFullLoadOutAirHumRat(CompanionCoilIndex) == 0.0) {
+                        if (state.dataDXCoils->DXCoilFullLoadOutAirTemp(CompanionCoilIndex) == 0.0 || state.dataDXCoils->DXCoilFullLoadOutAirHumRat(CompanionCoilIndex) == 0.0) {
                             //       DX Coil is OFF, read actual inlet conditions
                             FullLoadOutAirTemp = ExchCond(ExchNum).SecInTemp;
                             FullLoadOutAirHumRat = ExchCond(ExchNum).SecInHumRat;
                         } else {
                             //       DX Coil is ON, read full load DX coil outlet conditions (conditions HX sees when ON)
-                            FullLoadOutAirTemp = DXCoilFullLoadOutAirTemp(CompanionCoilIndex);
-                            FullLoadOutAirHumRat = DXCoilFullLoadOutAirHumRat(CompanionCoilIndex);
+                            FullLoadOutAirTemp = state.dataDXCoils->DXCoilFullLoadOutAirTemp(CompanionCoilIndex);
+                            FullLoadOutAirHumRat = state.dataDXCoils->DXCoilFullLoadOutAirHumRat(CompanionCoilIndex);
                         }
                     } else if (CompanionCoilType_Num == DataHVACGlobals::Coil_CoolingAirToAirVariableSpeed) {
                         // how to support VS dx coil here?
@@ -1629,7 +1622,9 @@ namespace HeatRecovery {
         std::string CompType;     // component type
         std::string SizingString; // input field sizing description
 
-        HRFlowSizingFlag = true;
+        auto &ZoneEqSizing(state.dataSize->ZoneEqSizing);
+
+        state.dataSize->HRFlowSizingFlag = true;
         PrintFlag = true;
         FieldNum = 0;
         if (ExchCond(ExchNum).ExchTypeNum == HX_DESICCANT_BALANCED) {
@@ -1649,27 +1644,27 @@ namespace HeatRecovery {
         } else {
             SizingString = "Nominal Supply Air Flow Rate [m3/s]"; // desiccant balanced flow does not have an input for air volume flow rate
         }
-        if (CurZoneEqNum > 0) {
+        if (state.dataSize->CurZoneEqNum > 0) {
             if (ExchCond(ExchNum).NomSupAirVolFlow == AutoSize) {
                 SizingMethod = AutoCalculateSizing;
-                if (ZoneEqSizing(CurZoneEqNum).DesignSizeFromParent) {
+                if (ZoneEqSizing(state.dataSize->CurZoneEqNum).DesignSizeFromParent) {
                     // Heat recovery heat exchanger in zoneHVAC equipment should have been sized to OA flow in the parent equipment
-                    DataConstantUsedForSizing = ZoneEqSizing(CurZoneEqNum).AirVolFlow;
+                    state.dataSize->DataConstantUsedForSizing = ZoneEqSizing(state.dataSize->CurZoneEqNum).AirVolFlow;
                 } else {
-                    DataConstantUsedForSizing = std::max(FinalZoneSizing(CurZoneEqNum).DesCoolVolFlow, FinalZoneSizing(CurZoneEqNum).DesHeatVolFlow);
+                    state.dataSize->DataConstantUsedForSizing = std::max(state.dataSize->FinalZoneSizing(state.dataSize->CurZoneEqNum).DesCoolVolFlow, state.dataSize->FinalZoneSizing(state.dataSize->CurZoneEqNum).DesHeatVolFlow);
                 }
-                DataFractionUsedForSizing = 1.0;
+                state.dataSize->DataFractionUsedForSizing = 1.0;
             } else {
-                if (ZoneSizingRunDone) {
+                if (state.dataSize->ZoneSizingRunDone) {
                     SizingMethod = AutoCalculateSizing;
-                    if (ZoneEqSizing(CurZoneEqNum).DesignSizeFromParent) {
+                    if (ZoneEqSizing(state.dataSize->CurZoneEqNum).DesignSizeFromParent) {
                         // Heat recovery heat exchanger in zoneHVAC equipment should have been sized to OA flow in the parent equipment
-                        DataConstantUsedForSizing = ZoneEqSizing(CurZoneEqNum).AirVolFlow;
+                        state.dataSize->DataConstantUsedForSizing = ZoneEqSizing(state.dataSize->CurZoneEqNum).AirVolFlow;
                     } else {
-                        DataConstantUsedForSizing =
-                            std::max(FinalZoneSizing(CurZoneEqNum).DesCoolVolFlow, FinalZoneSizing(CurZoneEqNum).DesHeatVolFlow);
+                        state.dataSize->DataConstantUsedForSizing =
+                            std::max(state.dataSize->FinalZoneSizing(state.dataSize->CurZoneEqNum).DesCoolVolFlow, state.dataSize->FinalZoneSizing(state.dataSize->CurZoneEqNum).DesHeatVolFlow);
                     }
-                    DataFractionUsedForSizing = 1.0;
+                    state.dataSize->DataFractionUsedForSizing = 1.0;
                 }
             }
         }
@@ -1680,8 +1675,8 @@ namespace HeatRecovery {
         // sizerSystemAirFlow.setHVACSizingIndexData(FanCoil(FanCoilNum).HVACSizingIndex);
         sizerSystemAirFlow.initializeWithinEP(state, CompType, CompName, PrintFlag, RoutineName);
         ExchCond(ExchNum).NomSupAirVolFlow = sizerSystemAirFlow.size(state, TempSize, errorsFound);
-        DataConstantUsedForSizing = 0.0;
-        DataFractionUsedForSizing = 0.0;
+        state.dataSize->DataConstantUsedForSizing = 0.0;
+        state.dataSize->DataFractionUsedForSizing = 0.0;
         if (ExchCond(ExchNum).ExchTypeNum == HX_AIRTOAIR_FLATPLATE) {
             PrintFlag = true;
             FieldNum = 5;
@@ -1689,12 +1684,12 @@ namespace HeatRecovery {
             CompType = cHXTypes(ExchCond(ExchNum).ExchTypeNum);
             SizingString = HeatExchCondNumericFields(ExchNum).NumericFieldNames(FieldNum) + " [m3/s]";
             if (ExchCond(ExchNum).NomSecAirVolFlow == AutoSize) {
-                DataConstantUsedForSizing = ExchCond(ExchNum).NomSupAirVolFlow;
-                DataFractionUsedForSizing = 1.0;
+                state.dataSize->DataConstantUsedForSizing = ExchCond(ExchNum).NomSupAirVolFlow;
+                state.dataSize->DataFractionUsedForSizing = 1.0;
             } else {
-                if (ZoneSizingRunDone || SysSizingRunDone) {
-                    DataConstantUsedForSizing = ExchCond(ExchNum).NomSupAirVolFlow;
-                    DataFractionUsedForSizing = 1.0;
+                if (state.dataSize->ZoneSizingRunDone || state.dataSize->SysSizingRunDone) {
+                    state.dataSize->DataConstantUsedForSizing = ExchCond(ExchNum).NomSupAirVolFlow;
+                    state.dataSize->DataFractionUsedForSizing = 1.0;
                 }
             }
             TempSize = ExchCond(ExchNum).NomSecAirVolFlow;
@@ -1704,10 +1699,10 @@ namespace HeatRecovery {
             // sizerSystemAirFlow2.setHVACSizingIndexData(FanCoil(FanCoilNum).HVACSizingIndex);
             sizerSystemAirFlow2.initializeWithinEP(state, CompType, CompName, PrintFlag, RoutineName);
             ExchCond(ExchNum).NomSecAirVolFlow = sizerSystemAirFlow2.size(state, TempSize, errorsFound);
-            DataConstantUsedForSizing = 0.0;
-            DataFractionUsedForSizing = 0.0;
+            state.dataSize->DataConstantUsedForSizing = 0.0;
+            state.dataSize->DataFractionUsedForSizing = 0.0;
         }
-        HRFlowSizingFlag = false;
+        state.dataSize->HRFlowSizingFlag = false;
         if (ExchCond(ExchNum).ExchTypeNum == HX_DESICCANT_BALANCED && ExchCond(ExchNum).HeatExchPerfTypeNum == BALANCEDHX_PERFDATATYPE1) {
 
             BalDesDehumPerfIndex = ExchCond(ExchNum).PerfDataIndex;
@@ -1725,14 +1720,14 @@ namespace HeatRecovery {
             sizerSystemAirFlow3.initializeWithinEP(state, CompType, CompName, PrintFlag, RoutineName);
             BalDesDehumPerfData(BalDesDehumPerfIndex).NomSupAirVolFlow = sizerSystemAirFlow3.size(state, TempSize, errorsFound);
 
-            DataAirFlowUsedForSizing = BalDesDehumPerfData(BalDesDehumPerfIndex).NomSupAirVolFlow;
+            state.dataSize->DataAirFlowUsedForSizing = BalDesDehumPerfData(BalDesDehumPerfIndex).NomSupAirVolFlow;
             TempSize = BalDesDehumPerfData(BalDesDehumPerfIndex).NomProcAirFaceVel;
             bool ErrorsFound = false;
             DesiccantDehumidifierBFPerfDataFaceVelocitySizer sizerDesDehumBFFaceVel;
             sizerDesDehumBFFaceVel.initializeWithinEP(state, CompType, CompName, PrintFlag, RoutineName);
             BalDesDehumPerfData(BalDesDehumPerfIndex).NomProcAirFaceVel = sizerDesDehumBFFaceVel.size(state, TempSize, ErrorsFound);
 
-            DataAirFlowUsedForSizing = 0.0;
+            state.dataSize->DataAirFlowUsedForSizing = 0.0;
         }
     }
 
@@ -2563,7 +2558,6 @@ namespace HeatRecovery {
 
         // Using/Aliasing
         using DataLoopNode::SensedNodeFlagValue;
-        using DXCoils::DXCoilPartLoadRatio;
 
         // Locals
         // SUBROUTINE ARGUMENT DEFINITIONS:
@@ -2810,7 +2804,7 @@ namespace HeatRecovery {
 
                     } else if (CompanionCoilIndex > 0) {
                         // VS coil issue here?
-                        HXPartLoadRatio = DXCoilPartLoadRatio(CompanionCoilIndex);
+                        HXPartLoadRatio = state.dataDXCoils->DXCoilPartLoadRatio(CompanionCoilIndex);
                     }
 
                     if (FanOpMode == CycFanCycCoil || RegenInletIsOANode) {

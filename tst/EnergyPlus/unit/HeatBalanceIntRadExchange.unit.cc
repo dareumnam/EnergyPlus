@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -52,7 +52,7 @@
 
 // EnergyPlus Headers
 #include <EnergyPlus/Construction.hh>
-#include <EnergyPlus/DataGlobals.hh>
+#include <EnergyPlus/Data/EnergyPlusData.hh>
 #include <EnergyPlus/DataHeatBalSurface.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
 #include <EnergyPlus/DataSurfaces.hh>
@@ -60,7 +60,6 @@
 #include <EnergyPlus/HeatBalanceIntRadExchange.hh>
 #include <EnergyPlus/HeatBalanceManager.hh>
 #include <EnergyPlus/Material.hh>
-#include <EnergyPlus/Data/EnergyPlusData.hh>
 
 #include "Fixtures/EnergyPlusFixture.hh"
 
@@ -166,10 +165,10 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_FixViewFactorsTest)
 
     ZoneNum = 1;
 
-    DataHeatBalance::Zone.allocate(ZoneNum);
-    DataHeatBalance::Zone(ZoneNum).Name = "Test";
+    state->dataHeatBal->Zone.allocate(ZoneNum);
+    state->dataHeatBal->Zone(ZoneNum).Name = "Test";
     DataViewFactorInformation::ZoneRadiantInfo.allocate(ZoneNum);
-    DataViewFactorInformation::ZoneRadiantInfo(ZoneNum).Name = DataHeatBalance::Zone(ZoneNum).Name;
+    DataViewFactorInformation::ZoneRadiantInfo(ZoneNum).Name = state->dataHeatBal->Zone(ZoneNum).Name;
     DataViewFactorInformation::ZoneRadiantInfo(ZoneNum).ZoneNums.push_back(ZoneNum);
 
     FixViewFactors(*state, N,
@@ -296,18 +295,18 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_UpdateMovableInsulationFlagT
 
     state->dataConstruction->Construct.allocate(1);
     state->dataMaterial->Material.allocate(1);
-    DataSurfaces::Surface.allocate(1);
+    state->dataSurface->Surface.allocate(1);
 
     SurfNum = 1;
-    DataSurfaces::Surface(1).MaterialMovInsulInt = 1;
-    DataSurfaces::Surface(1).MovInsulIntPresent = false;
-    DataSurfaces::Surface(1).MovInsulIntPresentPrevTS = false;
-    DataSurfaces::Surface(1).Construction = 1;
-    DataSurfaces::Surface(1).MaterialMovInsulInt = 1;
+    state->dataSurface->Surface(1).MaterialMovInsulInt = 1;
+    state->dataSurface->Surface(1).MovInsulIntPresent = false;
+    state->dataSurface->Surface(1).MovInsulIntPresentPrevTS = false;
+    state->dataSurface->Surface(1).Construction = 1;
+    state->dataSurface->Surface(1).MaterialMovInsulInt = 1;
     state->dataConstruction->Construct(1).InsideAbsorpThermal = 0.9;
     state->dataMaterial->Material(1).AbsorpThermal = 0.5;
     state->dataMaterial->Material(1).Resistance = 1.25;
-    DataSurfaces::Surface(1).SchedMovInsulInt = -1;
+    state->dataSurface->Surface(1).SchedMovInsulInt = -1;
     state->dataMaterial->Material(1).AbsorpSolar = 0.25;
 
     // Test 1: Movable insulation present but wasn't in previous time step, also movable insulation emissivity different than base construction
@@ -316,13 +315,13 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_UpdateMovableInsulationFlagT
     EXPECT_TRUE(DidMIChange);
 
     // Test 2: Movable insulation present and was also present in previous time step.  This should result in a false value since nothing has changed.
-    DataSurfaces::Surface(1).MovInsulIntPresentPrevTS = true;
+    state->dataSurface->Surface(1).MovInsulIntPresentPrevTS = true;
     HeatBalanceIntRadExchange::UpdateMovableInsulationFlag(*state, DidMIChange, SurfNum);
     EXPECT_TRUE(!DidMIChange);
 
     // Test 2: Movable insulation present but wasn't in previous time step.  However, the emissivity of the movable insulation and that of the
     // 		   construction are the same so nothing has actually changed.  This should result in a false value.
-    DataSurfaces::Surface(1).MovInsulIntPresentPrevTS = false;
+    state->dataSurface->Surface(1).MovInsulIntPresentPrevTS = false;
     state->dataMaterial->Material(1).AbsorpThermal = state->dataConstruction->Construct(1).InsideAbsorpThermal;
     HeatBalanceIntRadExchange::UpdateMovableInsulationFlag(*state, DidMIChange, SurfNum);
     EXPECT_TRUE(!DidMIChange);
@@ -382,17 +381,17 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_AlignInputViewFactorsTest)
     DataViewFactorInformation::ZoneRadiantInfo.allocate(3);
     DataViewFactorInformation::ZoneRadiantInfo(1).Name = "Enclosure 1";
     DataViewFactorInformation::ZoneRadiantInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 2"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 2"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 1"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 1"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(2).Name = "Enclosure 2";
     DataViewFactorInformation::ZoneRadiantInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 4"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 4"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 5"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 5"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(3).Name = "Zone 3";
     DataViewFactorInformation::ZoneRadiantInfo(3).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 3"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 3"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
 
     ErrorsFound = false;
     HeatBalanceIntRadExchange::AlignInputViewFactors(*state, "ZoneProperty:UserViewFactors:BySurfaceName", ErrorsFound);
@@ -462,17 +461,17 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_AlignInputViewFactorsTest2)
     DataViewFactorInformation::ZoneSolarInfo.allocate(3);
     DataViewFactorInformation::ZoneSolarInfo(1).Name = "Enclosure 1";
     DataViewFactorInformation::ZoneSolarInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 2"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 2"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 5"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 5"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(2).Name = "Enclosure 2";
     DataViewFactorInformation::ZoneSolarInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 4"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 4"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 5"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 5"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(3).Name = "Zone 3";
     DataViewFactorInformation::ZoneSolarInfo(3).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 3"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 3"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
 
     ErrorsFound = false;
     HeatBalanceIntRadExchange::AlignInputViewFactors(*state, "ZoneProperty:UserViewFactors:BySurfaceName", ErrorsFound);
@@ -541,17 +540,17 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_AlignInputViewFactorsTest3)
     DataViewFactorInformation::ZoneSolarInfo.allocate(3);
     DataViewFactorInformation::ZoneSolarInfo(1).Name = "Enclosure 1";
     DataViewFactorInformation::ZoneSolarInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 2"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 2"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 1"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 1"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(2).Name = "Enclosure 2";
     DataViewFactorInformation::ZoneSolarInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 4"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 4"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 5"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 5"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneSolarInfo(3).Name = "Zone 3";
     DataViewFactorInformation::ZoneSolarInfo(3).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 3"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 3"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
 
     ErrorsFound = false;
     HeatBalanceIntRadExchange::AlignInputViewFactors(*state, "ZoneProperty:UserViewFactors:BySurfaceName", ErrorsFound);
@@ -621,17 +620,17 @@ TEST_F(EnergyPlusFixture, HeatBalanceIntRadExchange_AlignInputViewFactorsTest4)
     DataViewFactorInformation::ZoneRadiantInfo.allocate(3);
     DataViewFactorInformation::ZoneRadiantInfo(1).Name = "Enclosure 1";
     DataViewFactorInformation::ZoneRadiantInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 2"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 2"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(1).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 5"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 5"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(2).Name = "Enclosure 2";
     DataViewFactorInformation::ZoneRadiantInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 4"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 4"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(2).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 5"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 5"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
     DataViewFactorInformation::ZoneRadiantInfo(3).Name = "Zone 3";
     DataViewFactorInformation::ZoneRadiantInfo(3).ZoneNums.push_back(UtilityRoutines::FindItemInList(
-        UtilityRoutines::MakeUPPERCase("Zone 3"), DataHeatBalance::Zone, state->dataGlobal->NumOfZones));
+        UtilityRoutines::MakeUPPERCase("Zone 3"), state->dataHeatBal->Zone, state->dataGlobal->NumOfZones));
 
     ErrorsFound = false;
     HeatBalanceIntRadExchange::AlignInputViewFactors(*state, "ZoneProperty:UserViewFactors:BySurfaceName", ErrorsFound);

@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -59,11 +59,6 @@ struct EnergyPlusData;
 
 namespace RoomAirModelManager {
 
-    extern bool GetUCSDDVDataFlag; // UCSD
-    extern bool GetAirModelData;   // Used to "get" all air model data
-
-    void clear_state();
-
     void ManageAirModel(EnergyPlusData &state, int &ZoneNum);
 
     void GetAirModelDatas(EnergyPlusData &state);
@@ -100,9 +95,15 @@ namespace RoomAirModelManager {
 
 struct RoomAirModelManagerData : BaseGlobalStruct {
 
+    bool GetUCSDDVDataFlag = true; // UCSD
+    bool GetAirModelData = true; // Used to "get" all air model data
+    bool MyOneTimeFlag = true;
+
     void clear_state() override
     {
-
+        this->GetUCSDDVDataFlag = true;
+        this->GetAirModelData = true;
+        this->MyOneTimeFlag = true;
     }
 };
 

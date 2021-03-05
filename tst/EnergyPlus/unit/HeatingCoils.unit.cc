@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -47,19 +47,20 @@
 
 // EnergyPlus::HeatingCoils Unit Tests
 
-#include <exception>
-
 // Google Test Headers
-#include "Fixtures/EnergyPlusFixture.hh"
-#include <EnergyPlus/DataGlobalConstants.hh>
-#include <EnergyPlus/HeatingCoils.hh>
-#include <EnergyPlus/Psychrometrics.hh>
+#include <gtest/gtest.h>
+
+// EnergyPlus Headers
+#include <EnergyPlus/Data/EnergyPlusData.hh>
 #include <EnergyPlus/DataEnvironment.hh>
-#include <EnergyPlus/ScheduleManager.hh>
+#include <EnergyPlus/DataGlobalConstants.hh>
 #include <EnergyPlus/DataHVACGlobals.hh>
 #include <EnergyPlus/DataLoopNode.hh>
-#include <gtest/gtest.h>
-#include <EnergyPlus/Data/EnergyPlusData.hh>
+#include <EnergyPlus/HeatingCoils.hh>
+#include <EnergyPlus/Psychrometrics.hh>
+#include <EnergyPlus/ScheduleManager.hh>
+
+#include "Fixtures/EnergyPlusFixture.hh"
 
 namespace EnergyPlus {
 
@@ -144,8 +145,8 @@ TEST_F(EnergyPlusFixture, HeatingCoils_OutletAirPropertiesTest)
     HeatingCoils::HeatingCoil(CoilNum).InletAirEnthalpy = Psychrometrics::PsyHFnTdbW(HeatingCoils::HeatingCoil(CoilNum).InletAirTemp, HeatingCoils::HeatingCoil(CoilNum).InletAirHumRat);
     state->dataEnvrn->OutBaroPress = 101325.0;
     HeatingCoils::HeatingCoil(CoilNum).SchedPtr = 1;
-    ScheduleManager::Schedule.allocate(1);
-    ScheduleManager::Schedule(1).CurrentValue = 1.0;
+    state->dataScheduleMgr->Schedule.allocate(1);
+    state->dataScheduleMgr->Schedule(1).CurrentValue = 1.0;
     DataHVACGlobals::MSHPMassFlowRateLow = OnMassFlowrate;
     HeatingCoils::HeatingCoil(CoilNum).MSNominalCapacity.allocate(1);
     HeatingCoils::HeatingCoil(CoilNum).MSNominalCapacity(1) = 10000;

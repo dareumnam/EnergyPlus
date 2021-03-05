@@ -1,4 +1,4 @@
-// EnergyPlus, Copyright (c) 1996-2020, The Board of Trustees of the University of Illinois,
+// EnergyPlus, Copyright (c) 1996-2021, The Board of Trustees of the University of Illinois,
 // The Regents of the University of California, through Lawrence Berkeley National Laboratory
 // (subject to receipt of any required approvals from the U.S. Dept. of Energy), Oak Ridge
 // National Laboratory, managed by UT-Battelle, Alliance for Sustainable Energy, LLC, and other
@@ -58,7 +58,7 @@ namespace EnergyPlus {
                                                         const std::string &_compName, const bool &_printWarningFlag,
                                                         const std::string &_callingRoutine) {
         BaseSizer::initializeWithinEP(state, _compType, _compName, _printWarningFlag, _callingRoutine);
-        this->dataDesAccountForFanHeat = DataSizing::DataDesAccountForFanHeat;
+        this->dataDesAccountForFanHeat = state.dataSize->DataDesAccountForFanHeat;
         // water coils on main branch have no parent object to set DataFan* variables
         if (int(this->primaryAirSystem.size() > 0) && this->curSysNum > 0 && this->curOASysNum == 0) {
             if (this->primaryAirSystem(this->curSysNum).supFanModelTypeEnum == DataAirSystems::structArrayLegacyFanModels) {
@@ -128,8 +128,8 @@ namespace EnergyPlus {
         return;
     }
 
-    void BaseSizerWithFanHeatInputs::setDataDesAccountForFanHeat(bool flag)         {
-        DataSizing::DataDesAccountForFanHeat = flag;
+    void BaseSizerWithFanHeatInputs::setDataDesAccountForFanHeat(EnergyPlusData &state, bool flag)         {
+        state.dataSize->DataDesAccountForFanHeat = flag;
     }
 
 }
