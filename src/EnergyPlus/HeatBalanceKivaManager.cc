@@ -371,9 +371,9 @@ namespace EnergyPlus::HeatBalanceKivaManager {
 
         bcs->slabAbsRadiation = DataHeatBalSurface::SurfOpaqQRadSWInAbs(floorSurface) + // solar
                                state.dataHeatBal->SurfQRadThermInAbs(floorSurface) + // internal gains
-                               DataHeatBalFanSys::QHTRadSysSurf(floorSurface) + DataHeatBalFanSys::QHWBaseboardSurf(floorSurface) +
-                               DataHeatBalFanSys::QCoolingPanelSurf(floorSurface) + DataHeatBalFanSys::QSteamBaseboardSurf(floorSurface) +
-                               DataHeatBalFanSys::QElecBaseboardSurf(floorSurface); // HVAC
+                                                                                     state.dataHeatBalFanSys->QHTRadSysSurf(floorSurface) + state.dataHeatBalFanSys->QHWBaseboardSurf(floorSurface) +
+                state.dataHeatBalFanSys->QCoolingPanelSurf(floorSurface) + state.dataHeatBalFanSys->QSteamBaseboardSurf(floorSurface) +
+                state.dataHeatBalFanSys->QElecBaseboardSurf(floorSurface); // HVAC
 
         bcs->slabConvectiveTemp = state.dataHeatBal->TempEffBulkAir(floorSurface) + DataGlobalConstants::KelvinConv;
         bcs->slabRadiantTemp = ThermalComfort::CalcSurfaceWeightedMRT(state, zoneNum, floorSurface) + DataGlobalConstants::KelvinConv;
@@ -390,9 +390,9 @@ namespace EnergyPlus::HeatBalanceKivaManager {
         for (auto &wl : wallSurfaces) {
             Real64 Q = DataHeatBalSurface::SurfOpaqQRadSWInAbs(wl) + // solar
                        state.dataHeatBal->SurfQRadThermInAbs(wl) + // internal gains
-                       DataHeatBalFanSys::QHTRadSysSurf(wl) + DataHeatBalFanSys::QHWBaseboardSurf(floorSurface) +
-                       DataHeatBalFanSys::QCoolingPanelSurf(wl) + DataHeatBalFanSys::QSteamBaseboardSurf(floorSurface) +
-                       DataHeatBalFanSys::QElecBaseboardSurf(wl); // HVAC
+                       state.dataHeatBalFanSys->QHTRadSysSurf(wl) + state.dataHeatBalFanSys->QHWBaseboardSurf(floorSurface) +
+                       state.dataHeatBalFanSys->QCoolingPanelSurf(wl) + state.dataHeatBalFanSys->QSteamBaseboardSurf(floorSurface) +
+                       state.dataHeatBalFanSys->QElecBaseboardSurf(wl); // HVAC
 
             Real64 &A = state.dataSurface->Surface(wl).Area;
 
@@ -471,7 +471,7 @@ namespace EnergyPlus::HeatBalanceKivaManager {
             // Use headers to know how to read data to memory (e.g., number of periods, number of intervals)
             int endcol = LineResult.data.size();
             if (endcol > 0) {
-                if (int(LineResult.data[endcol - 1]) == DataSystemVariables::iUnicode_end) {
+                if (int(LineResult.data[endcol - 1]) == state.dataSysVars->iUnicode_end) {
                     ShowSevereError(state, "OpenWeatherFile: EPW Weather File appears to be a Unicode or binary file.");
                     ShowContinueError(state, "...This file cannot be read by this program. Please save as PC or Unix file and try again");
                     ShowFatalError(state, "Program terminates due to previous condition.");
