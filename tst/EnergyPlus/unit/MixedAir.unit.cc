@@ -498,7 +498,7 @@ TEST_F(EnergyPlusFixture, MixedAir_HXBypassOptionTest)
     int OAControllerNum;
     int AirLoopNum;
 
-    DataHVACGlobals::NumPrimaryAirSys = 5; // will be reset in DataHVACGlobals::clear_state(); in EnergyPlusFixture
+    state->dataHVACGlobal->NumPrimaryAirSys = 5; // will be reset in DataHVACGlobals::clear_state(); in EnergyPlusFixture
     state->dataAirLoop->AirLoopControlInfo.allocate(5);        // will be deallocated by MixedAir::clear_state(); in EnergyPlusFixture
     state->dataAirLoop->AirLoopFlow.allocate(5);               // will be deallocated by MixedAir::clear_state(); in EnergyPlusFixture
     state->dataAirSystemsData->PrimaryAirSystems.allocate(5);          // will be deallocated by DataAirSystems::clear_state(); in EnergyPlusFixture
@@ -817,7 +817,7 @@ TEST_F(EnergyPlusFixture, CO2ControlDesignOccupancyTest)
     state->dataMixedAir->OAMixer(1).Name = "OAMixer";
     state->dataMixedAir->OAMixer(1).InletNode = 2;
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataAirSystemsData->PrimaryAirSystems.allocate(1);
     state->dataAirSystemsData->PrimaryAirSystems(1).Name = "PrimaryAirLoop";
     state->dataAirSystemsData->PrimaryAirSystems(1).NumBranches = 1;
@@ -1254,24 +1254,24 @@ TEST_F(EnergyPlusFixture, MixedAir_HumidifierOnOASystemTest)
     // simulate OA system, common node properties are propagated
     ManageOutsideAirSystem(*state, state->dataAirLoop->OutsideAirSys(OASysNum).Name, true, AirloopNum, OASysNum);
     // humidifier water and electric use rate are zero (no Hum Rat setpoint applied)
-    EXPECT_EQ(0.0, Humidifiers::Humidifier(HumNum).WaterAdd);
-    EXPECT_EQ(0.0, Humidifiers::Humidifier(HumNum).ElecUseRate);
+    EXPECT_EQ(0.0, state->dataHumidifiers->Humidifier(HumNum).WaterAdd);
+    EXPECT_EQ(0.0, state->dataHumidifiers->Humidifier(HumNum).ElecUseRate);
 
     // Add humidity ratio setpoint to the humidifier air outlet node
     state->dataLoopNodes->Node(2).HumRatMin = 0.005; // humidity ratio setpoint value
     // simulate OA system
     ManageOutsideAirSystem(*state, state->dataAirLoop->OutsideAirSys(OASysNum).Name, true, AirloopNum, OASysNum);
     // get humidifier's air inlet and outlet node number
-    AirInNode = Humidifiers::Humidifier(HumNum).AirInNode;
-    AirOutNode = Humidifiers::Humidifier(HumNum).AirOutNode;
+    AirInNode = state->dataHumidifiers->Humidifier(HumNum).AirInNode;
+    AirOutNode = state->dataHumidifiers->Humidifier(HumNum).AirOutNode;
     // Calculate expected humidifier water consumption rate
     WaterConsumptionRate = state->dataAirLoop->AirLoopFlow(AirloopNum).DesSupply * (0.005 - 0.0005);
     // Calculate humidifier electric use rate (fan electric power and standby electric power are zero)
-    ElecPowerInput = (WaterConsumptionRate / Humidifiers::Humidifier(HumNum).NomCap) * Humidifiers::Humidifier(HumNum).NomPower;
+    ElecPowerInput = (WaterConsumptionRate / state->dataHumidifiers->Humidifier(HumNum).NomCap) * state->dataHumidifiers->Humidifier(HumNum).NomPower;
     // Confirm humidifier water consumption calculation
-    EXPECT_EQ(WaterConsumptionRate, Humidifiers::Humidifier(HumNum).WaterAdd);
+    EXPECT_EQ(WaterConsumptionRate, state->dataHumidifiers->Humidifier(HumNum).WaterAdd);
     // confirm that electric energy is used by the humidifier
-    EXPECT_EQ(ElecPowerInput, Humidifiers::Humidifier(HumNum).ElecUseRate);
+    EXPECT_EQ(ElecPowerInput, state->dataHumidifiers->Humidifier(HumNum).ElecUseRate);
 }
 
 TEST_F(EnergyPlusFixture, FreezingCheckTest)
@@ -1764,7 +1764,7 @@ TEST_F(EnergyPlusFixture, OAControllerMixedAirSPTest)
     state->dataMixedAir->OAMixer(1).Name = "OAMixer";
     state->dataMixedAir->OAMixer(1).InletNode = 2;
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataAirSystemsData->PrimaryAirSystems.allocate(1);
     state->dataAirSystemsData->PrimaryAirSystems(1).Name = "PrimaryAirLoop";
     state->dataAirSystemsData->PrimaryAirSystems(1).NumBranches = 1;
@@ -6012,7 +6012,7 @@ TEST_F(EnergyPlusFixture, OAController_ProportionalMinimum_HXBypassTest)
     int OAControllerNum(1);
     int AirLoopNum(1);
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataEnvrn->StdBaroPress = StdPressureSeaLevel;
     // assume dry air (zero humidity ratio)
     state->dataEnvrn->StdRhoAir = Psychrometrics::PsyRhoAirFnPbTdbW(*state, state->dataEnvrn->StdBaroPress, 20.0, 0.0);
@@ -6206,7 +6206,7 @@ TEST_F(EnergyPlusFixture, OAController_FixedMinimum_MinimumLimitTypeTest)
     int OAControllerNum(1);
     int AirLoopNum(1);
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataEnvrn->StdBaroPress = StdPressureSeaLevel;
     // assume dry air (zero humidity ratio)
     state->dataEnvrn->StdRhoAir = Psychrometrics::PsyRhoAirFnPbTdbW(*state, state->dataEnvrn->StdBaroPress, 20.0, 0.0);
@@ -6414,7 +6414,7 @@ TEST_F(EnergyPlusFixture, OAController_HighExhaustMassFlowTest)
     int OAControllerNum(1);
     int AirLoopNum(1);
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataEnvrn->StdBaroPress = DataEnvironment::StdPressureSeaLevel;
     // assume dry air (zero humidity ratio)
     state->dataEnvrn->StdRhoAir = Psychrometrics::PsyRhoAirFnPbTdbW(*state, state->dataEnvrn->StdBaroPress, 20.0, 0.0);
@@ -6665,7 +6665,7 @@ TEST_F(EnergyPlusFixture, OAController_LowExhaustMassFlowTest)
     int OAControllerNum(1);
     int AirLoopNum(1);
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataEnvrn->StdBaroPress = DataEnvironment::StdPressureSeaLevel;
     // assume dry air (zero humidity ratio)
     state->dataEnvrn->StdRhoAir = Psychrometrics::PsyRhoAirFnPbTdbW(*state, state->dataEnvrn->StdBaroPress, 20.0, 0.0);

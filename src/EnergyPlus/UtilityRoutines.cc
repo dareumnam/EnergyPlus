@@ -436,20 +436,20 @@ namespace UtilityRoutines {
 
         if (finalColumn) {
             std::fstream fsPerfLog;
-            if (!FileSystem::fileExists(DataStringGlobals::outputPerfLogFileName)) {
+            if (!FileSystem::fileExists(state.dataStrGlobals->outputPerfLogFileName)) {
                 if (state.files.outputControl.perflog) {
-                    fsPerfLog.open(DataStringGlobals::outputPerfLogFileName, std::fstream::out); //open file normally
+                    fsPerfLog.open(state.dataStrGlobals->outputPerfLogFileName, std::fstream::out); //open file normally
                     if (!fsPerfLog) {
-                        ShowFatalError(state, "appendPerfLog: Could not open file \"" + DataStringGlobals::outputPerfLogFileName + "\" for output (write).");
+                        ShowFatalError(state, "appendPerfLog: Could not open file \"" + state.dataStrGlobals->outputPerfLogFileName + "\" for output (write).");
                     }
                     fsPerfLog << state.dataUtilityRoutines->appendPerfLog_headerRow << std::endl;
                     fsPerfLog << state.dataUtilityRoutines->appendPerfLog_valuesRow << std::endl;
                 }
             } else {
                 if (state.files.outputControl.perflog) {
-                    fsPerfLog.open(DataStringGlobals::outputPerfLogFileName, std::fstream::app); //append to already existing file
+                    fsPerfLog.open(state.dataStrGlobals->outputPerfLogFileName, std::fstream::app); //append to already existing file
                     if (!fsPerfLog) {
-                        ShowFatalError(state, "appendPerfLog: Could not open file \"" + DataStringGlobals::outputPerfLogFileName + "\" for output (append).");
+                        ShowFatalError(state, "appendPerfLog: Could not open file \"" + state.dataStrGlobals->outputPerfLogFileName + "\" for output (append).");
                     }
                     fsPerfLog << state.dataUtilityRoutines->appendPerfLog_valuesRow << std::endl;
                 }
@@ -916,7 +916,8 @@ namespace UtilityRoutines {
         // case alphabet, it makes an appropriate substitution.
 
         // Using/Aliasing
-        using namespace DataStringGlobals;
+        static std::string const UpperCase("ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝ");
+        static std::string const LowerCase("abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüý");
 
         OutputString = InputString;
 
@@ -949,7 +950,8 @@ namespace UtilityRoutines {
         // case alphabet, it makes an appropriate substitution.
 
         // Using/Aliasing
-        using namespace DataStringGlobals;
+        static std::string const UpperCase("ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝ");
+        static std::string const LowerCase("abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüý");
 
         OutputString = InputString;
 
@@ -1075,7 +1077,7 @@ namespace UtilityRoutines {
         int Loop;
 
         for (Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(ErrorMessage, MessageSearch(Loop))) ++state.dataErrTracking->MatchCounts(Loop);
+            if (has(ErrorMessage, MessageSearch[Loop])) ++state.dataErrTracking->MatchCounts(Loop);
         }
 
         ++state.dataErrTracking->TotalSevereErrors;
@@ -1118,7 +1120,7 @@ namespace UtilityRoutines {
         int Loop;
 
         for (Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(ErrorMessage, MessageSearch(Loop))) ++state.dataErrTracking->MatchCounts(Loop);
+            if (has(ErrorMessage, MessageSearch[Loop])) ++state.dataErrTracking->MatchCounts(Loop);
         }
 
         ShowErrorMessage(state, " ** Severe  ** " + ErrorMessage, OutUnit1, OutUnit2);
@@ -1271,7 +1273,7 @@ namespace UtilityRoutines {
         int Loop;
 
         for (Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(ErrorMessage, MessageSearch(Loop))) ++state.dataErrTracking->MatchCounts(Loop);
+            if (has(ErrorMessage, MessageSearch[Loop])) ++state.dataErrTracking->MatchCounts(Loop);
         }
 
         ++state.dataErrTracking->TotalWarningErrors;
@@ -1308,7 +1310,7 @@ namespace UtilityRoutines {
         using namespace DataErrorTracking;
 
         for (int Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(ErrorMessage, MessageSearch(Loop))) ++state.dataErrTracking->MatchCounts(Loop);
+            if (has(ErrorMessage, MessageSearch[Loop])) ++state.dataErrTracking->MatchCounts(Loop);
         }
 
         ShowErrorMessage(state, " ** Warning ** " + ErrorMessage, OutUnit1, OutUnit2);
@@ -1353,7 +1355,7 @@ namespace UtilityRoutines {
         //  with count of occurrences and optional max, min, sum
 
         for (int Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(Message, MessageSearch(Loop))) {
+            if (has(Message, MessageSearch[Loop])) {
                 ++state.dataErrTracking->MatchCounts(Loop);
                 break;
             }
@@ -1408,7 +1410,7 @@ namespace UtilityRoutines {
         //  with count of occurrences and optional max, min, sum
 
         for (int Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(Message, MessageSearch(Loop))) {
+            if (has(Message, MessageSearch[Loop])) {
                 ++state.dataErrTracking->MatchCounts(Loop);
                 break;
             }
@@ -1463,7 +1465,7 @@ namespace UtilityRoutines {
         //  with count of occurrences and optional max, min, sum
 
         for (int Loop = 1; Loop <= SearchCounts; ++Loop) {
-            if (has(Message, MessageSearch(Loop))) {
+            if (has(Message, MessageSearch[Loop])) {
                 ++state.dataErrTracking->MatchCounts(Loop);
                 break;
             }
@@ -1583,22 +1585,22 @@ namespace UtilityRoutines {
         // If arguments OutUnit1 and/or OutUnit2 are present the
         // error message is written to these as well and the standard one.
 
-        using DataStringGlobals::IDDVerString;
         using DataStringGlobals::VerString;
 
-        auto *err_stream = []() -> std::ostream *{
-            // NOTE: this is called in too many places to justify changing the interface right now,
-            // so we are using the Singleton (not ideal)
-            if (IOFiles::hasSingleton()) {
-                return IOFiles::getSingleton().err_stream.get();
-            } else {
-                return nullptr;
-            }
-        }();
+//        auto *err_stream = []() -> std::ostream *{
+//            // NOTE: this is called in too many places to justify changing the interface right now,
+//            // so we are using the Singleton (not ideal)
+//            if (IOFiles::hasSingleton()) {
+//                return IOFiles::getSingleton().err_stream.get();
+//            } else {
+//                return nullptr;
+//            }
+//        }();
 
+        auto *err_stream = state.files.err_stream.get();
 
         if (state.dataUtilityRoutines->outputErrorHeader && err_stream) {
-            *err_stream << "Program Version," << VerString << ',' << IDDVerString << '\n';
+            *err_stream << "Program Version," << VerString << ',' << state.dataStrGlobals->IDDVerString << '\n';
             state.dataUtilityRoutines->outputErrorHeader = false;
         }
 
@@ -1644,16 +1646,17 @@ namespace UtilityRoutines {
             ShowMessage(state, "The following error categories occurred.  Consider correcting or noting.");
             for (int Loop = 1; Loop <= SearchCounts; ++Loop) {
                 if (state.dataErrTracking->MatchCounts(Loop) > 0) {
-                    ShowMessage(state, Summaries(Loop));
-                    if (MoreDetails(Loop) != "") {
+                    ShowMessage(state, Summaries[Loop]);
+                    std::string thisMoreDetails = MoreDetails[Loop];
+                    if (!thisMoreDetails.empty()) {
                         StartC = 0;
-                        EndC = len(MoreDetails(Loop)) - 1;
+                        EndC = len(thisMoreDetails) - 1;
                         while (EndC != std::string::npos) {
-                            EndC = index(MoreDetails(Loop).substr(StartC), "<CR");
-                            ShowMessage(state, ".." + MoreDetails(Loop).substr(StartC, EndC));
-                            if (MoreDetails(Loop).substr(StartC + EndC, 5) == "<CRE>") break;
+                            EndC = index(thisMoreDetails.substr(StartC), "<CR");
+                            ShowMessage(state, ".." + thisMoreDetails.substr(StartC, EndC));
+                            if (thisMoreDetails.substr(StartC + EndC, 5) == "<CRE>") break;
                             StartC += EndC + 4;
-                            EndC = len(MoreDetails(Loop).substr(StartC)) - 1;
+                            EndC = len(thisMoreDetails.substr(StartC)) - 1;
                         }
                     }
                 }

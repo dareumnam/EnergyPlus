@@ -422,11 +422,11 @@ namespace AirLoopHVACDOAS {
                         thisDOAS.FanName = CompName;
                         thisDOAS.m_FanTypeNum = SimAirServingZones::Fan_System_Object;
                         thisDOAS.m_FanIndex = HVACFan::getFanObjectVectorIndex(state, CompName);
-                        state.dataAirLoop->OutsideAirSys(thisDOAS.m_OASystemNum).InletNodeNum(CompNum) = HVACFan::fanObjs[thisDOAS.m_FanIndex]->inletNodeNum;
+                        state.dataAirLoop->OutsideAirSys(thisDOAS.m_OASystemNum).InletNodeNum(CompNum) = state.dataHVACFan->fanObjs[thisDOAS.m_FanIndex]->inletNodeNum;
                         if (state.dataAirLoop->OutsideAirSys(thisDOAS.m_OASystemNum).InletNodeNum(CompNum) == 0) {
                             InletNodeErrFlag = true;
                         }
-                        state.dataAirLoop->OutsideAirSys(thisDOAS.m_OASystemNum).OutletNodeNum(CompNum) = HVACFan::fanObjs[thisDOAS.m_FanIndex]->outletNodeNum;
+                        state.dataAirLoop->OutsideAirSys(thisDOAS.m_OASystemNum).OutletNodeNum(CompNum) = state.dataHVACFan->fanObjs[thisDOAS.m_FanIndex]->outletNodeNum;
                         if (state.dataAirLoop->OutsideAirSys(thisDOAS.m_OASystemNum).OutletNodeNum(CompNum) == 0) {
                             OutletNodeErrFlag = true;
                         }
@@ -800,7 +800,7 @@ namespace AirLoopHVACDOAS {
                 std::string CompType = state.dataAirLoop->OutsideAirSys(this->m_OASystemNum).ComponentType(CompNum);
                 std::string CompName = state.dataAirLoop->OutsideAirSys(this->m_OASystemNum).ComponentName(CompNum);
                 if (UtilityRoutines::SameString(CompType, "FAN:SYSTEMMODEL")) {
-                    HVACFan::fanObjs[this->m_FanIndex]->simulate(state);
+                    state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state);
                 }
                 if (UtilityRoutines::SameString(CompType, "FAN:COMPONENTMODEL")) {
                     Fans::SimulateFanComponents(state, CompName, FirstHVACIteration, this->m_FanIndex);
@@ -928,7 +928,7 @@ namespace AirLoopHVACDOAS {
         this->GetDesignDayConditions(state);
 
         if (this->m_FanIndex > -1 && this->m_FanTypeNum == SimAirServingZones::Fan_System_Object) {
-            HVACFan::fanObjs[this->m_FanIndex]->designAirVolFlowRate = sizingMassFlow / state.dataEnvrn->StdRhoAir;
+            state.dataHVACFan->fanObjs[this->m_FanIndex]->designAirVolFlowRate = sizingMassFlow / state.dataEnvrn->StdRhoAir;
             state.dataLoopNodes->Node(this->m_FanInletNodeNum).MassFlowRateMaxAvail = sizingMassFlow;
             state.dataLoopNodes->Node(this->m_FanOutletNodeNum).MassFlowRateMaxAvail = sizingMassFlow;
             state.dataLoopNodes->Node(this->m_FanOutletNodeNum).MassFlowRateMax = sizingMassFlow;
@@ -944,7 +944,7 @@ namespace AirLoopHVACDOAS {
         if (errorsFound) {
             ShowFatalError(state, "Preceding sizing errors cause program termination");
         }
-        state.dataSize->CurSysNum = DataHVACGlobals::NumPrimaryAirSys + this->m_AirLoopDOASNum + 1;
+        state.dataSize->CurSysNum = state.dataHVACGlobal->NumPrimaryAirSys + this->m_AirLoopDOASNum + 1;
         state.dataSize->CurOASysNum = this->m_OASystemNum;
     }
 
@@ -961,12 +961,10 @@ namespace AirLoopHVACDOAS {
 
         int const summerDesignDayTypeIndex(9);
         int const winterDesignDayTypeIndex(10);
-        bool static SummerDesignDayFlag = true;
-        bool static WinterDesignDayFlag = true;
 
         for (size_t i = 1; i <= state.dataWeatherManager->DesDayInput.size(); i++) {
             // Summer design day
-            if (state.dataWeatherManager->DesDayInput(i).DayType == summerDesignDayTypeIndex && SummerDesignDayFlag) {
+            if (state.dataWeatherManager->DesDayInput(i).DayType == summerDesignDayTypeIndex && state.dataAirLoopHVACDOAS->SummerDesignDayFlag) {
                 this->SizingCoolOATemp = state.dataWeatherManager->DesDayInput(i).MaxDryBulb;
                 if (state.dataWeatherManager->DesDayInput(i).HumIndType == WeatherManager::DDHumIndType::WetBulb) { // wet bulb temperature
                     this->SizingCoolOAHumRat =
@@ -976,10 +974,10 @@ namespace AirLoopHVACDOAS {
                 } else if (state.dataWeatherManager->DesDayInput(i).HumIndType == WeatherManager::DDHumIndType::HumRatio) {
                     this->SizingCoolOAHumRat = state.dataWeatherManager->DesDayInput(i).HumIndValue;
                 } // else { // What about other cases?
-                SummerDesignDayFlag = false;
+                state.dataAirLoopHVACDOAS->SummerDesignDayFlag = false;
             }
             // Winter design day
-            if (state.dataWeatherManager->DesDayInput(i).DayType == winterDesignDayTypeIndex && WinterDesignDayFlag) {
+            if (state.dataWeatherManager->DesDayInput(i).DayType == winterDesignDayTypeIndex && state.dataAirLoopHVACDOAS->WinterDesignDayFlag) {
                 this->HeatOutTemp = state.dataWeatherManager->DesDayInput(i).MaxDryBulb;
                 if (state.dataWeatherManager->DesDayInput(i).HumIndType == WeatherManager::DDHumIndType::WetBulb) { // wet bulb temperature
                     this->HeatOutHumRat =
@@ -989,7 +987,7 @@ namespace AirLoopHVACDOAS {
                 } else if (state.dataWeatherManager->DesDayInput(i).HumIndType == WeatherManager::DDHumIndType::HumRatio) {
                     this->HeatOutHumRat = state.dataWeatherManager->DesDayInput(i).HumIndValue;
                 } // else { // What about other cases?
-                WinterDesignDayFlag = false;
+                state.dataAirLoopHVACDOAS->WinterDesignDayFlag = false;
             }
         }
     }

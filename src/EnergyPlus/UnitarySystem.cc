@@ -522,7 +522,7 @@ namespace UnitarySystems {
                     if (this->m_FanExists && !this->m_MultiOrVarSpeedHeatCoil && !this->m_MultiOrVarSpeedCoolCoil) {
                         bool fanHasPowerSpeedRatioCurve = false;
                         if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                            if (HVACFan::fanObjs[this->m_FanIndex]->powerModFuncFlowFractionCurveIndex > 0) fanHasPowerSpeedRatioCurve = true;
+                            if (state.dataHVACFan->fanObjs[this->m_FanIndex]->powerModFuncFlowFractionCurveIndex > 0) fanHasPowerSpeedRatioCurve = true;
                             FanType = "Fan:SystemModel";
                             FanName = this->m_FanName;
                         } else {
@@ -546,14 +546,14 @@ namespace UnitarySystems {
                     if (this->m_MultiOrVarSpeedHeatCoil || this->m_MultiOrVarSpeedCoolCoil) {
                         if (this->m_MultiOrVarSpeedCoolCoil) {
                             int NumSpeeds = this->m_NumOfSpeedCooling;
-                            if (this->m_MSCoolingSpeedRatio.size() == 0) this->m_MSCoolingSpeedRatio.resize(NumSpeeds);
+                            if (this->m_MSCoolingSpeedRatio.empty()) this->m_MSCoolingSpeedRatio.resize(NumSpeeds);
                             for (int Iter = 1; Iter <= NumSpeeds; ++Iter) {
                                 this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_ActualFanVolFlowRate;
                             }
                         }
                         if (this->m_MultiOrVarSpeedHeatCoil) {
                             int NumSpeeds = this->m_NumOfSpeedHeating;
-                            if (this->m_MSHeatingSpeedRatio.size() == 0) this->m_MSHeatingSpeedRatio.resize(NumSpeeds);
+                            if (this->m_MSHeatingSpeedRatio.empty()) this->m_MSHeatingSpeedRatio.resize(NumSpeeds);
                             for (int Iter = 1; Iter <= NumSpeeds; ++Iter) {
                                 this->m_MSHeatingSpeedRatio[Iter] = this->m_HeatVolumeFlowRate[Iter] / this->m_ActualFanVolFlowRate;
                             }
@@ -565,7 +565,7 @@ namespace UnitarySystems {
             } else {
                 if (this->m_FanExists) {
                     if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                        this->m_ActualFanVolFlowRate = HVACFan::fanObjs[this->m_FanIndex]->designAirVolFlowRate;
+                        this->m_ActualFanVolFlowRate = state.dataHVACFan->fanObjs[this->m_FanIndex]->designAirVolFlowRate;
                     } else {
                         this->m_ActualFanVolFlowRate =
                             Fans::GetFanDesignVolumeFlowRate(state, blankString, blankString, errorsFound, this->m_FanIndex);
@@ -1138,7 +1138,7 @@ namespace UnitarySystems {
         this->m_IterationCounter += 1;
 
         if (this->m_MySetPointCheckFlag) {
-            if (!state.dataGlobal->SysSizingCalc && DataHVACGlobals::DoSetPointTest) {
+            if (!state.dataGlobal->SysSizingCalc && state.dataHVACGlobal->DoSetPointTest) {
 
                 if (this->m_CoolCoilExists) {
                     int ControlNode = this->m_SystemCoolControlNodeNum;
@@ -1454,7 +1454,7 @@ namespace UnitarySystems {
             HardSizeNoDesRun = true;
         }
 
-        std::string SizingString("");
+        std::string SizingString;
         std::string CompName = this->Name;
         std::string CompType = this->UnitType;
         int CoolingSAFlowMethod = this->m_CoolingSAFMethod;
@@ -1547,7 +1547,7 @@ namespace UnitarySystems {
                     SizingMethod = DataHVACGlobals::CoolingCapacitySizing;
                     TempSize = DataSizing::AutoSize;
                     if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling) {
-                        state.dataSize->DataTotCapCurveIndex = coilCoolingDXs[this->m_CoolingCoilIndex].performance.normalMode.speeds[0].indexCapFT;
+                        state.dataSize->DataTotCapCurveIndex = coilCoolingDXs[this->m_CoolingCoilIndex].getOpModeCapFTIndex(false);
                         state.dataSize->DataIsDXCoil = true;
                     } else if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_CoolingSingleSpeed ||
                                this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling ||
@@ -1586,7 +1586,7 @@ namespace UnitarySystems {
                 state.dataSize->DataFlowUsedForSizing = EqSizing.CoolingAirVolFlow;
                 TempSize = DataSizing::AutoSize;
                 if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling) {
-                    state.dataSize->DataTotCapCurveIndex = coilCoolingDXs[this->m_CoolingCoilIndex].performance.normalMode.speeds[0].indexCapFT;
+                    state.dataSize->DataTotCapCurveIndex = coilCoolingDXs[this->m_CoolingCoilIndex].getOpModeCapFTIndex(false);
                     state.dataSize->DataIsDXCoil = true;
                 } else if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_CoolingSingleSpeed ||
                            this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling ||
@@ -2026,9 +2026,9 @@ namespace UnitarySystems {
             (this->m_CoolingCoilType_Num == DataHVACGlobals::Coil_CoolingAirToAirVariableSpeed)) {
 
             if (this->m_NumOfSpeedCooling > 0) {
-                if (this->m_CoolVolumeFlowRate.size() == 0) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_CoolMassFlowRate.size() == 0) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_MSCoolingSpeedRatio.size() == 0) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolVolumeFlowRate.empty()) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolMassFlowRate.empty()) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_MSCoolingSpeedRatio.empty()) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
             }
 
             MSHPIndex = this->m_DesignSpecMSHPIndex;
@@ -2075,7 +2075,7 @@ namespace UnitarySystems {
                 this->m_IdleVolumeAirRate = this->m_MaxCoolAirVolFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio;
                 this->m_IdleMassFlowRate = this->m_IdleVolumeAirRate * state.dataEnvrn->StdRhoAir;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
-            } else if (this->m_CoolVolumeFlowRate.size() == 0) {
+            } else if (this->m_CoolVolumeFlowRate.empty()) {
                 this->m_IdleVolumeAirRate = this->m_MaxNoCoolHeatAirVolFlow;
                 this->m_IdleMassFlowRate = this->MaxNoCoolHeatAirMassFlow;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
@@ -2084,14 +2084,14 @@ namespace UnitarySystems {
         } else if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling) {
 
             if (this->m_NumOfSpeedCooling > 0) {
-                if (this->m_CoolVolumeFlowRate.size() == 0) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_CoolMassFlowRate.size() == 0) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_MSCoolingSpeedRatio.size() == 0) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolVolumeFlowRate.empty()) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolMassFlowRate.empty()) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_MSCoolingSpeedRatio.empty()) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
             }
 
             // it feels like we are jamming the rectangular DXCoil into an oval box here
             MSHPIndex = this->m_DesignSpecMSHPIndex;
-            if (MSHPIndex > 0) {
+            if (MSHPIndex > -1) {
                 for (Iter = state.dataUnitarySystems->designSpecMSHP[MSHPIndex].numOfSpeedCooling; Iter >= 1;
                      --Iter) { // use reverse order since we divide by HeatVolumeFlowRate(max)
                     if (state.dataUnitarySystems->designSpecMSHP[MSHPIndex].coolingVolFlowRatio[Iter - 1] == DataSizing::AutoSize) {
@@ -2117,16 +2117,16 @@ namespace UnitarySystems {
             }
 
             newCoil.size(state);
-            for (Iter = 1; Iter <= this->m_NumOfSpeedCooling; ++Iter) {
-                // Need to size each speed here, so call once for each speed - probably need to call each mode too when fully implemented?
-                // newCoil.simulate(this->m_DehumidificationMode, this->m_CoolingPartLoadFrac, Iter, this->m_CoolingSpeedRatio, this->m_FanOpMode);
-                this->m_CoolVolumeFlowRate[Iter] = newCoil.performance.normalMode.speeds[Iter - 1].evap_air_flow_rate;
-                this->m_CoolMassFlowRate[Iter] = this->m_CoolVolumeFlowRate[Iter] * state.dataEnvrn->StdRhoAir;
-                // it seems the ratio should reference the actual flow rates, not the fan flow ???
-                if (this->m_DesignFanVolFlowRate > 0.0 && this->m_FanExists) {
-                    this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_DesignFanVolFlowRate;
-                } else {
-                    this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_CoolVolumeFlowRate[this->m_NumOfSpeedCooling];
+            if (MSHPIndex == -1) {
+                for (Iter = 1; Iter <= this->m_NumOfSpeedCooling; ++Iter) {
+                    this->m_CoolVolumeFlowRate[Iter] = newCoil.performance.normalMode.speeds[Iter - 1].evap_air_flow_rate;
+                    this->m_CoolMassFlowRate[Iter] = this->m_CoolVolumeFlowRate[Iter] * state.dataEnvrn->StdRhoAir;
+                    // it seems the ratio should reference the actual flow rates, not the fan flow ???
+                    if (this->m_DesignFanVolFlowRate > 0.0 && this->m_FanExists) {
+                        this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_DesignFanVolFlowRate;
+                    } else {
+                        this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_CoolVolumeFlowRate[this->m_NumOfSpeedCooling];
+                    }
                 }
             }
 
@@ -2134,33 +2134,43 @@ namespace UnitarySystems {
             EqSizing.DesCoolingLoad = state.dataSize->DXCoolCap;
             if (this->m_HeatPump) EqSizing.DesHeatingLoad = state.dataSize->DXCoolCap;
 
-            if (MSHPIndex > 0) {
+            if (MSHPIndex > -1) {
+                for (Iter = state.dataUnitarySystems->designSpecMSHP[MSHPIndex].numOfSpeedCooling; Iter > 0; --Iter) {
+                    if (state.dataUnitarySystems->designSpecMSHP[MSHPIndex].coolingVolFlowRatio[Iter - 1] == DataSizing::AutoSize)
+                        state.dataUnitarySystems->designSpecMSHP[MSHPIndex].coolingVolFlowRatio[Iter - 1] =
+                            double(Iter) / double(state.dataUnitarySystems->designSpecMSHP[MSHPIndex].numOfSpeedCooling);
+                    this->m_CoolVolumeFlowRate[Iter] =
+                        this->m_MaxCoolAirVolFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].coolingVolFlowRatio[Iter - 1];
+                    this->m_CoolMassFlowRate[Iter] = this->m_CoolVolumeFlowRate[Iter] * state.dataEnvrn->StdRhoAir;
+                    this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_DesignFanVolFlowRate;
+                }
                 this->m_IdleVolumeAirRate = this->m_MaxCoolAirVolFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio;
                 this->m_IdleMassFlowRate = this->m_IdleVolumeAirRate * state.dataEnvrn->StdRhoAir;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
-            } else if (this->m_CoolVolumeFlowRate.size() == 0) {
+            } else if (this->m_CoolVolumeFlowRate.empty()) {
                 this->m_IdleVolumeAirRate = this->m_MaxNoCoolHeatAirVolFlow;
                 this->m_IdleMassFlowRate = this->MaxNoCoolHeatAirMassFlow;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
             }
 
-        } else if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling) {
+        } else if (this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling ||
+                   this->m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_CoolingTwoSpeed) {
 
             if (this->m_NumOfSpeedCooling > 0) {
-                if (this->m_CoolVolumeFlowRate.size() == 0) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_CoolMassFlowRate.size() == 0) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_MSCoolingSpeedRatio.size() == 0) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolVolumeFlowRate.empty()) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolMassFlowRate.empty()) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_MSCoolingSpeedRatio.empty()) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
             }
 
             // set the multi-speed high flow rate variable in case a non-zero air flow rate resides on the coil inlet during sizing (e.g., upstream
             // system ran prior to this one)
-            DataHVACGlobals::MSHPMassFlowRateHigh =
+            state.dataHVACGlobal->MSHPMassFlowRateHigh =
                 EqSizing.CoolingAirVolFlow *
                 state.dataEnvrn->StdRhoAir; // doesn't matter what this value is since only coil size is needed and CompOn = 0 here
             DXCoils::SimDXCoilMultiSpeed(state, blankString, 1.0, 1.0, this->m_CoolingCoilIndex, 0, 0, 0);
             if (!HardSizeNoDesRun && EqSizing.Capacity) {
                 // do nothing, the vars EqSizing.DesCoolingLoad and DataSizing::DXCoolCap are already set earlier and the values could be max of the
-                // cooling and heating austosized values. Thus reseting them here to user specified value may not be the design size used else where
+                // cooling and heating autosized values. Thus reseting them here to user specified value may not be the design size used else where
             } else {
                 state.dataSize->DXCoolCap = DXCoils::GetCoilCapacityByIndexType(state, this->m_CoolingCoilIndex, this->m_CoolingCoilType_Num, ErrFound);
                 EqSizing.DesCoolingLoad = state.dataSize->DXCoolCap;
@@ -2179,18 +2189,27 @@ namespace UnitarySystems {
                 this->m_IdleVolumeAirRate = this->m_MaxCoolAirVolFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio;
                 this->m_IdleMassFlowRate = this->m_IdleVolumeAirRate * state.dataEnvrn->StdRhoAir;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
-            } else if (this->m_CoolVolumeFlowRate.size() == 0) {
+            } else if (this->m_CoolVolumeFlowRate.empty()) {
                 this->m_IdleVolumeAirRate = this->m_MaxNoCoolHeatAirVolFlow;
                 this->m_IdleMassFlowRate = this->MaxNoCoolHeatAirMassFlow;
+                this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
+            } else {
+                for (Iter = this->m_NumOfSpeedCooling; Iter > 0; --Iter) {
+                    this->m_CoolVolumeFlowRate[Iter] = this->m_MaxCoolAirVolFlow * Iter / this->m_NumOfSpeedCooling;
+                    this->m_CoolMassFlowRate[Iter] = this->m_CoolVolumeFlowRate[Iter] * state.dataEnvrn->StdRhoAir;
+                    this->m_MSCoolingSpeedRatio[Iter] = this->m_CoolVolumeFlowRate[Iter] / this->m_DesignFanVolFlowRate;
+                }
+                this->m_IdleVolumeAirRate = this->m_MaxNoCoolHeatAirVolFlow;
+                this->m_IdleMassFlowRate = this->m_IdleVolumeAirRate * state.dataEnvrn->StdRhoAir;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
             }
         } else if (this->m_CoolingCoilType_Num == DataHVACGlobals::Coil_CoolingWater ||
                    this->m_CoolingCoilType_Num == DataHVACGlobals::Coil_CoolingWaterDetailed) {
 
             if (this->m_NumOfSpeedCooling > 0) {
-                if (this->m_CoolVolumeFlowRate.size() == 0) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_CoolMassFlowRate.size() == 0) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
-                if (this->m_MSCoolingSpeedRatio.size() == 0) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolVolumeFlowRate.empty()) this->m_CoolVolumeFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_CoolMassFlowRate.empty()) this->m_CoolMassFlowRate.resize(this->m_NumOfSpeedCooling + 1);
+                if (this->m_MSCoolingSpeedRatio.empty()) this->m_MSCoolingSpeedRatio.resize(this->m_NumOfSpeedCooling + 1);
             }
             MSHPIndex = this->m_DesignSpecMSHPIndex;
 
@@ -2205,7 +2224,7 @@ namespace UnitarySystems {
                 this->m_IdleVolumeAirRate = this->m_MaxCoolAirVolFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio;
                 this->m_IdleMassFlowRate = this->m_IdleVolumeAirRate * state.dataEnvrn->StdRhoAir;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
-            } else if (this->m_CoolVolumeFlowRate.size() == 0) {
+            } else if (this->m_CoolVolumeFlowRate.empty()) {
                 this->m_IdleVolumeAirRate = this->m_MaxNoCoolHeatAirVolFlow;
                 this->m_IdleMassFlowRate = this->MaxNoCoolHeatAirMassFlow;
                 this->m_IdleSpeedRatio = this->m_IdleVolumeAirRate / this->m_DesignFanVolFlowRate;
@@ -2217,9 +2236,9 @@ namespace UnitarySystems {
             this->m_HeatingCoilType_Num == DataHVACGlobals::Coil_HeatingGas_MultiStage) {
 
             if (this->m_NumOfSpeedHeating > 0) {
-                if (this->m_HeatVolumeFlowRate.size() == 0) this->m_HeatVolumeFlowRate.resize(this->m_NumOfSpeedHeating + 1);
-                if (this->m_HeatMassFlowRate.size() == 0) this->m_HeatMassFlowRate.resize(this->m_NumOfSpeedHeating + 1);
-                if (this->m_MSHeatingSpeedRatio.size() == 0) this->m_MSHeatingSpeedRatio.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_HeatVolumeFlowRate.empty()) this->m_HeatVolumeFlowRate.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_HeatMassFlowRate.empty()) this->m_HeatMassFlowRate.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_MSHeatingSpeedRatio.empty()) this->m_MSHeatingSpeedRatio.resize(this->m_NumOfSpeedHeating + 1);
             }
 
             MSHPIndex = this->m_DesignSpecMSHPIndex;
@@ -2313,9 +2332,9 @@ namespace UnitarySystems {
             }
 
             if (this->m_NumOfSpeedHeating > 0) {
-                if (this->m_HeatVolumeFlowRate.size() == 0) this->m_HeatVolumeFlowRate.resize(this->m_NumOfSpeedHeating + 1);
-                if (this->m_HeatMassFlowRate.size() == 0) this->m_HeatMassFlowRate.resize(this->m_NumOfSpeedHeating + 1);
-                if (this->m_MSHeatingSpeedRatio.size() == 0) this->m_MSHeatingSpeedRatio.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_HeatVolumeFlowRate.empty()) this->m_HeatVolumeFlowRate.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_HeatMassFlowRate.empty()) this->m_HeatMassFlowRate.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_MSHeatingSpeedRatio.empty()) this->m_MSHeatingSpeedRatio.resize(this->m_NumOfSpeedHeating + 1);
             }
 
             for (Iter = 1; Iter <= this->m_NumOfSpeedHeating; ++Iter) {
@@ -2335,7 +2354,7 @@ namespace UnitarySystems {
                     this->m_IdleMassFlowRate =
                         min(this->m_IdleMassFlowRate, this->MaxHeatAirMassFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio);
                     this->m_IdleSpeedRatio = min(this->m_IdleSpeedRatio, this->m_MaxNoCoolHeatAirVolFlow / this->m_DesignFanVolFlowRate);
-                } else if (this->m_CoolVolumeFlowRate.size() == 0 && MSHPIndex > 0) {
+                } else if (this->m_CoolVolumeFlowRate.empty() && MSHPIndex > 0) {
                     this->m_IdleVolumeAirRate = this->m_MaxHeatAirVolFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio;
                     this->m_IdleMassFlowRate = this->MaxHeatAirMassFlow * state.dataUnitarySystems->designSpecMSHP[MSHPIndex].noLoadAirFlowRateRatio;
                     this->m_IdleSpeedRatio =
@@ -2362,9 +2381,9 @@ namespace UnitarySystems {
         if (this->m_HeatingCoilType_Num == DataHVACGlobals::Coil_HeatingWater) {
 
             if (this->m_NumOfSpeedHeating > 0) {
-                if (this->m_HeatVolumeFlowRate.size() == 0) this->m_HeatVolumeFlowRate.resize(this->m_NumOfSpeedHeating + 1);
-                if (this->m_HeatMassFlowRate.size() == 0) this->m_HeatMassFlowRate.resize(this->m_NumOfSpeedHeating + 1);
-                if (this->m_MSHeatingSpeedRatio.size() == 0) this->m_MSHeatingSpeedRatio.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_HeatVolumeFlowRate.empty()) this->m_HeatVolumeFlowRate.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_HeatMassFlowRate.empty()) this->m_HeatMassFlowRate.resize(this->m_NumOfSpeedHeating + 1);
+                if (this->m_MSHeatingSpeedRatio.empty()) this->m_MSHeatingSpeedRatio.resize(this->m_NumOfSpeedHeating + 1);
             }
 
             MSHPIndex = this->m_DesignSpecMSHPIndex;
@@ -2412,7 +2431,7 @@ namespace UnitarySystems {
                 if (BranchNum > 0.0) BranchInputManager::GetBranchFanTypeName(state, BranchNum, FanType, m_FanName, ErrFound);
                 if (!ErrFound && BranchNum > 0) {
                     if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                        BranchFanFlow = HVACFan::fanObjs[this->m_FanIndex]->designAirVolFlowRate;
+                        BranchFanFlow = state.dataHVACFan->fanObjs[this->m_FanIndex]->designAirVolFlowRate;
                     } else {
                         BranchFanFlow = Fans::GetFanDesignVolumeFlowRate(state, FanType, m_FanName, ErrFound);
                     }
@@ -2898,7 +2917,7 @@ namespace UnitarySystems {
                     loc_m_SuppHeatCoilName = UtilityRoutines::MakeUPPERCase(fields.at("supplemental_heating_coil_name"));
                 }
 
-                std::string loc_m_CoolingSAFMethod("");
+                std::string loc_m_CoolingSAFMethod;
                 if (fields.find("cooling_supply_air_flow_rate_method") != fields.end()) { // not required field
                     loc_m_CoolingSAFMethod = UtilityRoutines::MakeUPPERCase(fields.at("cooling_supply_air_flow_rate_method"));
                 }
@@ -2928,7 +2947,7 @@ namespace UnitarySystems {
                     loc_m_CoolingSAFMethod_FlowPerCoolingCapacity = fields.at("cooling_supply_air_flow_rate_per_unit_of_capacity");
                 }
 
-                std::string loc_m_HeatingSAFMethod("");
+                std::string loc_m_HeatingSAFMethod;
                 if (fields.find("heating_supply_air_flow_rate_method") != fields.end()) { // not required field
                     loc_m_HeatingSAFMethod = UtilityRoutines::MakeUPPERCase(fields.at("heating_supply_air_flow_rate_method"));
                 }
@@ -2958,7 +2977,7 @@ namespace UnitarySystems {
                     loc_m_HeatingSAFMethod_FlowPerHeatingCapacity = fields.at("heating_supply_air_flow_rate_per_unit_of_capacity");
                 }
 
-                std::string loc_m_NoCoolHeatSAFMethod("");
+                std::string loc_m_NoCoolHeatSAFMethod;
                 if (fields.find("no_load_supply_air_flow_rate_method") != fields.end()) { // not required field
                     loc_m_NoCoolHeatSAFMethod = UtilityRoutines::MakeUPPERCase(fields.at("no_load_supply_air_flow_rate_method"));
                 }
@@ -3016,7 +3035,7 @@ namespace UnitarySystems {
                     loc_m_MaxOATSuppHeat = fields.at("maximum_outdoor_dry_bulb_temperature_for_supplemental_heater_operation");
                 }
 
-                std::string loc_condenserInletNodeName = "";
+                std::string loc_condenserInletNodeName;
                 if (fields.find("outdoor_dry_bulb_temperature_sensor_node_name") != fields.end()) { // not required field
                     loc_condenserInletNodeName = UtilityRoutines::MakeUPPERCase(fields.at("outdoor_dry_bulb_temperature_sensor_node_name"));
                 }
@@ -3061,22 +3080,22 @@ namespace UnitarySystems {
                     loc_m_MaxHROutletWaterTemp = fields.at("maximum_temperature_for_heat_recovery");
                 }
 
-                std::string loc_heatRecoveryInletNodeName = "";
+                std::string loc_heatRecoveryInletNodeName;
                 if (fields.find("heat_recovery_water_inlet_node_name") != fields.end()) { // not required field
                     loc_heatRecoveryInletNodeName = UtilityRoutines::MakeUPPERCase(fields.at("heat_recovery_water_inlet_node_name"));
                 }
 
-                std::string loc_heatRecoveryOutletNodeName = "";
+                std::string loc_heatRecoveryOutletNodeName;
                 if (fields.find("heat_recovery_water_outlet_node_name") != fields.end()) { // not required field
                     loc_heatRecoveryOutletNodeName = UtilityRoutines::MakeUPPERCase(fields.at("heat_recovery_water_outlet_node_name"));
                 }
 
-                std::string loc_m_DesignSpecMultispeedHPType = "";
+                std::string loc_m_DesignSpecMultispeedHPType;
                 if (fields.find("design_specification_multispeed_object_type") != fields.end()) { // not required field
                     loc_m_DesignSpecMultispeedHPType = UtilityRoutines::MakeUPPERCase(fields.at("design_specification_multispeed_object_type"));
                 }
 
-                std::string loc_m_DesignSpecMultispeedHPName = "";
+                std::string loc_m_DesignSpecMultispeedHPName;
                 if (fields.find("design_specification_multispeed_object_name") != fields.end()) { // not required field
                     loc_m_DesignSpecMultispeedHPName = UtilityRoutines::MakeUPPERCase(fields.at("design_specification_multispeed_object_name"));
                 }
@@ -3094,7 +3113,7 @@ namespace UnitarySystems {
                 bool errFlag = false;
                 bool isNotOK = false;
 
-                std::string loc_sysAvailSched("");
+                std::string loc_sysAvailSched;
                 if (fields.find("availability_schedule_name") != fields.end()) { // not required field
                     loc_sysAvailSched = UtilityRoutines::MakeUPPERCase(fields.at("availability_schedule_name"));
                     thisSys.m_SysAvailSchedPtr = ScheduleManager::GetScheduleIndex(state, loc_sysAvailSched);
@@ -3124,7 +3143,7 @@ namespace UnitarySystems {
                     errorsFound = true;
                 }
 
-                std::string loc_controlZoneName("");
+                std::string loc_controlZoneName;
                 if (fields.find("controlling_zone_or_thermostat_location") != fields.end()) { // not required field
                     loc_controlZoneName = UtilityRoutines::MakeUPPERCase(fields.at("controlling_zone_or_thermostat_location"));
                 } else if (thisSys.m_ControlType == ControlType::Load || thisSys.m_ControlType == ControlType::CCMASHRAE) {
@@ -3143,7 +3162,7 @@ namespace UnitarySystems {
                     }
                 }
 
-                std::string loc_dehumm_ControlType("");
+                std::string loc_dehumm_ControlType;
                 if (fields.find("dehumidification_control_type") != fields.end()) { // not required field, has default
                     loc_dehumm_ControlType = UtilityRoutines::MakeUPPERCase(fields.at("dehumidification_control_type"));
                 } else {
@@ -3186,6 +3205,7 @@ namespace UnitarySystems {
                 bool OASysFound = false;
                 bool ZoneEquipmentFound = false;
                 bool ZoneInletNodeFound = false;
+                bool ZoneExhaustNodeFound = false;
 
                 // Get AirTerminal mixer data
                 SingleDuct::GetATMixer(state,
@@ -3204,219 +3224,86 @@ namespace UnitarySystems {
                 // if part of ZoneHVAC:OutdoorAirUnit bypass most checks for connection to air loop or OASystem
                 if (ZoneOAUnitNum > 0) OASysFound = true;
 
-                // check if the UnitarySystem is connected as zone equipment
-                if (!thisSys.ATMixerExists && !AirLoopFound && !OASysFound) {
-                    for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                        for (int ZoneExhNum = 1; ZoneExhNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumExhaustNodes; ++ZoneExhNum) {
-                            if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ExhaustNode(ZoneExhNum) != thisSys.AirInNode) continue;
+                if (!AirLoopFound && !OASysFound) {
+                    int ControlledZoneNum = 0;
+                    int ZoneExhNum = 0;
+
+                    if (!thisSys.ATMixerExists) {
+                        ZoneExhaustNodeFound = searchExhaustNodes(state, thisSys.AirInNode, ControlledZoneNum, ZoneExhNum);
+                        if (ZoneExhaustNodeFound) {
                             ZoneEquipmentFound = true;
-                            //               Find the controlled zone number for the specified thermostat location
-                            thisSys.NodeNumOfControlledZone = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ZoneNode;
-                            TotalFloorAreaOnAirLoop =
-                                state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum).FloorArea;
-                            thisSys.m_AirLoopEquipment = false;
+                            // The Node was found among the exhaust nodes, now check that a matching inlet node exists
                             thisSys.m_ZoneInletNode = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ExhaustNode(ZoneExhNum);
-                            if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex > 0) {
-                                for (int EquipNum = 1; EquipNum <= state.dataZoneEquip->ZoneEquipList(
-                                                                       state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                                       .NumOfEquipTypes;
-                                     ++EquipNum) {
-                                    if ((state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                             .EquipType_Num(EquipNum) != DataZoneEquipment::ZoneUnitarySys_Num) ||
-                                        state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                .EquipName(EquipNum) != thisObjectName)
-                                        continue;
-                                    // When used as zone equipment these 2 variables will not be used to access SequencedOutput variables
-                                    // leave this here in case it could be used in the future. It would need to be changed to use equipIndex instead.
-                                    // (i.e., for (ZoneEqInList = 1 to n, find equipment and return loop index)
-                                    thisSys.m_ZoneSequenceCoolingNum =
-                                        state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                            .CoolingPriority(EquipNum);
-                                    thisSys.m_ZoneSequenceHeatingNum =
-                                        state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                            .HeatingPriority(EquipNum);
-                                    break;
-                                }
-                            }
                             thisSys.ControlZoneNum = ControlledZoneNum;
-                            break;
+                            setSystemParams(state, thisSys, TotalFloorAreaOnAirLoop, thisObjectName);
+                            ZoneInletNodeFound = searchZoneInletNodesByEquipmentIndex(state, thisSys.AirOutNode, thisSys.ControlZoneNum);
                         }
-                        if (ZoneEquipmentFound) {
-                            for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                 ++ZoneInletNum) {
-                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) != thisSys.AirOutNode) continue;
-                                ZoneInletNodeFound = true;
-                                break;
-                            }
+                    } else if (thisSys.ATMixerType == DataHVACGlobals::ATMixer_InletSide) {
+                        ZoneExhaustNodeFound = searchExhaustNodes(state, thisSys.m_ATMixerSecNode, ControlledZoneNum, ZoneExhNum);
+                        if (ZoneExhaustNodeFound) {
+                            ZoneEquipmentFound = true;
+                            thisSys.m_ZoneInletNode = thisSys.AirOutNode;
+                            thisSys.ControlZoneNum = ControlledZoneNum;
+                            setSystemParams(state, thisSys, TotalFloorAreaOnAirLoop, thisObjectName);
+                            // The Node was found among the exhaust nodes, now check that a matching inlet node exists
+                            ZoneInletNodeFound = searchZoneInletNodesByEquipmentIndex(state, thisSys.AirOutNode, thisSys.ControlZoneNum);
                         }
-                    }
-                    if (!ZoneInletNodeFound) {
-                        for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                            for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                 ++ZoneInletNum) {
-                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) != thisSys.AirOutNode) continue;
-                                ZoneInletNodeFound = true;
-                                ZoneEquipmentFound = true;
-                                break;
-                            }
-                        }
-                        if (!ZoneInletNodeFound && ZoneEquipmentFound) {
-                            ShowSevereError(state, "Input errors for " + cCurrentModuleObject + ":" + thisObjectName);
-                            ShowContinueError(state, "Incorrect or misspelled Air Outlet Node Name = " + loc_AirOutNodeName);
-                            // ShowContinueError(state, "Incorrect or misspelled " + cAlphaFields(iAirOutletNodeNameAlphaNum) + " = " +
-                            //                  Alphas(iAirOutletNodeNameAlphaNum));
-                            ShowContinueError(state, "Node name does not match any controlled zone inlet node name. Check ZoneHVAC:EquipmentConnections "
-                                              "object inputs.");
-                            errorsFound = true;
-                        }
-                    }
-                }
-
-                // check if the UnitarySystem is connected as zone equipment
-                if (thisSys.ATMixerExists && thisSys.ATMixerType == DataHVACGlobals::ATMixer_InletSide) {
-
-                    if (!AirLoopFound && !OASysFound) {
-                        for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                            for (int ZoneExhNum = 1; ZoneExhNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumExhaustNodes;
-                                 ++ZoneExhNum) {
-                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ExhaustNode(ZoneExhNum) != thisSys.m_ATMixerSecNode)
-                                    continue;
-                                ZoneEquipmentFound = true;
-                                //               Find the controlled zone number for the specified thermostat location
-                                thisSys.NodeNumOfControlledZone = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ZoneNode;
-                                TotalFloorAreaOnAirLoop =
-                                    state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum).FloorArea;
-                                thisSys.m_AirLoopEquipment = false;
-                                thisSys.m_ZoneInletNode = thisSys.AirOutNode;
-                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex > 0) {
-                                    for (int EquipNum = 1; EquipNum <= state.dataZoneEquip->ZoneEquipList(
-                                                                           state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                                           .NumOfEquipTypes;
-                                         ++EquipNum) {
-                                        if ((state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                 .EquipType_Num(EquipNum) != DataZoneEquipment::ZoneUnitarySys_Num) ||
-                                            state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                    .EquipName(EquipNum) != thisObjectName)
-                                            continue;
-                                        // When used as zone equipment these 2 variables will not be used to access SequencedOutput variables
-                                        // leave this here in case it could be used in the future. It would need to be changed to use equipIndex
-                                        // instead. (i.e., for (ZoneEqInList = 1 to n, find equipment and return loop index)
-                                        thisSys.m_ZoneSequenceCoolingNum =
-                                            state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                .CoolingPriority(EquipNum);
-                                        thisSys.m_ZoneSequenceHeatingNum =
-                                            state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                .HeatingPriority(EquipNum);
-                                    }
-                                }
-                                break;
-                            }
-                            if (ZoneEquipmentFound) {
-                                for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                     ++ZoneInletNum) {
-                                    if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) != thisSys.AirOutNode) continue;
-                                    ZoneInletNodeFound = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!ZoneInletNodeFound) {
-                            for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                                for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                     ++ZoneInletNum) {
-                                    if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) != thisSys.AirOutNode) continue;
-                                    ZoneInletNodeFound = true;
-                                    ZoneEquipmentFound = true;
-                                    break;
-                                }
-                            }
-                            if (!ZoneInletNodeFound && ZoneEquipmentFound) {
-                                ShowSevereError(state, "Input errors for " + cCurrentModuleObject + ":" + thisObjectName);
-                                ShowContinueError(state, "Incorrect or misspelled Air Outlet Node Name = " + loc_AirOutNodeName);
-                                // ShowContinueError(state, "Incorrect or misspelled " + cAlphaFields(iAirOutletNodeNameAlphaNum) + " = " +
-                                //                  Alphas(iAirOutletNodeNameAlphaNum));
-                                ShowContinueError(state, "Node name does not match any controlled zone inlet node name. Check ZoneHVAC:EquipmentConnections "
-                                                  "object inputs.");
-                                errorsFound = true;
-                            }
-                        }
-                    }
-                }
-
-                if (thisSys.ATMixerExists && thisSys.ATMixerType == DataHVACGlobals::ATMixer_SupplySide) {
-
-                    if (!AirLoopFound && !OASysFound) {
-                        for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                            for (int ZoneExhNum = 1; ZoneExhNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumExhaustNodes;
-                                 ++ZoneExhNum) {
-                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ExhaustNode(ZoneExhNum) != thisSys.AirInNode) continue;
-                                ZoneEquipmentFound = true;
-                                //               Find the controlled zone number for the specified thermostat location
-                                thisSys.NodeNumOfControlledZone = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ZoneNode;
-                                TotalFloorAreaOnAirLoop =
-                                    state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum).FloorArea;
-                                thisSys.m_AirLoopEquipment = false;
-                                thisSys.m_ZoneInletNode = thisSys.ATMixerOutNode;
-                                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex > 0) {
-                                    for (int EquipNum = 1; EquipNum <= state.dataZoneEquip->ZoneEquipList(
-                                                                           state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                                           .NumOfEquipTypes;
-                                         ++EquipNum) {
-                                        if ((state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                 .EquipType_Num(EquipNum) != DataZoneEquipment::ZoneUnitarySys_Num) ||
-                                            state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                    .EquipName(EquipNum) != thisObjectName)
-                                            continue;
-                                        // When used as zone equipment these 2 variables will not be used to access SequencedOutput variables
-                                        // leave this here in case it could be used in the future. It would need to be changed to use equipIndex
-                                        // instead. (i.e., for (ZoneEqInList = 1 to n, find equipment and return loop index)
-                                        thisSys.m_ZoneSequenceCoolingNum =
-                                            state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                .CoolingPriority(EquipNum);
-                                        thisSys.m_ZoneSequenceHeatingNum =
-                                            state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).EquipListIndex)
-                                                .HeatingPriority(EquipNum);
-                                    }
-                                }
-                                break;
-                            }
-                            if (ZoneEquipmentFound) {
-                                for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                     ++ZoneInletNum) {
-                                    if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) != thisSys.ATMixerOutNode)
-                                        continue;
-                                    ZoneInletNodeFound = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!ZoneInletNodeFound) {
-                            for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
-                                for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                     ++ZoneInletNum) {
-                                    if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) != thisSys.ATMixerOutNode)
-                                        continue;
-                                    ZoneInletNodeFound = true;
-                                    ZoneEquipmentFound = true;
-                                    break;
-                                }
-                            }
-                            if (!ZoneInletNodeFound && ZoneEquipmentFound) {
-                                ShowSevereError(state, "Input errors for " + cCurrentModuleObject + ":" + thisObjectName);
-                                ShowContinueError(state, "Incorrect or misspelled Air Outlet Node Name = " + loc_AirOutNodeName);
-                                // ShowContinueError(state, "Incorrect or misspelled " + cAlphaFields(iAirOutletNodeNameAlphaNum) + " = " +
-                                //                  Alphas(iAirOutletNodeNameAlphaNum));
-                                ShowContinueError(state, "Node name does not match any air terminal mixer secondary air inlet node. Check "
-                                                  "AirTerminal:SingleDuct:Mixer object inputs.");
-                                errorsFound = true;
-                            }
+                    } else if (thisSys.ATMixerType == DataHVACGlobals::ATMixer_SupplySide) {
+                        ZoneExhaustNodeFound = searchExhaustNodes(state, thisSys.AirInNode, ControlledZoneNum, ZoneExhNum);
+                        if (ZoneExhaustNodeFound) {
+                            ZoneEquipmentFound = true;
+                            thisSys.m_ZoneInletNode = thisSys.ATMixerOutNode;
+                            thisSys.ControlZoneNum = ControlledZoneNum;
+                            setSystemParams(state, thisSys, TotalFloorAreaOnAirLoop, thisObjectName);
+                            // The Node was found among the exhaust nodes, now check that a matching inlet node exists
+                            ZoneInletNodeFound = searchZoneInletNodesByEquipmentIndex(state, thisSys.ATMixerOutNode, thisSys.ControlZoneNum);
                         }
                     }
                 }
 
                 if (!ZoneEquipmentFound) {
                     // check if the UnitarySystem is connected to an air loop
-                    for (int AirLoopNum = 1; AirLoopNum <= DataHVACGlobals::NumPrimaryAirSys; ++AirLoopNum) {
+
+                    int compIndex;
+                    int branchIndex;
+                    AirLoopFound =  searchTotalComponents(state, thisObjectName, compIndex, branchIndex, AirLoopNumber);
+                    if (AirLoopFound){
+                        for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
+                            if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum != thisSys.ControlZoneNum) continue;
+                            //             Find the controlled zone number for the specified thermostat location
+                            thisSys.NodeNumOfControlledZone = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ZoneNode;
+
+                            //             Determine if system is on air loop served by the thermostat location specified
+                            ZoneInletNodeFound = false;
+                            int ZoneInletNum = 0;
+                            ZoneInletNodeFound = searchZoneInletNodeAirLoopNum(state, AirLoopNumber, ControlledZoneNum, ZoneInletNum);
+                            if (ZoneInletNodeFound){
+                                thisSys.m_ZoneInletNode = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum);
+                                TotalFloorAreaOnAirLoop +=
+                                state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum)
+                                        .FloorArea;
+                            }
+
+                            // if (thisSys.m_ZoneInletNode == 0) AirLoopFound = false;
+                            for (int TstatZoneNum = 1; TstatZoneNum <= state.dataZoneCtrls->NumTempControlledZones; ++TstatZoneNum) {
+                                if (state.dataZoneCtrls->TempControlledZone(TstatZoneNum).ActualZoneNum != thisSys.ControlZoneNum) continue;
+                                AirNodeFound = true;
+                            }
+                            for (int TstatZoneNum = 1; TstatZoneNum <= state.dataZoneCtrls->NumComfortControlledZones; ++TstatZoneNum) {
+                                if (state.dataZoneCtrls->ComfortControlledZone(TstatZoneNum).ActualZoneNum != thisSys.ControlZoneNum)
+                                    continue;
+                                AirNodeFound = true;
+                            }
+                            if (!AirNodeFound && thisSys.ControlZoneNum > 0) {
+                                ShowSevereError(state, "Input errors for " + cCurrentModuleObject + ":" + thisObjectName);
+                                ShowContinueError(state, "Did not find Air Node (Zone with Thermostat or Thermal Comfort Thermostat).");
+                                ShowContinueError(state, "specified Controlling Zone or Thermostat Location name = " + loc_controlZoneName);
+                                errorsFound = true;
+                            }
+                        }
+                    }
+
+                    for (int AirLoopNum = 1; AirLoopNum <= state.dataHVACGlobal->NumPrimaryAirSys; ++AirLoopNum) {
                         for (int BranchNum = 1; BranchNum <= state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).NumBranches; ++BranchNum) {
                             for (int CompNum = 1; CompNum <= state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).Branch(BranchNum).TotalComponents;
                                  ++CompNum) {
@@ -3430,17 +3317,18 @@ namespace UnitarySystems {
                                         if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum != thisSys.ControlZoneNum) continue;
                                         //             Find the controlled zone number for the specified thermostat location
                                         thisSys.NodeNumOfControlledZone = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ZoneNode;
+
                                         //             Determine if system is on air loop served by the thermostat location specified
-                                        for (int zoneInNode = 1; zoneInNode <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes;
-                                             ++zoneInNode) {
-                                            if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNodeAirLoopNum(zoneInNode) ==
-                                                AirLoopNumber) {
-                                                thisSys.m_ZoneInletNode = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(zoneInNode);
-                                                TotalFloorAreaOnAirLoop +=
-                                                    state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum)
-                                                        .FloorArea;
-                                            }
+                                        ZoneInletNodeFound = false;
+                                        int ZoneInletNum = 0;
+                                        ZoneInletNodeFound = searchZoneInletNodeAirLoopNum(state, AirLoopNumber, ControlledZoneNum, ZoneInletNum);
+                                        if (ZoneInletNodeFound){
+                                            thisSys.m_ZoneInletNode = state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum);
+                                            TotalFloorAreaOnAirLoop +=
+                                                state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ActualZoneNum)
+                                                    .FloorArea;
                                         }
+
                                         // if (thisSys.m_ZoneInletNode == 0) AirLoopFound = false;
                                         for (int TstatZoneNum = 1; TstatZoneNum <= state.dataZoneCtrls->NumTempControlledZones; ++TstatZoneNum) {
                                             if (state.dataZoneCtrls->TempControlledZone(TstatZoneNum).ActualZoneNum != thisSys.ControlZoneNum) continue;
@@ -3461,6 +3349,28 @@ namespace UnitarySystems {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if (ZoneEquipmentFound && !ZoneExhaustNodeFound) {
+                        // Exhaust Node was not found
+                        ShowSevereError(state, "Input errors for " + cCurrentModuleObject + ":" + thisObjectName);
+                        ShowContinueError(state, "Incorrect or misspelled Air Inlet Node Name or Exhaust Node Name. = " + loc_AirInNodeName);
+                        ShowContinueError(state, "Air Inlet Node " + loc_AirInNodeName +
+                                          " name does not match any controlled zone exhaust node name. Check ZoneHVAC:EquipmentConnections "
+                                          "object inputs.");
+                        errorsFound = true;
+                    } else if (ZoneEquipmentFound && !ZoneInletNodeFound) {
+                        bool ZoneInletNodeExists = false;
+                        int InletControlledZoneNum = 0;
+                        int ZoneInletNum = 0;
+                        ZoneInletNodeExists = searchZoneInletNodes(state, thisSys.AirOutNode, InletControlledZoneNum, ZoneInletNum);
+                        if (!ZoneInletNodeExists) {
+                            ShowSevereError(state, "Input errors for " + cCurrentModuleObject + ":" + thisObjectName);
+                            ShowContinueError(state, "Incorrect or misspelled Air Outlet Node Name = " + loc_AirOutNodeName);
+                            ShowContinueError(state, "Node name does not match any controlled zone inlet node name. Check ZoneHVAC:EquipmentConnections "
+                                              "object inputs.");
+                            errorsFound = true;
                         }
                     }
 
@@ -3517,12 +3427,12 @@ namespace UnitarySystems {
                     BranchNodeConnections::TestCompSet(state,
                         cCurrentModuleObject, UtilityRoutines::MakeUPPERCase(thisObjectName), loc_AirInNodeName, loc_AirOutNodeName, "Air Nodes");
 
-                std::string loc_fanType("");
+                std::string loc_fanType;
                 if (fields.find("supply_fan_object_type") != fields.end()) { // not required field
                     loc_fanType = UtilityRoutines::MakeUPPERCase(fields.at("supply_fan_object_type"));
                 }
 
-                std::string loc_m_FanName("");
+                std::string loc_m_FanName;
                 if (fields.find("supply_fan_name") != fields.end()) { // not required field
                     loc_m_FanName = UtilityRoutines::MakeUPPERCase(fields.at("supply_fan_name"));
                 }
@@ -3541,14 +3451,14 @@ namespace UnitarySystems {
                                 errorsFound = true;
                             } else { // mine data from fan object
                                 if (HVACFan::getFanObjectVectorIndex(state, loc_m_FanName, false) < 0) {
-                                    HVACFan::fanObjs.emplace_back(new HVACFan::FanSystem(state, loc_m_FanName)); // call constructor
+                                    state.dataHVACFan->fanObjs.emplace_back(new HVACFan::FanSystem(state, loc_m_FanName)); // call constructor
                                 }
                                 thisSys.m_FanIndex = HVACFan::getFanObjectVectorIndex(state, loc_m_FanName);
                                 if (thisSys.m_FanIndex > -1) {
-                                    FanInletNode = HVACFan::fanObjs[thisSys.m_FanIndex]->inletNodeNum;
-                                    FanOutletNode = HVACFan::fanObjs[thisSys.m_FanIndex]->outletNodeNum;
-                                    thisSys.m_FanAvailSchedPtr = HVACFan::fanObjs[thisSys.m_FanIndex]->availSchedIndex;
-                                    FanVolFlowRate = HVACFan::fanObjs[thisSys.m_FanIndex]->designAirVolFlowRate;
+                                    FanInletNode = state.dataHVACFan->fanObjs[thisSys.m_FanIndex]->inletNodeNum;
+                                    FanOutletNode = state.dataHVACFan->fanObjs[thisSys.m_FanIndex]->outletNodeNum;
+                                    thisSys.m_FanAvailSchedPtr = state.dataHVACFan->fanObjs[thisSys.m_FanIndex]->availSchedIndex;
+                                    FanVolFlowRate = state.dataHVACFan->fanObjs[thisSys.m_FanIndex]->designAirVolFlowRate;
                                 } else {
                                     ShowSevereError(state, cCurrentModuleObject + " = " + thisObjectName);
                                     ShowContinueError(state, "Unable to access fan data.");
@@ -3638,7 +3548,7 @@ namespace UnitarySystems {
                     thisSys.m_FanCompNotSetYet = false;
                 }
 
-                std::string loc_supFanPlace("");
+                std::string loc_supFanPlace;
                 if (fields.find("fan_placement") != fields.end()) { // not required field
                     loc_supFanPlace = UtilityRoutines::MakeUPPERCase(fields.at("fan_placement"));
                 }
@@ -3650,7 +3560,7 @@ namespace UnitarySystems {
                     errorsFound = true;
                 }
 
-                std::string loc_supFanOpMode("");
+                std::string loc_supFanOpMode;
                 if (fields.find("supply_air_fan_operating_mode_schedule_name") != fields.end()) { // not required field
                     loc_supFanOpMode = UtilityRoutines::MakeUPPERCase(fields.at("supply_air_fan_operating_mode_schedule_name"));
                 }
@@ -4418,7 +4328,13 @@ namespace UnitarySystems {
 
                         } else { // mine data from DX cooling coil
 
-                            if (thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_CoolingTwoSpeed) thisSys.m_NumOfSpeedCooling = 2;
+                            if (thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_CoolingTwoSpeed) {
+                                thisSys.m_NumOfSpeedCooling = 2;
+                                thisSys.m_MultiOrVarSpeedCoolCoil = true;
+                            } else {
+                                thisSys.m_NumOfSpeedCooling = 1;
+                                thisSys.m_MultiOrVarSpeedCoolCoil = false;
+                            }
 
                             // Get DX cooling coil index
                             DXCoils::GetDXCoilIndex(state,
@@ -4599,48 +4515,58 @@ namespace UnitarySystems {
                         } else {
                             //                    // call CoilCoolingDX constructor
                             thisSys.m_CoolingCoilIndex = CoilCoolingDX::factory(state, loc_m_CoolingCoilName);
+                            if (thisSys.m_CoolingCoilIndex == -1) {
+                                ShowContinueError(state, "Occurs in " + cCurrentModuleObject + " = " + thisObjectName);
+                                errorsFound = true;
+                            } else {
 
-                            // mine data from coil object
-                            // TODO: Need to check for autosize on these I guess
-                            auto &newCoil = coilCoolingDXs[thisSys.m_CoolingCoilIndex];
-                            thisSys.m_DesignCoolingCapacity = newCoil.performance.normalMode.ratedGrossTotalCap;
-                            thisSys.m_MaxCoolAirVolFlow = newCoil.performance.normalMode.ratedEvapAirFlowRate;
-                            thisSys.m_CoolingCoilAvailSchPtr = newCoil.availScheduleIndex;
-                            CoolingCoilInletNode = newCoil.evapInletNodeIndex;
-                            CoolingCoilOutletNode = newCoil.evapOutletNodeIndex;
-                            thisSys.m_CondenserNodeNum = newCoil.condInletNodeIndex;
-                            thisSys.m_NumOfSpeedCooling = (int)newCoil.performance.normalMode.speeds.size();
-                            thisSys.m_MinOATCompressorCooling = newCoil.performance.minOutdoorDrybulb;
-                            // also give the new coil object some stuff
-                            newCoil.supplyFanName = thisSys.m_FanName;
-                            newCoil.supplyFanIndex = thisSys.m_FanIndex;
-                            newCoil.supplyFanType = thisSys.m_FanType_Num;
-                            if (newCoil.SubcoolReheatFlag) {
-                                thisSys.m_Humidistat = true;
+                                // mine data from coil object
+                                // TODO: Need to check for autosize on these I guess
+                                auto &newCoil = coilCoolingDXs[thisSys.m_CoolingCoilIndex];
+                                thisSys.m_DesignCoolingCapacity = newCoil.performance.normalMode.ratedGrossTotalCap;
+                                thisSys.m_MaxCoolAirVolFlow = newCoil.performance.normalMode.ratedEvapAirFlowRate;
+                                if (thisSys.m_DesignCoolingCapacity == DataSizing::AutoSize) thisSys.m_RequestAutoSize = true;
+                                if (thisSys.m_MaxCoolAirVolFlow == DataSizing::AutoSize) thisSys.m_RequestAutoSize = true;
+                                thisSys.m_CoolingCoilAvailSchPtr = newCoil.availScheduleIndex;
+                                CoolingCoilInletNode = newCoil.evapInletNodeIndex;
+                                CoolingCoilOutletNode = newCoil.evapOutletNodeIndex;
+                                thisSys.m_CondenserNodeNum = newCoil.condInletNodeIndex;
+                                thisSys.m_NumOfSpeedCooling = (int)newCoil.performance.normalMode.speeds.size();
+                                thisSys.m_MinOATCompressorCooling = newCoil.performance.minOutdoorDrybulb;
+                                newCoil.supplyFanName = thisSys.m_FanName;
+                                newCoil.supplyFanIndex = thisSys.m_FanIndex;
+                                newCoil.supplyFanType = thisSys.m_FanType_Num;
+                                if (newCoil.SubcoolReheatFlag) {
+                                    thisSys.m_Humidistat = true;
+                                    if (thisSys.m_NumOfSpeedCooling > 1) {
+                                        thisSys.FullOutput.resize(thisSys.m_NumOfSpeedCooling + 1);
+                                        thisSys.FullLatOutput.resize(thisSys.m_NumOfSpeedCooling + 1);
+                                        thisSys.SpeedSHR.resize(thisSys.m_NumOfSpeedCooling + 1);
+                                    }
+                                    if (thisSys.m_ControlType == ControlType::Setpoint) {
+                                        ShowSevereError(state, cCurrentModuleObject + " = " + thisObjectName);
+                                        ShowContinueError(state, "Setpoint control is not available for SubcoolReheat cooling coil. Load control is forced. "
+                                                          "Simulation continues.");
+                                        thisSys.m_ControlType = ControlType::Load;
+                                    }
+                                }
+                                newCoil.setData(thisSys.m_FanIndex, thisSys.m_FanType_Num, thisSys.m_FanName, thisSys.m_SuppCoilLoopNum);
+
+                                // Push heating coil PLF curve index to DX coil
+                                //                    if ( HeatingCoilPLFCurveIndex > 0 ) {
+                                //                        SetDXCoolingCoilData( UnitarySystem( UnitarySysNum ).CoolingCoilIndex, ErrorsFound,
+                                //                        HeatingCoilPLFCurveIndex );
+                                //                    }
+
+                                // set variable speed coil flag as necessary
                                 if (thisSys.m_NumOfSpeedCooling > 1) {
-                                    thisSys.FullOutput.resize(thisSys.m_NumOfSpeedCooling + 1);
-                                    thisSys.FullLatOutput.resize(thisSys.m_NumOfSpeedCooling + 1);
-                                    thisSys.SpeedSHR.resize(thisSys.m_NumOfSpeedCooling + 1);
-                                }
-                                if (thisSys.m_ControlType == ControlType::Setpoint) {
-                                    ShowSevereError(state, cCurrentModuleObject + " = " + thisObjectName);
-                                    ShowContinueError(state, "Setpoint control is not available for SubcoolReheat cooling coil. Load control is forced. "
-                                                      "Simulation continues.");
-                                    thisSys.m_ControlType = ControlType::Load;
-                                }
-                            }
-                            // Push heating coil PLF curve index to DX coil
-                            //                    if ( HeatingCoilPLFCurveIndex > 0 ) {
-                            //                        SetDXCoolingCoilData( UnitarySystem( UnitarySysNum ).CoolingCoilIndex, ErrorsFound,
-                            //                        HeatingCoilPLFCurveIndex );
-                            //                    }
-
-                            // set variable speed coil flag as necessary
-                            if (thisSys.m_NumOfSpeedCooling > 1) {
-                                if (newCoil.performance.capControlMethod == CoilCoolingDXCurveFitPerformance::CapControlMethod::DISCRETE) {
-                                    thisSys.m_DiscreteSpeedCoolingCoil = true;
-                                } else if (newCoil.performance.capControlMethod == CoilCoolingDXCurveFitPerformance::CapControlMethod::CONTINUOUS) {
-                                    thisSys.m_ContSpeedCoolingCoil = true;
+                                    if (newCoil.performance.capControlMethod == CoilCoolingDXCurveFitPerformance::CapControlMethod::DISCRETE) {
+                                        thisSys.m_DiscreteSpeedCoolingCoil = true;
+                                    } else if (newCoil.performance.capControlMethod ==
+                                               CoilCoolingDXCurveFitPerformance::CapControlMethod::CONTINUOUS) {
+                                        thisSys.m_ContSpeedCoolingCoil = true;
+                                    }
+                                    thisSys.m_MultiOrVarSpeedCoolCoil = true;
                                 }
                             }
 
@@ -5151,7 +5077,7 @@ namespace UnitarySystems {
                             //  CALL CheckCoilWaterInletNode(thisSys%CoolCoilFluidInletNode,InletNodeNotControlled)
                             if (!InletNodeNotControlled) {
                                 ShowSevereError(state, cCurrentModuleObject + " = " + thisObjectName);
-                                ShowContinueError(state, DataHVACControllers::ControllerTypes(DataHVACControllers::ControllerSimple_Type) + " found for " +
+                                ShowContinueError(state, state.dataHVACCtrl->ControllerTypes(DataHVACControllers::ControllerSimple_Type) + " found for " +
                                                   loc_coolingCoilType + " = \"" + loc_m_CoolingCoilName + ".\"");
                                 ShowContinueError(state, "...water coil controllers are not used with " + thisSys.UnitType);
                                 errorsFound = true;
@@ -5516,6 +5442,8 @@ namespace UnitarySystems {
                     if (!(thisSys.m_CoolingCoilType_Num == DataHVACGlobals::Coil_CoolingAirToAirVariableSpeed ||
                           thisSys.m_CoolingCoilType_Num == DataHVACGlobals::Coil_CoolingWaterToAirHPVSEquationFit)) {
                         DXCoils::SetDXCoilTypeData(state, thisSys.m_CoolingCoilName);
+                    } else if (thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling) {
+                        coilCoolingDXs[thisSys.m_CoolingCoilIndex].setToHundredPercentDOAS();
                     }
                 }
                 // DOAS DX Cooling Coil Leaving Minimum Air Temperature
@@ -6376,10 +6304,19 @@ namespace UnitarySystems {
                     }
                 }
 
-                if (thisSys.m_CoolingCoilType_Num != DataHVACGlobals::CoilDX_Cooling &&
-                    thisSys.m_CoolingCoilType_Num != DataHVACGlobals::CoilDX_CoolingHXAssisted &&
-                    thisSys.m_CoolingCoilType_Num != DataHVACGlobals::CoilDX_CoolingTwoStageWHumControl &&
+                if (thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling &&
                     thisSys.m_DehumidControlType_Num == DehumCtrlType::Multimode) {
+                    int numCoolingCoilModes = coilCoolingDXs[thisSys.m_CoolingCoilIndex].getNumModes();
+                    if (numCoolingCoilModes == 1) {
+                        ShowSevereError(state, cCurrentModuleObject + " = " + thisObjectName);
+                        ShowContinueError(state, "Illegal Dehumidification Control Type = " + loc_dehumm_ControlType);
+                        ShowContinueError(state, "Multimode control must be used with a Heat Exchanger Assisted or Multimode Cooling Coil.");
+                        ShowContinueError(state, "Cooling coil named: " + coilCoolingDXs[thisSys.m_CoolingCoilIndex].name + " has only one mode");
+                        ShowFatalError(state, "Multimode cooling coil error causes program termination");
+                    }
+                } else if (thisSys.m_CoolingCoilType_Num != DataHVACGlobals::CoilDX_CoolingHXAssisted &&
+                           thisSys.m_CoolingCoilType_Num != DataHVACGlobals::CoilDX_CoolingTwoStageWHumControl &&
+                           thisSys.m_DehumidControlType_Num == DehumCtrlType::Multimode) {
                     ShowSevereError(state, cCurrentModuleObject + " = " + thisObjectName);
                     ShowContinueError(state, "Illegal Dehumidification Control Type = " + loc_dehumm_ControlType);
                     ShowContinueError(state, "Multimode control must be used with a Heat Exchanger Assisted or Multimode Cooling Coil.");
@@ -6919,9 +6856,11 @@ namespace UnitarySystems {
                 }
 
                 if ((thisSys.m_HeatingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedHeating &&
-                     thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling) ||
+                     (thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling ||
+                      thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling)) ||
                     (thisSys.m_HeatingCoilType_Num == DataHVACGlobals::Coil_HeatingGasOrOtherFuel &&
-                     thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling)) {
+                     (thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling ||
+                      thisSys.m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling))) {
                     if (thisSys.m_DesignSpecMSHPIndex > -1) {
                         if (thisSys.m_CompPointerMSHP->m_SingleModeFlag) {
                             thisSys.m_SingleMode = 1;
@@ -6931,9 +6870,8 @@ namespace UnitarySystems {
                     if (thisSys.m_DesignSpecMSHPIndex > -1) {
                         if (thisSys.m_CompPointerMSHP->m_SingleModeFlag) {
                             ShowSevereError(state, cCurrentModuleObject + ": " + thisObjectName);
-                            ShowContinueError(state,
-                                "In order to perform Single Mode Operation, the valid cooling coil type is Coil:Cooling:DX:MultiSpeed and "
-                                "the valid heating is Coil:Heating:DX:MultiSpeed or Coil:Heating:Fuel.");
+                            ShowContinueError(state, "In order to perform Single Mode Operation, the valid cooling coil type is Coil:Cooling:DX:MultiSpeed "
+                                              "or Coil:Cooling:DX and the valid heating is Coil:Heating:DX:MultiSpeed or Coil:Heating:Fuel.");
                             ShowContinueError(state, "The input cooling coil type = " + loc_coolingCoilType +
                                               " and the input heating coil type = " + loc_heatingCoilType);
                         }
@@ -7193,18 +7131,6 @@ namespace UnitarySystems {
                 {
                     auto const SELECT_CASE_var(state.dataUnitarySystems->unitarySys[sysNum].m_CoolingCoilType_Num);
                     if (SELECT_CASE_var == DataHVACGlobals::CoilDX_CoolingTwoSpeed) {
-                        SetupOutputVariable(state, "Unitary System Cycling Ratio",
-                                            OutputProcessor::Unit::None,
-                                            state.dataUnitarySystems->unitarySys[sysNum].m_CycRatio,
-                                            "System",
-                                            "Average",
-                                            state.dataUnitarySystems->unitarySys[sysNum].Name);
-                        SetupOutputVariable(state, "Unitary System Compressor Speed Ratio",
-                                            OutputProcessor::Unit::None,
-                                            state.dataUnitarySystems->unitarySys[sysNum].m_SpeedRatio,
-                                            "System",
-                                            "Average",
-                                            state.dataUnitarySystems->unitarySys[sysNum].Name);
                     } else if (SELECT_CASE_var == DataHVACGlobals::CoilDX_MultiSpeedCooling || (SELECT_CASE_var == DataHVACGlobals::CoilDX_Cooling)) {
                         if (state.dataUnitarySystems->unitarySys[sysNum].m_HeatRecActive) {
                             SetupOutputVariable(state, "Unitary System Heat Recovery Rate",
@@ -7290,6 +7216,7 @@ namespace UnitarySystems {
                 }
 
                 if (state.dataUnitarySystems->unitarySys[sysNum].m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedCooling ||
+                    state.dataUnitarySystems->unitarySys[sysNum].m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_CoolingTwoSpeed ||
                     state.dataUnitarySystems->unitarySys[sysNum].m_CoolingCoilType_Num == DataHVACGlobals::CoilDX_Cooling ||
                     state.dataUnitarySystems->unitarySys[sysNum].m_HeatingCoilType_Num == DataHVACGlobals::CoilDX_MultiSpeedHeating ||
                     state.dataUnitarySystems->unitarySys[sysNum].m_HeatingCoilType_Num == DataHVACGlobals::Coil_HeatingElectric_MultiStage ||
@@ -7430,8 +7357,6 @@ namespace UnitarySystems {
                                                     _,
                                                     this->m_FanOpMode,
                                                     this->m_SuppHeatPartLoadFrac);
-
-        } else {
         }
     }
 
@@ -7646,7 +7571,7 @@ namespace UnitarySystems {
 
         if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru) {
             if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _);
+                state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _);
             } else {
                 Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
             }
@@ -7739,7 +7664,7 @@ namespace UnitarySystems {
 
         if (this->m_FanExists && this->m_FanPlace == FanPlace::DrawThru) {
             if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _);
+                state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _);
             } else {
                 Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
             }
@@ -9081,7 +9006,10 @@ namespace UnitarySystems {
         // RETURN if the moisture load is met
         if (state.dataUnitarySystems->MoistureLoad >= 0.0 || state.dataUnitarySystems->MoistureLoad >= TempLatOutput) return;
         // Multimode does not meet the latent load, only the sensible load with or without HX active
+        // what if there is a heating load for a system using Multimode?
         if (!state.dataUnitarySystems->CoolingLoad && this->m_DehumidControlType_Num == DehumCtrlType::Multimode) return;
+        // if HX was previously turned on return since sensible load is already met
+        if (state.dataUnitarySystems->CoolingLoad && this->m_DehumidControlType_Num == DehumCtrlType::Multimode && HXUnitOn) return;
         //  IF(HeatingLoad .AND. UnitarySystem(UnitarySysNum)%m_DehumidControlType_Num .EQ. dehumidm_ControlType::CoolReheat)RETURN
 
         if ((this->m_DehumidControlType_Num == DehumCtrlType::CoolReheat || this->m_DehumidControlType_Num == DehumCtrlType::Multimode)) {
@@ -9645,7 +9573,7 @@ namespace UnitarySystems {
 
         // Calcuate air distribution losses
         //  IF (.NOT. FirstHVACIteration .AND. AirLoopPass .EQ. 1 .AND. AirflowNetworkFanActivated) THEN
-        if (!FirstHVACIteration && AirflowNetwork::AirflowNetworkFanActivated) {
+        if (!FirstHVACIteration && state.dataAirflowNetwork->AirflowNetworkFanActivated) {
             Real64 DeltaMassRate = 0.0;
             Real64 TotalOutput = 0.0;         // total output rate, {W}
             Real64 SensibleOutputDelta = 0.0; // delta sensible output rate, {W}
@@ -9653,7 +9581,7 @@ namespace UnitarySystems {
             Real64 TotalOutputDelta = 0.0;    // delta total output rate, {W}
             int ZoneInNode = this->m_ZoneInletNode;
             Real64 MassFlowRate = state.dataLoopNodes->Node(ZoneInNode).MassFlowRate / this->ControlZoneMassFlowFrac;
-            if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+            if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
                 DeltaMassRate =
                     state.dataLoopNodes->Node(this->AirOutNode).MassFlowRate - state.dataLoopNodes->Node(ZoneInNode).MassFlowRate / this->ControlZoneMassFlowFrac;
                 if (DeltaMassRate < 0.0) DeltaMassRate = 0.0;
@@ -9694,7 +9622,7 @@ namespace UnitarySystems {
                 this->m_FanOpMode = DataHVACGlobals::CycFanCycCoil;
             } else {
                 this->m_FanOpMode = DataHVACGlobals::ContFanCycCoil;
-                DataHVACGlobals::OnOffFanPartLoadFraction = 1.0;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
             }
         }
 
@@ -9846,7 +9774,7 @@ namespace UnitarySystems {
                 ZoneLoad = 0.0;
                 state.dataUnitarySystems->CoolingLoad = false;
                 state.dataUnitarySystems->HeatingLoad = false;
-            } else if (this->m_IterationCounter > (DataHVACGlobals::MinAirLoopIterationsAfterFirst + 6)) {
+            } else if (this->m_IterationCounter > (state.dataHVACGlobal->MinAirLoopIterationsAfterFirst + 6)) {
                 // attempt to lock output (air flow) if oscillations are detected
                 int OperatingMode = this->m_IterationMode[0]; // VS systems can take a few more iterations than single-speed systems
                 int OperatingModeMinusOne = this->m_IterationMode[1];
@@ -10290,17 +10218,14 @@ namespace UnitarySystems {
         }             // No Heating/Cooling Load
 
         if (this->m_MultiSpeedHeatingCoil && (state.dataUnitarySystems->HeatingLoad && HeatSpeedNum == 1)) {
-            if (this->m_FanOpMode == DataHVACGlobals::ContFanCycCoil) {
-                DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow; // #5737
-            } else {
-                DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow * PartLoadRatio; // proportional to PLR when speed = 1,  #5518
-            }
+            state.dataHVACGlobal->MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow;
         } else if (this->m_DiscreteSpeedCoolingCoil && (state.dataUnitarySystems->CoolingLoad && CoolSpeedNum == 1)) {
-            DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow;
+            state.dataHVACGlobal->MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow;
         } else {
-            DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOffMassFlow; // these need to be set for multi-speed coils
+            state.dataHVACGlobal->MSHPMassFlowRateLow = state.dataUnitarySystems->CompOffMassFlow; // these need to be set for multi-speed coils
         }
-        DataHVACGlobals::MSHPMassFlowRateHigh = state.dataUnitarySystems->CompOnMassFlow; // doesn't hurt to set these if multi-speed coils are not used
+        state.dataHVACGlobal->MSHPMassFlowRateHigh =
+            state.dataUnitarySystems->CompOnMassFlow; // doesn't hurt to set these if multi-speed coils are not used
 
         state.dataUnitarySystems->m_massFlow1 = state.dataUnitarySystems->CompOnMassFlow;
         state.dataUnitarySystems->m_massFlow2 = state.dataUnitarySystems->CompOffMassFlow;
@@ -10393,7 +10318,7 @@ namespace UnitarySystems {
             FanOn = true;
         }
         if (ScheduleManager::GetCurrentScheduleValue(state, this->m_SysAvailSchedPtr) > 0.0 &&
-            ((FanOn || DataHVACGlobals::TurnFansOn) && !DataHVACGlobals::TurnFansOff)) {
+            ((FanOn || state.dataHVACGlobal->TurnFansOn) && !state.dataHVACGlobal->TurnFansOff)) {
             if (this->m_ControlType == ControlType::Setpoint) {
                 // set point based equipment should use VAV terminal units to set the flow.
                 // zone equipment needs to set flow since no other device regulates flow (ZoneHVAC /= AirLoopEquipment)
@@ -10496,7 +10421,7 @@ namespace UnitarySystems {
 
         if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru) {
             if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
+                state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
             } else {
                 Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
             }
@@ -10523,9 +10448,9 @@ namespace UnitarySystems {
             }
 
             // If blow thru fan is used, the fan must be simulated after coil sets OnOffFanPartLoadFraction
-            if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru && DataHVACGlobals::OnOffFanPartLoadFraction < 1.0) {
+            if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru && state.dataHVACGlobal->OnOffFanPartLoadFraction < 1.0) {
                 if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                    HVACFan::fanObjs[this->m_FanIndex]->simulate(
+                    state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(
                         state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
                 } else {
                     Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
@@ -10567,9 +10492,9 @@ namespace UnitarySystems {
             }
 
             // If blow thru fan is used, the fan must be simulated after coil sets OnOffFanPartLoadFraction
-            if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru && DataHVACGlobals::OnOffFanPartLoadFraction < 1.0) {
+            if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru && state.dataHVACGlobal->OnOffFanPartLoadFraction < 1.0) {
                 if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                    HVACFan::fanObjs[this->m_FanIndex]->simulate(
+                    state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(
                         state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
                 } else {
                     Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
@@ -10595,7 +10520,7 @@ namespace UnitarySystems {
 
         if (this->m_FanExists && this->m_FanPlace == FanPlace::DrawThru) {
             if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
+                state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
             } else {
                 Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
             }
@@ -10766,16 +10691,28 @@ namespace UnitarySystems {
 
             } else if (SELECT_CASE_var == DataHVACGlobals::CoilDX_Cooling) { // CoilCoolingDX
 
-                if (state.dataUnitarySystems->CoolingLoad) {
+                bool const singleMode = (this->m_SingleMode == 1);
+                if (this->m_ControlType == ControlType::Setpoint) {
                     if (this->m_CoolingSpeedNum > 1) {
                         CoilPLR = 1.0 * double(CompOn);
-                        this->m_CoolingSpeedRatio = PartLoadRatio * double(CompOn);
                     } else {
                         CoilPLR = PartLoadRatio * double(CompOn);
-                        //                UnitarySystem( UnitarySysNum ).CoolingSpeedRatio = 0.0; // isn't this handled somewhere else?
                     }
                 } else {
-                    CoilPLR = 0.0;
+                    if (state.dataUnitarySystems->CoolingLoad) {
+                        if (this->m_CoolingSpeedNum > 1) {
+                            if (!singleMode) {
+                                CoilPLR = 1.0 * double(CompOn);
+                                this->m_CoolingSpeedRatio = PartLoadRatio * double(CompOn);
+                            } else {
+                                CoilPLR = PartLoadRatio * double(CompOn);
+                            }
+                        } else {
+                            CoilPLR = PartLoadRatio * double(CompOn);
+                        }
+                    } else {
+                        CoilPLR = 0.0;
+                    }
                 }
                 int OperationMode = DataHVACGlobals::coilNormalMode;
                 if (coilCoolingDXs[this->m_CoolingCoilIndex].SubcoolReheatFlag) {
@@ -10785,12 +10722,26 @@ namespace UnitarySystems {
                 }
 
                 coilCoolingDXs[this->m_CoolingCoilIndex].simulate(state,
-                    OperationMode, CoilPLR, this->m_CoolingSpeedNum, this->m_CoolingSpeedRatio, this->m_FanOpMode, this->CoilSHR);
+                                                                  OperationMode,
+                                                                  CoilPLR,
+                                                                  this->m_CoolingSpeedNum,
+                                                                  this->m_CoolingSpeedRatio,
+                                                                  this->m_FanOpMode,
+                                                                  singleMode,
+                                                                  this->CoilSHR);
 
                 if (this->m_CoolingSpeedNum > 1) {
-                    this->m_CoolCompPartLoadRatio = 1.0;
+                    if (this->m_SingleMode == 0) {
+                        this->m_CoolCompPartLoadRatio = double(CompOn);
+                    } else {
+                        this->m_CoolCompPartLoadRatio = PartLoadRatio * double(CompOn);
+                        //this->m_CoolingCycRatio = this->m_CoolingSpeedRatio;
+                        this->m_CoolingSpeedRatio = 1.0;
+                    }
                 } else {
-                    this->m_CoolCompPartLoadRatio = PartLoadRatio * double(CompOn);
+                    this->m_CoolCompPartLoadRatio = this->m_CoolingCycRatio * double(CompOn);
+                    //this->m_CoolingCycRatio = this->m_CoolingSpeedRatio;
+                    this->m_CoolingSpeedRatio = 0.0;
                 }
 
             } else if ((SELECT_CASE_var == DataHVACGlobals::CoilDX_CoolingHXAssisted) ||
@@ -10905,7 +10856,7 @@ namespace UnitarySystems {
             } else if (SELECT_CASE_var == DataHVACGlobals::Coil_CoolingWaterToAirHPSimple) {
 
                 if (PartLoadRatio > 0.0 && this->m_WSHPRuntimeFrac > 0.0 && this->m_FanOpMode == DataHVACGlobals::CycFanCycCoil) {
-                    DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
                 }
 
                 WaterToAirHeatPumpSimple::SimWatertoAirHPSimple(state,
@@ -10929,7 +10880,7 @@ namespace UnitarySystems {
                 this->heatPumpRunFrac(PartLoadRatio, errFlag, this->m_WSHPRuntimeFrac);
 
                 if (PartLoadRatio > 0.0 && this->m_WSHPRuntimeFrac > 0.0 && this->m_FanOpMode == DataHVACGlobals::CycFanCycCoil) {
-                    DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
                 }
 
                 WaterToAirHeatPump::SimWatertoAirHP(state,
@@ -11122,7 +11073,7 @@ namespace UnitarySystems {
             } else if (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingWaterToAirHPSimple) {
 
                 if (PartLoadRatio > 0.0 && this->m_WSHPRuntimeFrac > 0.0 && this->m_FanOpMode == DataHVACGlobals::CycFanCycCoil) {
-                    DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
                 }
 
                 WaterToAirHeatPumpSimple::SimWatertoAirHPSimple(state,
@@ -11145,7 +11096,7 @@ namespace UnitarySystems {
                 this->heatPumpRunFrac(PartLoadRatio, errFlag, this->m_WSHPRuntimeFrac);
 
                 if (PartLoadRatio > 0.0 && this->m_WSHPRuntimeFrac > 0.0 && this->m_FanOpMode == DataHVACGlobals::CycFanCycCoil) {
-                    DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / this->m_WSHPRuntimeFrac;
                 }
 
                 WaterToAirHeatPump::SimWatertoAirHP(state,
@@ -11339,7 +11290,7 @@ namespace UnitarySystems {
         Real64 DesOutHumRat = this->m_DesiredOutletHumRat;
         int CoilType_Num = this->m_CoolingCoilType_Num;
         Real64 LoopDXCoilMaxRTFSave = 0.0;
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             LoopDXCoilMaxRTFSave = state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF = 0.0;
         }
@@ -11467,6 +11418,22 @@ namespace UnitarySystems {
                     DXCoils::SimDXCoilMultiMode(
                         state, CompName, state.dataUnitarySystems->On, FirstHVACIteration, PartLoadFrac, DehumidMode, this->m_CoolingCoilIndex, FanOpMode);
                     this->m_CompPartLoadRatio = PartLoadFrac;
+                } else if (CoilType_Num == DataHVACGlobals::CoilDX_Cooling) { // CoilCoolingDX
+                    // SP control (tentatively) operates at constant air flow regardless of speed
+                    // speed n uses MSHPMassFlowRateHigh and speed n-1 uses MSHPMassFlowRateLow
+                    state.dataHVACGlobal->MSHPMassFlowRateLow = this->m_DesignMassFlowRate;
+                    state.dataHVACGlobal->MSHPMassFlowRateHigh = this->m_DesignMassFlowRate;
+                    int OperationMode = DataHVACGlobals::coilNormalMode;
+                    if (coilCoolingDXs[this->m_CoolingCoilIndex].SubcoolReheatFlag) {
+                        OperationMode = DataHVACGlobals::coilSubcoolReheatMode;
+                    }
+                    else if (this->m_DehumidificationMode == 1) {
+                        OperationMode = DataHVACGlobals::coilEnhancedMode;
+                    }
+                    bool const singleMode = (this->m_SingleMode == 1);
+                    coilCoolingDXs[this->m_CoolingCoilIndex].simulate(
+                        state, OperationMode, PartLoadFrac, this->m_CoolingSpeedNum, this->m_CoolingSpeedRatio, this->m_FanOpMode, singleMode);
+                    this->m_CoolCompPartLoadRatio = PartLoadFrac;
                 } else if ((CoilType_Num == DataHVACGlobals::Coil_CoolingWater) ||
                            (CoilType_Num == DataHVACGlobals::Coil_CoolingWaterDetailed)) { // COIL:COOLING:WATER
 
@@ -11616,6 +11583,32 @@ namespace UnitarySystems {
                             state, CompName, state.dataUnitarySystems->On, FirstHVACIteration, PartLoadFrac, DehumidMode, this->m_CoolingCoilIndex, FanOpMode);
                         this->m_CompPartLoadRatio = PartLoadFrac;
 
+                    } else if (CoilType_Num == DataHVACGlobals::CoilDX_Cooling) { // CoilCoolingDX
+                        int OperationMode = DataHVACGlobals::coilNormalMode;
+                        if (coilCoolingDXs[this->m_CoolingCoilIndex].SubcoolReheatFlag) {
+                            OperationMode = DataHVACGlobals::coilSubcoolReheatMode;
+                        }
+                        else if (this->m_DehumidificationMode == 1) {
+                            OperationMode = DataHVACGlobals::coilEnhancedMode;
+                        }
+                        this->m_CoolingSpeedRatio = 1.0;
+                        bool const singleMode = (this->m_SingleMode == 1);
+                        for (int speedNum = 1; speedNum <= this->m_NumOfSpeedCooling; speedNum++) {
+                            this->m_CoolingSpeedNum = speedNum;
+                            coilCoolingDXs[this->m_CoolingCoilIndex].simulate(
+                                state, OperationMode, PartLoadFrac, this->m_CoolingSpeedNum, this->m_CoolingSpeedRatio, this->m_FanOpMode, singleMode);
+                            if ((state.dataLoopNodes->Node(OutletNode).Temp - DesOutTemp) < Acc) break;
+                        }
+                        if (this->m_CoolingSpeedNum == 1) {
+                            this->m_CompPartLoadRatio = PartLoadFrac;
+                            this->m_CoolCompPartLoadRatio = PartLoadFrac; // why is the set only for a few?
+                            SpeedRatio = 0.0;
+                        } else {
+                            SpeedRatio = PartLoadFrac;
+                            PartLoadFrac = 1.0;
+                            this->m_CompPartLoadRatio = 1.0;
+                            this->m_CoolCompPartLoadRatio = 1.0;
+                        }
                     } else if ((CoilType_Num == DataHVACGlobals::Coil_CoolingWater) ||
                                (CoilType_Num == DataHVACGlobals::Coil_CoolingWaterDetailed)) { // COIL:COOLING:WATER
 
@@ -11764,7 +11757,7 @@ namespace UnitarySystems {
                                                                                         HXUnitOn,
                                                                                         _,
                                                                                         state.dataUnitarySystems->economizerFlag);
-                                    TempOutletTempDXCoil = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletTemp(this->m_CoolingCoilIndex);
+                                    TempOutletTempDXCoil = state.dataHVACAssistedCC->HXAssistedCoilOutletTemp(this->m_CoolingCoilIndex);
                                 }
                                 TempMinPLR = TempMaxPLR;
                                 while ((TempOutletTempDXCoil - DesOutTemp) < 0.0 && TempMinPLR >= 0.0) {
@@ -11782,7 +11775,7 @@ namespace UnitarySystems {
                                                                                         HXUnitOn,
                                                                                         _,
                                                                                         state.dataUnitarySystems->economizerFlag);
-                                    TempOutletTempDXCoil = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletTemp(this->m_CoolingCoilIndex);
+                                    TempOutletTempDXCoil = state.dataHVACAssistedCC->HXAssistedCoilOutletTemp(this->m_CoolingCoilIndex);
                                 }
                                 // Relax boundary slightly to assure a solution can be found using RegulaFalsi (i.e. one boundary may
                                 // be very near the desired result)
@@ -11933,6 +11926,27 @@ namespace UnitarySystems {
                             TempSolveRoot::SolveRoot(state, Acc, MaxIte, SolFla, PartLoadFrac, &this->multiModeDXCoilResidual, 0.0, 1.0, Par);
                             this->m_CompPartLoadRatio = PartLoadFrac;
 
+                        } else if (CoilType_Num == DataHVACGlobals::CoilDX_Cooling) { // CoilCoolingDX
+
+                            Par[1] = double(this->m_CoolingCoilIndex);
+                            Par[2] = DesOutTemp;
+                            // dehumidification mode = 0 for normal mode, 1+ for enhanced mode
+                            Par[3] = double(DehumidMode);
+                            Par[4] = double(FanOpMode);
+                            Par[5] = this->m_CoolingSpeedNum;
+                            Par[6] = this->m_CoolingSpeedRatio;
+                            Par[7] = 0.0;
+                            Par[8] = 0.0;
+                            if (this->m_SingleMode == 1) Par[8] = 1.0;
+                            General::SolveRoot(state, Acc, MaxIte, SolFla, PartLoadFrac, &this->genericDXCoilResidual, 0.0, 1.0, Par);
+                            if (this->m_CoolingSpeedNum == 1) {
+                                this->m_CompPartLoadRatio = PartLoadFrac;
+                                SpeedRatio = 0.0;
+                            } else {
+                                SpeedRatio = PartLoadFrac;
+                                PartLoadFrac = 1.0;
+                                this->m_CompPartLoadRatio = 1.0;
+                            }
                         } else if ((CoilType_Num == DataHVACGlobals::Coil_CoolingWater) ||
                                    (CoilType_Num == DataHVACGlobals::Coil_CoolingWaterDetailed)) {
 
@@ -12003,7 +12017,7 @@ namespace UnitarySystems {
                         HVACHXAssistedCoolingCoil::SimHXAssistedCoolingCoil(
                             state, CompName, FirstHVACIteration, state.dataUnitarySystems->On, PartLoadFrac, this->m_CoolingCoilIndex, FanOpMode, HXUnitOn, _, state.dataUnitarySystems->economizerFlag);
 
-                        OutletTempDXCoil = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletTemp(this->m_CoolingCoilIndex);
+                        OutletTempDXCoil = state.dataHVACAssistedCC->HXAssistedCoilOutletTemp(this->m_CoolingCoilIndex);
 
                         //               FullOutput will be different than the FullOutput determined above during sensible PLR calculations
                         FullOutput = state.dataLoopNodes->Node(InletNode).MassFlowRate *
@@ -12097,6 +12111,40 @@ namespace UnitarySystems {
                         }
                         this->m_CompPartLoadRatio = PartLoadFrac;
 
+                    } else if (CoilType_Num == DataHVACGlobals::CoilDX_Cooling) { // CoilCoolingDX
+                        int OperationMode = DataHVACGlobals::coilEnhancedMode;
+                        if (coilCoolingDXs[this->m_CoolingCoilIndex].SubcoolReheatFlag) {
+                            OperationMode = DataHVACGlobals::coilSubcoolReheatMode;
+                        }
+                        if (this->m_CoolingSpeedNum == 0) this->m_CoolingSpeedNum = 1;
+                        bool const singleMode = (this->m_SingleMode == 1);
+                        for (int speedNum = this->m_CoolingSpeedNum; speedNum <= this->m_NumOfSpeedCooling; speedNum++) {
+                            this->m_CoolingSpeedNum = speedNum;
+                            coilCoolingDXs[this->m_CoolingCoilIndex].simulate(
+                                state, OperationMode, PartLoadFrac, this->m_CoolingSpeedNum, this->m_CoolingSpeedRatio, this->m_FanOpMode, singleMode);
+                            if ((state.dataLoopNodes->Node(OutletNode).Temp - DesOutTemp) < Acc) break;
+                        }
+
+                        Par[1] = double(this->m_CoolingCoilIndex);
+                        Par[2] = DesOutTemp;
+                        // dehumidification mode = 0 for normal mode, 1+ for enhanced mode
+                        // need to test what happens when Alt mode doesn't exist, or somehow test for it,
+                        // or fatal out in GetInput
+                        Par[3] = 1.0; // DehumidMode
+                        Par[4] = double(FanOpMode);
+                        Par[5] = this->m_CoolingSpeedNum;
+                        Par[6] = 1.0; //  this->m_CoolingSpeedRatio;
+                        Par[7] = 0.0;
+                        General::SolveRoot(state, Acc, MaxIte, SolFla, PartLoadFrac, &this->genericDXCoilResidual, 0.0, 1.0, Par);
+                        if (this->m_CoolingSpeedNum == 1) {
+                            this->m_CompPartLoadRatio = PartLoadFrac;
+                            SpeedRatio = 0.0;
+                        } else {
+                            SpeedRatio = PartLoadFrac;
+                            PartLoadFrac = 1.0;
+                            this->m_CompPartLoadRatio = 1.0;
+                        }
+
                     } else {
                     }
                 } // END IF humidity ratio setpoint not met - Multimode humidity control
@@ -12175,7 +12223,7 @@ namespace UnitarySystems {
                                                                                             HXUnitOn,
                                                                                             _,
                                                                                             state.dataUnitarySystems->economizerFlag);
-                                        OutletHumRatDXCoil = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletHumRat(this->m_CoolingCoilIndex);
+                                        OutletHumRatDXCoil = state.dataHVACAssistedCC->HXAssistedCoilOutletHumRat(this->m_CoolingCoilIndex);
                                     }
                                     TempMinPLR = TempMaxPLR;
                                     while ((OutletHumRatDXCoil - TempOutletHumRatDXCoil) <= 0.0 && TempMinPLR >= 0.0) {
@@ -12194,7 +12242,7 @@ namespace UnitarySystems {
                                                                                             HXUnitOn,
                                                                                             _,
                                                                                             state.dataUnitarySystems->economizerFlag);
-                                        OutletHumRatDXCoil = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletHumRat(this->m_CoolingCoilIndex);
+                                        OutletHumRatDXCoil = state.dataHVACAssistedCC->HXAssistedCoilOutletHumRat(this->m_CoolingCoilIndex);
                                     }
                                     //                   tighter boundary of solution has been found, CALL RegulaFalsi a second time
                                     TempSolveRoot::SolveRoot(state,
@@ -12425,6 +12473,38 @@ namespace UnitarySystems {
                             TempSolveRoot::SolveRoot(state, Acc, MaxIte, SolFlaLat, PartLoadFrac, this->multiModeDXCoilHumRatResidual, 0.0, 1.0, Par);
                             this->m_CompPartLoadRatio = PartLoadFrac;
 
+                        } else if (CoilType_Num == DataHVACGlobals::CoilDX_Cooling) { // CoilCoolingDX
+                            int OperationMode = DataHVACGlobals::coilNormalMode;
+                            if (this->m_CoolingSpeedNum == 0) this->m_CoolingSpeedNum = 1;
+                            bool const singleMode = (this->m_SingleMode == 1);
+                            PartLoadFrac = 1.0;
+                            for (int speedNum = this->m_CoolingSpeedNum; speedNum <= this->m_NumOfSpeedCooling; speedNum++) {
+                                this->m_CoolingSpeedNum = speedNum;
+                                coilCoolingDXs[this->m_CoolingCoilIndex].simulate(state, 
+                                    OperationMode, PartLoadFrac, this->m_CoolingSpeedNum, this->m_CoolingSpeedRatio, this->m_FanOpMode, singleMode);
+                                if ((state.dataLoopNodes->Node(OutletNode).HumRat - DesOutHumRat) < Acc) break;
+                            }
+
+                            Par[1] = double(this->m_CoolingCoilIndex);
+                            Par[2] = DesOutHumRat;
+                            // dehumidification mode = 0 for normal mode, 1+ for enhanced mode
+                            // need to test what happens when Alt mode doesn't exist, or somehow test for it,
+                            // or fatal out in GetInput
+                            Par[3] = 0.0; // DehumidMode
+                            Par[4] = double(FanOpMode);
+                            Par[5] = this->m_CoolingSpeedNum;
+                            Par[6] = 1.0; //  this->m_CoolingSpeedRatio;
+                            Par[7] = 1.0; // run on latent, check coil outlet node HumRat
+                            General::SolveRoot(state, HumRatAcc, MaxIte, SolFla, PartLoadFrac, &this->genericDXCoilResidual, 0.0, 1.0, Par);
+                            if (this->m_CoolingSpeedNum == 1) {
+                                this->m_CompPartLoadRatio = PartLoadFrac;
+                                SpeedRatio = 0.0;
+                            } else {
+                                SpeedRatio = PartLoadFrac;
+                                PartLoadFrac = 1.0;
+                                this->m_CompPartLoadRatio = 1.0;
+                            }
+
                         } else if ((CoilType_Num == DataHVACGlobals::Coil_CoolingWater) ||
                                    (CoilType_Num == DataHVACGlobals::Coil_CoolingWaterDetailed)) { // COIL:COOLING:WATER
 
@@ -12560,7 +12640,7 @@ namespace UnitarySystems {
         this->m_CoolingCycRatio = CycRatio;
         this->m_DehumidificationMode = DehumidMode;
 
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF =
                 max(state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF, LoopDXCoilMaxRTFSave);
         }
@@ -12628,7 +12708,7 @@ namespace UnitarySystems {
 
         Real64 LoopHeatingCoilMaxRTFSave = 0.0;
         Real64 LoopDXCoilMaxRTFSave = 0.0;
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             LoopHeatingCoilMaxRTFSave = state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF = 0.0;
             LoopDXCoilMaxRTFSave = state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF;
@@ -13195,7 +13275,7 @@ namespace UnitarySystems {
         this->m_HeatingSpeedRatio = SpeedRatio;
         this->m_HeatingCycRatio = CycRatio;
 
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF =
                 max(state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF, LoopHeatingCoilMaxRTFSave);
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF =
@@ -13263,7 +13343,7 @@ namespace UnitarySystems {
 
         Real64 LoopHeatingCoilMaxRTFSave = 0.0;
         Real64 LoopDXCoilMaxRTFSave = 0.0;
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             LoopHeatingCoilMaxRTFSave = state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF = 0.0;
             LoopDXCoilMaxRTFSave = state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF;
@@ -13567,7 +13647,7 @@ namespace UnitarySystems {
         this->m_SuppHeatPartLoadFrac = PartLoadFrac;
 
         // LoopHeatingCoilMaxRTF used for AirflowNetwork gets set in child components (gas and fuel)
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF =
                 max(state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF, LoopHeatingCoilMaxRTFSave);
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopDXCoilRTF =
@@ -13607,7 +13687,7 @@ namespace UnitarySystems {
 
         // Locals
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
-        std::string CompName = ""; // Name of Unitary System object
+        std::string CompName; // Name of Unitary System object
         Real64 SensLoad = 0.0;
         Real64 LatLoad = 0.0;
         int CoilTypeNum = 0;
@@ -13664,6 +13744,7 @@ namespace UnitarySystems {
 
         if ((CoilTypeNum == DataHVACGlobals::CoilDX_MultiSpeedCooling) || (CoilTypeNum == DataHVACGlobals::CoilDX_MultiSpeedHeating)) {
 
+            // TODO: THIS IF SECTION DOES NOTHING
             if (CoilType == DataHVACGlobals::Cooling) {
                 if (this->m_CoolingSpeedNum <= 1.0) {
                     SpeedRatio = 0.0;
@@ -13709,6 +13790,7 @@ namespace UnitarySystems {
                     }
                 }
             }
+            bool const singleMode = (this->m_SingleMode == 1);
             int OperationMode = DataHVACGlobals::coilNormalMode;
             if (coilCoolingDXs[this->m_CoolingCoilIndex].SubcoolReheatFlag) {
                 OperationMode = DataHVACGlobals::coilSubcoolReheatMode;
@@ -13716,8 +13798,8 @@ namespace UnitarySystems {
                 OperationMode = DataHVACGlobals::coilEnhancedMode;
             }
 
-            coilCoolingDXs[this->m_CoolingCoilIndex].simulate(state,
-                OperationMode, CycRatio, this->m_CoolingSpeedNum, SpeedRatio, this->m_FanOpMode, this->CoilSHR);
+            coilCoolingDXs[this->m_CoolingCoilIndex].simulate(
+                state, OperationMode, CycRatio, this->m_CoolingSpeedNum, SpeedRatio, this->m_FanOpMode, singleMode, this->CoilSHR);
 
         } else if (CoilTypeNum == DataHVACGlobals::Coil_CoolingAirToAirVariableSpeed) {
 
@@ -13820,7 +13902,7 @@ namespace UnitarySystems {
         // CALL the series of components that simulate a Unitary System
         if (this->m_FanExists && this->m_FanPlace == FanPlace::BlowThru) {
             if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
+                state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
             } else {
                 Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
             }
@@ -13863,7 +13945,7 @@ namespace UnitarySystems {
 
         if (this->m_FanExists && this->m_FanPlace == FanPlace::DrawThru) {
             if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
+                state.dataHVACFan->fanObjs[this->m_FanIndex]->simulate(state, _, _, _, _, state.dataUnitarySystems->m_massFlow1, state.dataUnitarySystems->m_runTimeFraction1, state.dataUnitarySystems->m_massFlow2, state.dataUnitarySystems->m_runTimeFraction2, _);
             } else {
                 Fans::SimulateFanComponents(state, blankString, FirstHVACIteration, this->m_FanIndex, state.dataUnitarySystems->FanSpeedRatio);
             }
@@ -13890,7 +13972,7 @@ namespace UnitarySystems {
         auto &OASysEqSizing(state.dataSize->OASysEqSizing);
         auto &CurOASysNum(state.dataSize->CurOASysNum);
 
-        Real64 ReportingConstant = DataHVACGlobals::TimeStepSys * DataGlobalConstants::SecInHour;
+        Real64 ReportingConstant = state.dataHVACGlobal->TimeStepSys * DataGlobalConstants::SecInHour;
 
         Real64 SensibleOutput = 0.0; // sensible output rate, {W}
         Real64 LatentOutput = 0.0;   // latent output rate, {W}
@@ -13997,7 +14079,7 @@ namespace UnitarySystems {
 
         Real64 locFanElecPower = 0.0;
         if (this->m_FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-            locFanElecPower = HVACFan::fanObjs[this->m_FanIndex]->fanPower();
+            locFanElecPower = state.dataHVACFan->fanObjs[this->m_FanIndex]->fanPower();
         } else {
             locFanElecPower = Fans::GetFanPower(state, this->m_FanIndex);
         }
@@ -14022,7 +14104,7 @@ namespace UnitarySystems {
                 if (this->m_LastMode == state.dataUnitarySystems->CoolingMode) {
                     this->m_CoolingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - this->m_CycRatio) * ReportingConstant;
                 }
-                elecCoolingPower = DataHVACGlobals::DXElecCoolingPower;
+                elecCoolingPower = state.dataHVACGlobal->DXElecCoolingPower;
 
             } else if ((SELECT_CASE_var == DataHVACGlobals::CoilDX_MultiSpeedCooling) ||
                        ((SELECT_CASE_var == DataHVACGlobals::CoilDX_Cooling) && (this->m_NumOfSpeedCooling > 1))) {
@@ -14038,7 +14120,7 @@ namespace UnitarySystems {
                 if (this->m_LastMode == state.dataUnitarySystems->CoolingMode) {
                     this->m_CoolingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - CompPartLoadFrac) * ReportingConstant;
                 }
-                elecCoolingPower = DataHVACGlobals::DXElecCoolingPower;
+                elecCoolingPower = state.dataHVACGlobal->DXElecCoolingPower;
 
             } else if (SELECT_CASE_var == DataHVACGlobals::Coil_CoolingWater || SELECT_CASE_var == DataHVACGlobals::Coil_CoolingWaterDetailed) {
 
@@ -14083,7 +14165,7 @@ namespace UnitarySystems {
                 if (this->m_LastMode == state.dataUnitarySystems->CoolingMode) {
                     this->m_CoolingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - CompPartLoadFrac) * ReportingConstant;
                 }
-                elecCoolingPower = DataHVACGlobals::DXElecCoolingPower;
+                elecCoolingPower = state.dataHVACGlobal->DXElecCoolingPower;
             } else if (SELECT_CASE_var == DataHVACGlobals::Coil_UserDefined || SELECT_CASE_var == DataHVACGlobals::CoilWater_CoolingHXAssisted ||
                        SELECT_CASE_var == DataHVACGlobals::CoilDX_PackagedThermalStorageCooling) {
                 if (state.dataUnitarySystems->CoolingLoad) {
@@ -14104,7 +14186,7 @@ namespace UnitarySystems {
                 if (this->m_LastMode == state.dataUnitarySystems->CoolingMode) {
                     this->m_CoolingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - CompPartLoadFrac) * ReportingConstant;
                 }
-                elecCoolingPower = DataHVACGlobals::DXElecCoolingPower;
+                elecCoolingPower = state.dataHVACGlobal->DXElecCoolingPower;
             }
         }
 
@@ -14124,7 +14206,7 @@ namespace UnitarySystems {
                 if (this->m_LastMode == state.dataUnitarySystems->HeatingMode) {
                     this->m_HeatingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - CompPartLoadFrac) * ReportingConstant;
                 }
-                elecHeatingPower = DataHVACGlobals::DXElecHeatingPower;
+                elecHeatingPower = state.dataHVACGlobal->DXElecHeatingPower;
 
             } else if ((SELECT_CASE_var == DataHVACGlobals::Coil_HeatingGas_MultiStage) ||
                        (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingElectric_MultiStage)) {
@@ -14140,7 +14222,7 @@ namespace UnitarySystems {
                     this->m_HeatingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - this->m_PartLoadFrac) * ReportingConstant;
                 }
 
-                elecHeatingPower = DataHVACGlobals::ElecHeatingCoilPower;
+                elecHeatingPower = state.dataHVACGlobal->ElecHeatingCoilPower;
 
             } else if ((SELECT_CASE_var == DataHVACGlobals::CoilDX_HeatingEmpirical) ||
                        (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingWaterToAirHP) ||
@@ -14157,7 +14239,7 @@ namespace UnitarySystems {
                     this->m_HeatingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - this->m_PartLoadFrac) * ReportingConstant;
                 }
 
-                elecHeatingPower = DataHVACGlobals::DXElecHeatingPower;
+                elecHeatingPower = state.dataHVACGlobal->DXElecHeatingPower;
 
             } else if ((SELECT_CASE_var == DataHVACGlobals::Coil_UserDefined) || (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingWater) ||
                        (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingSteam) || (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingDesuperheater)) {
@@ -14181,7 +14263,7 @@ namespace UnitarySystems {
                 if (this->m_LastMode == state.dataUnitarySystems->HeatingMode) {
                     this->m_HeatingAuxElecConsumption += this->m_AncillaryOffPower * (1.0 - this->m_PartLoadFrac) * ReportingConstant;
                 }
-                elecHeatingPower = DataHVACGlobals::ElecHeatingCoilPower;
+                elecHeatingPower = state.dataHVACGlobal->ElecHeatingCoilPower;
             }
         }
 
@@ -14192,15 +14274,15 @@ namespace UnitarySystems {
         if (this->m_SuppCoilExists) {
             auto const SELECT_CASE_var(this->m_HeatingCoilType_Num);
             if (SELECT_CASE_var == DataHVACGlobals::Coil_HeatingElectric) {
-                suppHeatingPower = DataHVACGlobals::SuppHeatingCoilPower;
+                suppHeatingPower = state.dataHVACGlobal->SuppHeatingCoilPower;
             }
         }
 
         this->m_ElecPower = locFanElecPower + elecCoolingPower + elecHeatingPower + suppHeatingPower + this->m_TotalAuxElecPower;
         this->m_ElecPowerConsumption = this->m_ElecPower * ReportingConstant;
 
-        if (AirflowNetwork::SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlMultiADS ||
-            AirflowNetwork::SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlSimpleADS) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlMultiADS ||
+            state.dataAirflowNetwork->SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlSimpleADS) {
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).LoopSystemOnMassFlowrate = state.dataUnitarySystems->CompOnMassFlow;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).LoopSystemOffMassFlowrate = state.dataUnitarySystems->CompOffMassFlow;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).LoopFanOperationMode = this->m_FanOpMode;
@@ -14232,7 +14314,7 @@ namespace UnitarySystems {
         }
 
         // reset to 1 in case blow through fan configuration (fan resets to 1, but for blow thru fans coil sets back down < 1)
-        DataHVACGlobals::OnOffFanPartLoadFraction = 1.0;
+        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
         state.dataSize->ZoneEqUnitarySys = false;
     }
 
@@ -14249,7 +14331,7 @@ namespace UnitarySystems {
         // SUBROUTINE PARAMETER DEFINITIONS:
         static std::string const routineName("UnitarySystemHeatRecovery");
 
-        Real64 ReportingConstant = DataHVACGlobals::TimeStepSys * DataGlobalConstants::SecInHour;
+        Real64 ReportingConstant = state.dataHVACGlobal->TimeStepSys * DataGlobalConstants::SecInHour;
 
         int HeatRecInNode = this->m_HeatRecoveryInletNodeNum;
         int HeatRecOutNode = this->m_HeatRecoveryOutletNodeNum;
@@ -14260,7 +14342,7 @@ namespace UnitarySystems {
         // Set heat recovery mass flow rates
         Real64 HeatRecMassFlowRate = state.dataLoopNodes->Node(HeatRecInNode).MassFlowRate;
 
-        Real64 QHeatRec = DataHVACGlobals::MSHPWasteHeat;
+        Real64 QHeatRec = state.dataHVACGlobal->MSHPWasteHeat;
 
         if (HeatRecMassFlowRate > 0.0) {
 
@@ -14491,6 +14573,41 @@ namespace UnitarySystems {
         return Residuum;
     }
 
+    Real64 UnitarySys::genericDXCoilResidual(EnergyPlusData &state,
+                                             Real64 const PartLoadRatio,    // compressor cycling ratio (1.0 is continuous, 0.0 is off)
+                                             std::vector<Real64> const &Par // par(1) = DX coil number
+    )
+    {
+
+        //       AUTHOR         Richard Raustad, FSEC
+        //       DATE WRITTEN   February 2020
+
+        // Return value
+        Real64 Residuum; // residual to be minimized to zero
+
+        int CoilIndex = int(Par[1]);
+        bool useDehumMode = int(Par[3]) > 0;
+        int FanOpMode = int(Par[4]);
+        int CoolingSpeedNum = int(Par[5]);
+        Real64 CoolingSpeedRatio = Par[6];
+        bool RunOnSensible = (Par[7] == 0.0);
+        bool const singleMode = (Par[8] == 1.0);
+        if (CoolingSpeedNum == 1) {
+            coilCoolingDXs[CoilIndex].simulate(state, useDehumMode, PartLoadRatio, CoolingSpeedNum, CoolingSpeedRatio, FanOpMode, singleMode);
+        } else {
+            coilCoolingDXs[CoilIndex].simulate(state, useDehumMode, CoolingSpeedRatio, CoolingSpeedNum, PartLoadRatio, FanOpMode, singleMode);
+        }
+        Real64 outletCondition = 0.0;
+        if (RunOnSensible) {
+            outletCondition = state.dataLoopNodes->Node(coilCoolingDXs[CoilIndex].evapOutletNodeIndex).Temp;
+        } else {
+            outletCondition = state.dataLoopNodes->Node(coilCoolingDXs[CoilIndex].evapOutletNodeIndex).HumRat;
+        }
+        Residuum = Par[2] - outletCondition;
+
+        return Residuum;
+    }
+
     Real64 UnitarySys::DOE2DXCoilHumRatResidual(EnergyPlusData &state,
                                                 Real64 const PartLoadRatio,    // compressor cycling ratio (1.0 is continuous, 0.0 is off)
                                                 std::vector<Real64> const &Par // par(1) = DX coil number
@@ -14658,7 +14775,7 @@ namespace UnitarySystems {
             state.dataLoopNodes->Node(thisSys.CoolCoilFluidInletNode).MassFlowRate = thisSys.MaxCoolCoilFluidFlow * PartLoadRatio;
         }
         HVACHXAssistedCoolingCoil::CalcHXAssistedCoolingCoil(state, CoilIndex, FirstHVACIteration, state.dataUnitarySystems->On, PartLoadRatio, HXUnitOn, FanOpMode);
-        Real64 OutletAirTemp = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletTemp(CoilIndex);
+        Real64 OutletAirTemp = state.dataHVACAssistedCC->HXAssistedCoilOutletTemp(CoilIndex);
         Residuum = Par[2] - OutletAirTemp;
         return Residuum;
     }
@@ -14697,7 +14814,7 @@ namespace UnitarySystems {
         int FanOpMode = int(Par[5]);
         HVACHXAssistedCoolingCoil::CalcHXAssistedCoolingCoil(
             state, CoilIndex, FirstHVACIteration, state.dataUnitarySystems->On, PartLoadRatio, HXUnitOn, FanOpMode, _, state.dataUnitarySystems->economizerFlag);
-        Real64 OutletAirHumRat = HVACHXAssistedCoolingCoil::HXAssistedCoilOutletHumRat(CoilIndex);
+        Real64 OutletAirHumRat = state.dataHVACAssistedCC->HXAssistedCoilOutletHumRat(CoilIndex);
         Residuum = Par[2] - OutletAirHumRat;
         return Residuum;
     }
@@ -15701,9 +15818,9 @@ namespace UnitarySystems {
         thisSys.heatPumpRunFrac(PartLoadRatio, errFlag, RuntimeFrac);
 
         if (RuntimeFrac > 0.0 && thisSys.m_FanOpMode == DataHVACGlobals::CycFanCycCoil) {
-            DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
         } else {
-            DataHVACGlobals::OnOffFanPartLoadFraction = 1.0;
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
         }
 
         thisSys.m_CompPartLoadRatio = PartLoadRatio;
@@ -15863,9 +15980,9 @@ namespace UnitarySystems {
         thisSys.heatPumpRunFrac(PartLoadRatio, errFlag, RuntimeFrac);
 
         if (RuntimeFrac > 0.0 && thisSys.m_FanOpMode == DataHVACGlobals::CycFanCycCoil) {
-            DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
         } else {
-            DataHVACGlobals::OnOffFanPartLoadFraction = 1;
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1;
         }
 
         thisSys.m_CompPartLoadRatio = PartLoadRatio;
@@ -16110,11 +16227,7 @@ namespace UnitarySystems {
                 if (this->m_HeatingSpeedNum <= 1) {
                     this->m_HeatingSpeedRatio = 0.0;
                     this->m_HeatingCycRatio = PartLoadRatio;
-                    if (this->m_FanOpMode == DataHVACGlobals::ContFanCycCoil) {
-                        DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow; // #5737
-                    } else {
-                        DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow * PartLoadRatio; // #5518
-                    }
+                    state.dataHVACGlobal->MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow;
                 } else {
                     if (this->m_SingleMode == 0) {
                         this->m_HeatingSpeedRatio = PartLoadRatio;
@@ -16128,9 +16241,9 @@ namespace UnitarySystems {
                        this->m_HeatingCoilType_Num == DataHVACGlobals::Coil_HeatingWaterToAirHP) {
                 this->heatPumpRunFrac(PartLoadRatio, errFlag, RuntimeFrac);
                 if (RuntimeFrac > 0.0 && this->m_FanOpMode == DataHVACGlobals::CycFanCycCoil) { // was DataHVACGlobals::ContFanCycCoil
-                    DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
                 } else {
-                    DataHVACGlobals::OnOffFanPartLoadFraction = 1;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = 1;
                 }
                 this->m_CompPartLoadRatio = PartLoadRatio;
                 this->m_WSHPRuntimeFrac = RuntimeFrac;
@@ -16143,7 +16256,7 @@ namespace UnitarySystems {
                 if (this->m_CoolingSpeedNum <= 1) {
                     this->m_CoolingSpeedRatio = 0.0;
                     this->m_CoolingCycRatio = PartLoadRatio;
-                    DataHVACGlobals::MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow;
+                    state.dataHVACGlobal->MSHPMassFlowRateLow = state.dataUnitarySystems->CompOnMassFlow;
                 } else {
                     if (this->m_SingleMode == 0) {
                         this->m_CoolingSpeedRatio = PartLoadRatio;
@@ -16159,9 +16272,9 @@ namespace UnitarySystems {
                 if (RuntimeFrac > 0.0 &&
                     this->m_FanOpMode ==
                         DataHVACGlobals::CycFanCycCoil) { // was DataHVACGlobals::ContFanCycCoil, maybe file an issue or see if it fixes some
-                    DataHVACGlobals::OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
                 } else {
-                    DataHVACGlobals::OnOffFanPartLoadFraction = 1.0;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                 }
                 this->m_CompPartLoadRatio = PartLoadRatio;
                 this->m_WSHPRuntimeFrac = RuntimeFrac;
@@ -16294,6 +16407,98 @@ namespace UnitarySystems {
         }
         if (airNode == 0) errFlag = true;
         return airNode;
+    }
+
+    bool searchZoneInletNodes(EnergyPlusData &state, int nodeToFind, int &ZoneEquipConfigIndex, int &InletNodeIndex)
+    {
+        for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
+            for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumInletNodes; ++ZoneInletNum) {
+                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).InletNode(ZoneInletNum) == nodeToFind) {
+                    ZoneEquipConfigIndex = ControlledZoneNum;
+                    InletNodeIndex = ZoneInletNum;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool searchZoneInletNodesByEquipmentIndex(EnergyPlusData &state, int nodeToFind, int zoneEquipmentIndex)
+    {
+        for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(zoneEquipmentIndex).NumInletNodes; ++ZoneInletNum) {
+            if (state.dataZoneEquip->ZoneEquipConfig(zoneEquipmentIndex).InletNode(ZoneInletNum) == nodeToFind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool searchZoneInletNodeAirLoopNum(EnergyPlusData &state, int airLoopNumToFind, int ZoneEquipConfigIndex, int &InletNodeIndex)
+    {
+        for (int ZoneInletNum = 1; ZoneInletNum <= state.dataZoneEquip->ZoneEquipConfig(ZoneEquipConfigIndex).NumInletNodes; ++ZoneInletNum) {
+            if (state.dataZoneEquip->ZoneEquipConfig(ZoneEquipConfigIndex).InletNodeAirLoopNum(ZoneInletNum) == airLoopNumToFind) {
+                InletNodeIndex = ZoneInletNum;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool searchExhaustNodes(EnergyPlusData &state, const int nodeToFind, int &ZoneEquipConfigIndex, int &ExhaustNodeIndex)
+    {
+        for (int ControlledZoneNum = 1; ControlledZoneNum <= state.dataGlobal->NumOfZones; ++ControlledZoneNum) {
+            for (int ZoneExhNum = 1; ZoneExhNum <= state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).NumExhaustNodes; ++ZoneExhNum) {
+                if (state.dataZoneEquip->ZoneEquipConfig(ControlledZoneNum).ExhaustNode(ZoneExhNum) == nodeToFind) {
+                    ZoneEquipConfigIndex = ControlledZoneNum;
+                    ExhaustNodeIndex = ZoneExhNum;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    void setSystemParams(EnergyPlusData &state, UnitarySys &thisSys, Real64 &TotalFloorAreaOnAirLoop, const std::string thisObjectName)
+    {
+        thisSys.NodeNumOfControlledZone = state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).ZoneNode;
+        TotalFloorAreaOnAirLoop = state.dataHeatBal->Zone(state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).ActualZoneNum).FloorArea;
+        thisSys.m_AirLoopEquipment = false;
+        if (state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).EquipListIndex > 0) {
+            for (int EquipNum = 1;
+                 EquipNum <=
+                 state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).EquipListIndex).NumOfEquipTypes;
+                 ++EquipNum) {
+                if ((state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).EquipListIndex)
+                         .EquipType_Num(EquipNum) != DataZoneEquipment::ZoneUnitarySys_Num) ||
+                 state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).EquipListIndex).EquipName(EquipNum) !=
+                        thisObjectName)
+                    continue;
+                thisSys.m_ZoneSequenceCoolingNum =
+                state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).EquipListIndex)
+                        .CoolingPriority(EquipNum);
+                thisSys.m_ZoneSequenceHeatingNum =
+                state.dataZoneEquip->ZoneEquipList(state.dataZoneEquip->ZoneEquipConfig(thisSys.ControlZoneNum).EquipListIndex)
+                        .HeatingPriority(EquipNum);
+                break;
+            }
+        }
+    }
+
+    bool searchTotalComponents(EnergyPlusData &state, std:: string objectNameToFind, int &compIndex, int &branchIndex, int &airLoopIndex){
+        for (int AirLoopNum = 1; AirLoopNum <= state.dataHVACGlobal->NumPrimaryAirSys; ++AirLoopNum) {
+            for (int BranchNum = 1; BranchNum <= state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).NumBranches; ++BranchNum) {
+                for (int CompNum = 1; CompNum <= state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).Branch(BranchNum).TotalComponents; ++CompNum) {
+                    if (UtilityRoutines::SameString(state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).Branch(BranchNum).Comp(CompNum).Name,
+                                                    objectNameToFind)){
+                        compIndex = CompNum;
+                        branchIndex = BranchNum;
+                        airLoopIndex = AirLoopNum;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 } // namespace UnitarySystems

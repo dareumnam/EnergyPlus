@@ -66,6 +66,7 @@
 #include <EnergyPlus/HeatBalanceManager.hh>
 #include <EnergyPlus/IOFiles.hh>
 #include <EnergyPlus/ScheduleManager.hh>
+#include <EnergyPlus/SimAirServingZones.hh>
 #include <EnergyPlus/ZoneAirLoopEquipmentManager.hh>
 #include <EnergyPlus/ZoneEquipmentManager.hh>
 
@@ -542,7 +543,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_CalcZoneMassBalanceTest2)
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(ZoneNum).ZoneNode).Temp = 20.0;
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(ZoneNum).ZoneNode).HumRat = 0.004;
 
-    DataHVACGlobals::NumPrimaryAirSys = 3;
+    state->dataHVACGlobal->NumPrimaryAirSys = 3;
     state->dataAirSystemsData->PrimaryAirSystems.allocate(3);
     state->dataAirLoop->AirLoopFlow.allocate(3);
 
@@ -655,7 +656,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_CalcZoneMassBalanceTest3)
         state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(ZoneNum).InletNode(NodeNum)).MassFlowRate = 1.0;
     }
 
-    DataHVACGlobals::NumPrimaryAirSys = 1;
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
     state->dataAirSystemsData->PrimaryAirSystems.allocate(1);
     state->dataAirLoop->AirLoopFlow.allocate(1);
 
@@ -776,7 +777,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_CalcZoneMassBalanceTest4)
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(ZoneNum).ZoneNode).Temp = 20.0;
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(ZoneNum).ZoneNode).HumRat = 0.004;
 
-    DataHVACGlobals::NumPrimaryAirSys = 3;
+    state->dataHVACGlobal->NumPrimaryAirSys = 3;
     state->dataAirSystemsData->PrimaryAirSystems.allocate(3);
     state->dataAirLoop->AirLoopFlow.allocate(3);
 
@@ -1364,7 +1365,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeUniformPLR)
     EXPECT_EQ(coolingPriority, 1);
     EXPECT_EQ(heatingPriority, 1);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal 2 for UniformPLR
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 2);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 2);
     zoneInlet = UtilityRoutines::FindItemInList("ZONE EQUIP INLET 3", state->dataLoopNodes->NodeID, state->dataLoopNodes->NumOfNodes);
     coolingPriority = 0;
     heatingPriority = 0;
@@ -1372,7 +1373,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeUniformPLR)
     EXPECT_EQ(coolingPriority, 0);
     EXPECT_EQ(heatingPriority, 3);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal 2 for UniformPLR
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 2);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 2);
 
     // UniformPLR Test 2 - Heating, FirstHVACIteration = false
     firstHVACIteration = false;
@@ -1582,7 +1583,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeSequentialUniformPLR)
     EXPECT_EQ(coolingPriority, 1);
     EXPECT_EQ(heatingPriority, 1);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal equipmnum+1 for SequentialUniformPLR
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 2);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 2);
     zoneInlet = UtilityRoutines::FindItemInList("ZONE EQUIP INLET 3", state->dataLoopNodes->NodeID, state->dataLoopNodes->NumOfNodes);
     coolingPriority = 0;
     heatingPriority = 0;
@@ -1590,7 +1591,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeSequentialUniformPLR)
     EXPECT_EQ(coolingPriority, 0);
     EXPECT_EQ(heatingPriority, 3);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal equipmnum+1 for SequentialUniformPLR
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 4);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 4);
 
     // SequentialUniformPLR Test 2 - Heating, FirstHVACIteration = false, low load requiring only 1 piece of equipment
     firstHVACIteration = false;
@@ -1900,7 +1901,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeSequentialLoad_MixedEqu
     EXPECT_EQ(coolingPriority, 1);
     EXPECT_EQ(heatingPriority, 1);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal the highest air terminal equipment num for sequential loading
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 1);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 1);
     zoneInlet = UtilityRoutines::FindItemInList("ZONE EQUIP INLET 3", state->dataLoopNodes->NodeID, state->dataLoopNodes->NumOfNodes);
     coolingPriority = 0;
     heatingPriority = 0;
@@ -1908,7 +1909,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeSequentialLoad_MixedEqu
     EXPECT_EQ(coolingPriority, 3);
     EXPECT_EQ(heatingPriority, 3);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal the highest air terminal equipment num for sequential loading
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 3);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 3);
 
     // Sequential Test 2 - Heating, FirstHVACIteration = false
     firstHVACIteration = false;
@@ -2131,7 +2132,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeSequentialLoad_MixedEqu
     EXPECT_EQ(coolingPriority, 1);
     EXPECT_EQ(heatingPriority, 1);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal the highest air terminal equipment num for sequential loading
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 1);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 1);
     zoneInlet = UtilityRoutines::FindItemInList("ZONE EQUIP INLET 3", state->dataLoopNodes->NodeID, state->dataLoopNodes->NumOfNodes);
     coolingPriority = 0;
     heatingPriority = 0;
@@ -2139,7 +2140,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_DistributeSequentialLoad_MixedEqu
     EXPECT_EQ(coolingPriority, 3);
     EXPECT_EQ(heatingPriority, 3);
     // DataHVACGlobals::MinAirLoopIterationsAfterFirst should equal the highest air terminal equipment num for sequential loading
-    EXPECT_EQ(DataHVACGlobals::MinAirLoopIterationsAfterFirst, 3);
+    EXPECT_EQ(state->dataHVACGlobal->MinAirLoopIterationsAfterFirst, 3);
 
     // Sequential Test 2 - Heating, FirstHVACIteration = false
     firstHVACIteration = false;
@@ -3062,7 +3063,7 @@ TEST_F(EnergyPlusFixture, ZoneEquipmentManager_ZoneMassBalance_wAdjustInfiltrati
     GetProjectControlData(*state, ErrorsFound);
     EXPECT_FALSE(ErrorsFound);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.EnforceZoneMassBalance);
-    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustMixingOnly);
+    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustmentType::AdjustMixingOnly);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationTreatment, DataHeatBalance::AdjustInfiltrationFlow);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationZoneType, DataHeatBalance::AllZones);
     GetSimpleAirModelInputs(*state, ErrorsFound);
@@ -3306,7 +3307,7 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustReturnOnly)
     GetProjectControlData(*state, ErrorsFound);
     EXPECT_FALSE(ErrorsFound);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.EnforceZoneMassBalance);
-    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustReturnOnly);
+    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustmentType::AdjustReturnOnly);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationTreatment, DataHeatBalance::AdjustInfiltrationFlow);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationZoneType, DataHeatBalance::AllZones);
     GetSimpleAirModelInputs(*state, ErrorsFound);
@@ -3322,12 +3323,14 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustReturnOnly)
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(2).ZoneNode).HumRat = 0.004;
 
     // set number of airloops
-    DataHVACGlobals::NumPrimaryAirSys = 2;
-    state->dataAirSystemsData->PrimaryAirSystems.allocate(DataHVACGlobals::NumPrimaryAirSys);
-    state->dataAirLoop->AirLoopFlow.allocate(DataHVACGlobals::NumPrimaryAirSys);
+    state->dataHVACGlobal->NumPrimaryAirSys = 2;
+    state->dataAirSystemsData->PrimaryAirSystems.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
+    state->dataAirLoop->AirLoopFlow.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
     // set airloops design supply air flow rate to 1.0
     state->dataAirLoop->AirLoopFlow(1).DesSupply = 1.0;
     state->dataAirLoop->AirLoopFlow(2).DesSupply = 1.0;
+    state->dataZoneEquip->ZoneEquipConfig(1).AirLoopDesSupply = state->dataAirLoop->AirLoopFlow(1).DesSupply;
+    state->dataZoneEquip->ZoneEquipConfig(2).AirLoopDesSupply = state->dataAirLoop->AirLoopFlow(2).DesSupply;
     // set airloop numbers
     state->dataZoneEquip->ZoneEquipConfig(1).ReturnNodeAirLoopNum(1) = 1;
     state->dataZoneEquip->ZoneEquipConfig(2).ReturnNodeAirLoopNum(1) = 2;
@@ -3348,6 +3351,7 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustReturnOnly)
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(2).ExhaustNode(1)).MassFlowRate = 0.0;
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(2).ExhaustNode(2)).MassFlowRate = 1.0;
     ;
+
     InitAirHeatBalance(*state);
     CalcAirFlowSimple(*state);
     CalcZoneMassBalance(*state, false);
@@ -3568,7 +3572,7 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustReturnThenMixing)
     GetProjectControlData(*state, ErrorsFound);
     EXPECT_FALSE(ErrorsFound);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.EnforceZoneMassBalance);
-    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustReturnThenMixing);
+    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustmentType::AdjustReturnThenMixing);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationTreatment, DataHeatBalance::AdjustInfiltrationFlow);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationZoneType, DataHeatBalance::AllZones);
     GetSimpleAirModelInputs(*state, ErrorsFound);
@@ -3584,12 +3588,14 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustReturnThenMixing)
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(2).ZoneNode).HumRat = 0.004;
 
     // set number of airloops
-    DataHVACGlobals::NumPrimaryAirSys = 2;
-    state->dataAirSystemsData->PrimaryAirSystems.allocate(DataHVACGlobals::NumPrimaryAirSys);
-    state->dataAirLoop->AirLoopFlow.allocate(DataHVACGlobals::NumPrimaryAirSys);
+    state->dataHVACGlobal->NumPrimaryAirSys = 2;
+    state->dataAirSystemsData->PrimaryAirSystems.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
+    state->dataAirLoop->AirLoopFlow.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
     // set airloops design supply air flow rate to 1.0
     state->dataAirLoop->AirLoopFlow(1).DesSupply = 1.0;
     state->dataAirLoop->AirLoopFlow(2).DesSupply = 1.0;
+    state->dataZoneEquip->ZoneEquipConfig(1).AirLoopDesSupply = state->dataAirLoop->AirLoopFlow(1).DesSupply;
+    state->dataZoneEquip->ZoneEquipConfig(2).AirLoopDesSupply = state->dataAirLoop->AirLoopFlow(2).DesSupply;
     // set airloop numbers
     state->dataZoneEquip->ZoneEquipConfig(1).ReturnNodeAirLoopNum(1) = 1;
     state->dataZoneEquip->ZoneEquipConfig(2).ReturnNodeAirLoopNum(1) = 2;
@@ -3833,7 +3839,7 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustMixingThenReturn)
     GetProjectControlData(*state, ErrorsFound);
     EXPECT_FALSE(ErrorsFound);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.EnforceZoneMassBalance);
-    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustMixingThenReturn);
+    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustmentType::AdjustMixingThenReturn);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationTreatment, DataHeatBalance::AdjustInfiltrationFlow);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationZoneType, DataHeatBalance::AllZones);
     GetSimpleAirModelInputs(*state, ErrorsFound);
@@ -3849,12 +3855,15 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wAdjustMixingThenReturn)
     state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(2).ZoneNode).HumRat = 0.004;
 
     // set number of airloops
-    DataHVACGlobals::NumPrimaryAirSys = 2;
-    state->dataAirSystemsData->PrimaryAirSystems.allocate(DataHVACGlobals::NumPrimaryAirSys);
-    state->dataAirLoop->AirLoopFlow.allocate(DataHVACGlobals::NumPrimaryAirSys);
+    state->dataHVACGlobal->NumPrimaryAirSys = 2;
+    state->dataAirSystemsData->PrimaryAirSystems.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
+    state->dataAirLoop->AirLoopFlow.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
     // set airloops design supply air flow rate to 1.0
     state->dataAirLoop->AirLoopFlow(1).DesSupply = 1.0;
     state->dataAirLoop->AirLoopFlow(2).DesSupply = 1.0;
+    state->dataZoneEquip->ZoneEquipConfig(1).AirLoopDesSupply = state->dataAirLoop->AirLoopFlow(1).DesSupply;
+    state->dataZoneEquip->ZoneEquipConfig(2).AirLoopDesSupply = state->dataAirLoop->AirLoopFlow(2).DesSupply;
+
     // set airloop numbers
     state->dataZoneEquip->ZoneEquipConfig(1).ReturnNodeAirLoopNum(1) = 1;
     state->dataZoneEquip->ZoneEquipConfig(2).ReturnNodeAirLoopNum(1) = 2;
@@ -4146,7 +4155,7 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wSourceAndReceivingZone)
     GetProjectControlData(*state, ErrorsFound);
     EXPECT_FALSE(ErrorsFound);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.EnforceZoneMassBalance);
-    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustMixingOnly);
+    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustmentType::AdjustMixingOnly);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationTreatment, DataHeatBalance::AdjustInfiltrationFlow);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationZoneType, DataHeatBalance::AllZones);
     GetSimpleAirModelInputs(*state, ErrorsFound);
@@ -4161,9 +4170,9 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_wSourceAndReceivingZone)
         state->dataLoopNodes->Node(state->dataZoneEquip->ZoneEquipConfig(ZoneNum).ZoneNode).HumRat = 0.004;
     }
     // set number of airloops
-    DataHVACGlobals::NumPrimaryAirSys = 1;
-    state->dataAirSystemsData->PrimaryAirSystems.allocate(DataHVACGlobals::NumPrimaryAirSys);
-    state->dataAirLoop->AirLoopFlow.allocate(DataHVACGlobals::NumPrimaryAirSys);
+    state->dataHVACGlobal->NumPrimaryAirSys = 1;
+    state->dataAirSystemsData->PrimaryAirSystems.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
+    state->dataAirLoop->AirLoopFlow.allocate(state->dataHVACGlobal->NumPrimaryAirSys);
     // set airloops design supply air flow rate to 1.0
     state->dataAirLoop->AirLoopFlow(1).DesSupply = 1.0;
     // set airloop numbers, single airloop serves all zones
@@ -4389,7 +4398,7 @@ TEST_F(EnergyPlusFixture, ZoneAirMassFlowBalance_ZoneMixingInfiltrationFlowsFlag
     // ckeck zone mixing and infiltration flags
     EXPECT_FALSE(ErrorsFound);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.EnforceZoneMassBalance);
-    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustMixingOnly);
+    EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment, DataHeatBalance::AdjustmentType::AdjustMixingOnly);
     EXPECT_TRUE(state->dataHeatBal->ZoneAirMassFlow.AdjustZoneMixingFlow);
     EXPECT_EQ(state->dataHeatBal->ZoneAirMassFlow.InfiltrationTreatment, DataHeatBalance::NoInfiltrationFlow);
     EXPECT_FALSE(state->dataHeatBal->ZoneAirMassFlow.AdjustZoneInfiltrationFlow);

@@ -224,9 +224,8 @@ namespace EnergyPlus::MixedAir {
     void SimOASysComponents(EnergyPlusData &state, int const OASysNum, bool const FirstHVACIteration, int const AirLoopNum)
     {
         int CompNum;
-        static std::string CompType; // Tuned Made static
-        static std::string CompName; // Tuned Made static
-        static std::string CtrlName; // Tuned Made static
+        auto & CompType = state.dataMixedAir->CompType;
+        auto & CompName = state.dataMixedAir->CompName;
         bool ReSim(false);
         bool Sim(true);
         bool OAHeatCoil(false);
@@ -307,8 +306,8 @@ namespace EnergyPlus::MixedAir {
         // INTEGER :: CtrlNum
         int OAMixerNum;
         int OAControllerNum;         // OA controller index in OAController
-        static std::string CompType; // Tuned Made static
-        static std::string CompName; // Tuned Made static
+        auto & CompType = state.dataMixedAir->CompType; // Tuned Made static
+        auto & CompName = state.dataMixedAir->CompName; // Tuned Made static
         bool FatalErrorFlag(false);
 
         // SimOutsideAirSys can handle only 1 controller right now.  This must be
@@ -409,7 +408,6 @@ namespace EnergyPlus::MixedAir {
         using Humidifiers::SimHumidifier;
         using HVACDXHeatPumpSystem::SimDXHeatPumpSystem;
         using HVACDXSystem::SimDXCoolingSystem;
-        using HVACHXAssistedCoolingCoil::HXAssistedCoil;
         using HVACHXAssistedCoolingCoil::SimHXAssistedCoolingCoil;
         using SimAirServingZones::SolveWaterCoilController;
         using SteamCoils::SimulateSteamCoilComponents;
@@ -455,7 +453,7 @@ namespace EnergyPlus::MixedAir {
                     CompIndex = HVACFan::getFanObjectVectorIndex(state, CompName) + 1; // + 1 for shift from zero-based vector to 1-based compIndex
                 }
                 if (Sim) {
-                    HVACFan::fanObjs[CompIndex - 1]->simulate(state, _, _, _, _); // vector is 0 based, but CompIndex is 1 based so shift
+                    state.dataHVACFan->fanObjs[CompIndex - 1]->simulate(state, _, _, _, _); // vector is 0 based, but CompIndex is 1 based so shift
                 }
             } else if (SELECT_CASE_var == Fan_ComponentModel) { // 'Fan:ComponentModel'
                 if (Sim) {
@@ -541,11 +539,11 @@ namespace EnergyPlus::MixedAir {
                                              AirLoopNum,
                                              CompName,
                                              CompIndex,
-                                             HXAssistedCoil(CompIndex).ControllerName,
-                                             HXAssistedCoil(CompIndex).ControllerIndex,
+                                             state.dataHVACAssistedCC->HXAssistedCoil(CompIndex).ControllerName,
+                                             state.dataHVACAssistedCC->HXAssistedCoil(CompIndex).ControllerIndex,
                                              true);
                     // set flag to tell HVAC controller it will be simulated only in SolveWaterCoilController()
-                    state.dataHVACControllers->ControllerProps(HXAssistedCoil(CompIndex).ControllerIndex).BypassControllerCalc = true;
+                    state.dataHVACControllers->ControllerProps(state.dataHVACAssistedCC->HXAssistedCoil(CompIndex).ControllerIndex).BypassControllerCalc = true;
                 }
                 OACoolingCoil = true;
             } else if (SELECT_CASE_var == DXSystem) { // CoilSystem:Cooling:DX  old 'AirLoopHVAC:UnitaryCoolOnly'
@@ -823,15 +821,15 @@ namespace EnergyPlus::MixedAir {
         int InListNum;
         int ListNum;
         int NumSimpControllers; // number of Controller:Simple objects in an OA System
-        static bool ErrorsFound(false);
+        bool ErrorsFound(false);
         std::string CurrentModuleObject; // Object type for getting and messages
         Array1D_string cAlphaFields;     // Alpha field names
         Array1D_string cNumericFields;   // Numeric field names
         Array1D_bool lAlphaBlanks;       // Logical array, alpha field input BLANK = .TRUE.
         Array1D_bool lNumericBlanks;     // Logical array, numeric field input BLANK = .TRUE.
-        static int MaxNums(0);           // Maximum number of numeric input fields
-        static int MaxAlphas(0);         // Maximum number of alpha input fields
-        static int TotalArgs(0);         // Total number of alpha and numeric arguments (max) for a
+        int MaxNums(0);           // Maximum number of numeric input fields
+        int MaxAlphas(0);         // Maximum number of alpha input fields
+        int TotalArgs(0);         // Total number of alpha and numeric arguments (max) for a
         //  certain object in the input file
 
         if (!state.dataMixedAir->GetOASysInputFlag) return;
@@ -1046,8 +1044,8 @@ namespace EnergyPlus::MixedAir {
                     } else if (SELECT_CASE_var == "FAN:SYSTEMMODEL") {
                         state.dataAirLoop->OutsideAirSys(OASysNum).ComponentType_Num(CompNum) = Fan_System_Object;
                         // construct fan object
-                        HVACFan::fanObjs.emplace_back(new HVACFan::FanSystem(state, state.dataAirLoop->OutsideAirSys(OASysNum).ComponentName(CompNum)));
-                        state.dataAirLoop->OutsideAirSys(OASysNum).ComponentIndex(CompNum) = HVACFan::fanObjs.size();
+                        state.dataHVACFan->fanObjs.emplace_back(new HVACFan::FanSystem(state, state.dataAirLoop->OutsideAirSys(OASysNum).ComponentName(CompNum)));
+                        state.dataAirLoop->OutsideAirSys(OASysNum).ComponentIndex(CompNum) = state.dataHVACFan->fanObjs.size();
                     } else if (SELECT_CASE_var == "FAN:COMPONENTMODEL") {
                         state.dataAirLoop->OutsideAirSys(OASysNum).ComponentType_Num(CompNum) = Fan_ComponentModel;
 
@@ -1198,7 +1196,7 @@ namespace EnergyPlus::MixedAir {
         Array1D_string cNumericFields;   // Numeric field names
         Array1D_bool lAlphaBlanks;       // Logical array, alpha field input BLANK = .TRUE.
         Array1D_bool lNumericBlanks;     // Logical array, numeric field input BLANK = .TRUE.
-        static bool ErrorsFound(false);  // Flag identifying errors found during get input
+        bool ErrorsFound(false);  // Flag identifying errors found during get input
         int ZoneListNum;                 // Index to Zone List
         int MechVentZoneCount;           // Index counter for zones with mechanical ventilation
         int NumArg;                      // Number of arguments from GetObjectDefMaxArgs call
@@ -1206,11 +1204,11 @@ namespace EnergyPlus::MixedAir {
         int MaxNums;                     // Maximum numbers in multiple objects
 
         int NumGroups; // Number of extensible input groups of the VentilationMechanical object
-        static int ObjIndex(0);
-        static int EquipListIndex(0);
-        static int EquipNum(0);
-        static int EquipListNum(0);
-        static int ADUNum(0);
+        int ObjIndex(0);
+        int EquipListIndex(0);
+        int EquipNum(0);
+        int EquipListNum(0);
+        int ADUNum(0);
         int jZone;
         int i;
 
@@ -1938,7 +1936,7 @@ namespace EnergyPlus::MixedAir {
         Array1D_string cNumericFields;   // Numeric field names
         Array1D_bool lAlphaBlanks;       // Logical array, alpha field input BLANK = .TRUE.
         Array1D_bool lNumericBlanks;     // Logical array, numeric field input BLANK = .TRUE.
-        static bool ErrorsFound(false);
+        bool ErrorsFound(false);
 
         if (!state.dataMixedAir->GetOAMixerInputFlag) return;
 
@@ -2457,10 +2455,10 @@ namespace EnergyPlus::MixedAir {
         using namespace OutputReportPredefined;
         using EMSManager::CheckIfNodeSetPointManagedByEMS;
 
-        static Array1D_bool OAControllerMyOneTimeFlag; // One-time initialization flag
-        static Array1D_bool OAControllerMyEnvrnFlag;   // One-time initialization flag
-        static Array1D_bool OAControllerMySizeFlag;    // One-time initialization flag
-        static Array1D_bool MechVentCheckFlag;         // One-time initialization flag
+        auto & OAControllerMyOneTimeFlag = state.dataMixedAir->OAControllerMyOneTimeFlag; // One-time initialization flag
+        auto & OAControllerMyEnvrnFlag = state.dataMixedAir->OAControllerMyEnvrnFlag;   // One-time initialization flag
+        auto & OAControllerMySizeFlag = state.dataMixedAir->OAControllerMySizeFlag;    // One-time initialization flag
+        auto & MechVentCheckFlag = state.dataMixedAir->MechVentCheckFlag;         // One-time initialization flag
         bool FoundZone;                                // Logical determines if ZONE object is accounted for in VENTILATION:MECHANICAL object
         bool FoundAreaZone;                            // Logical determines if ZONE object is accounted for in VENTILATION:MECHANICAL object
         bool FoundPeopleZone;                          // Logical determines if ZONE object is accounted for in VENTILATION:MECHANICAL object
@@ -2571,7 +2569,7 @@ namespace EnergyPlus::MixedAir {
             OAControllerMyOneTimeFlag(OAControllerNum) = false;
         }
 
-        if (!state.dataGlobal->SysSizingCalc && state.dataMixedAir->InitOAControllerSetPointCheckFlag(OAControllerNum) && DoSetPointTest && !FirstHVACIteration) {
+        if (!state.dataGlobal->SysSizingCalc && state.dataMixedAir->InitOAControllerSetPointCheckFlag(OAControllerNum) && state.dataHVACGlobal->DoSetPointTest && !FirstHVACIteration) {
             MixedAirNode = thisOAController.MixNode;
             if (MixedAirNode > 0) {
                 //      IF (OAController(OAControllerNum)%Econo == 1 .AND. .NOT. AirLoopControlInfo(AirLoopNum)%CyclingFan) THEN
@@ -2582,11 +2580,11 @@ namespace EnergyPlus::MixedAir {
                             ShowSevereError(state, "Node Referenced (by Controller)=" + state.dataLoopNodes->NodeID(MixedAirNode));
                             ShowContinueError(state,
                                 "  use a Setpoint Manager with Control Variable = \"Temperature\" to establish a setpoint at the mixed air node.");
-                            SetPointErrorFlag = true;
+                            state.dataHVACGlobal->SetPointErrorFlag = true;
                         } else {
                             // add call to check node in EMS
-                            CheckIfNodeSetPointManagedByEMS(state, MixedAirNode, EMSManager::SPControlType::iTemperatureSetPoint, SetPointErrorFlag);
-                            if (SetPointErrorFlag) {
+                            CheckIfNodeSetPointManagedByEMS(state, MixedAirNode, EMSManager::SPControlType::iTemperatureSetPoint, state.dataHVACGlobal->SetPointErrorFlag);
+                            if (state.dataHVACGlobal->SetPointErrorFlag) {
                                 ShowSevereError(state, "MixedAir: Missing temperature setpoint for economizer controller " + thisOAController.Name);
                                 ShowSevereError(state, "Node Referenced (by Controller)=" + state.dataLoopNodes->NodeID(MixedAirNode));
                                 ShowContinueError(state, "  use a Setpoint Manager with Control Variable = \"Temperature\" to establish a setpoint at the "
@@ -2916,7 +2914,7 @@ namespace EnergyPlus::MixedAir {
                     } else {
                         // Find the primary air loop that has the outside air system
                         AirLoopFound = false;
-                        for (thisAirLoop = 1; thisAirLoop <= NumPrimaryAirSys; ++thisAirLoop) {
+                        for (thisAirLoop = 1; thisAirLoop <= state.dataHVACGlobal->NumPrimaryAirSys; ++thisAirLoop) {
                             for (BranchNum = 1; BranchNum <= state.dataAirSystemsData->PrimaryAirSystems(thisAirLoop).NumBranches; ++BranchNum) {
                                 for (CompNum = 1; CompNum <= state.dataAirSystemsData->PrimaryAirSystems(thisAirLoop).Branch(BranchNum).TotalComponents; ++CompNum) {
                                     if (!UtilityRoutines::SameString(state.dataAirSystemsData->PrimaryAirSystems(thisAirLoop).Branch(BranchNum).Comp(CompNum).Name,
@@ -2972,6 +2970,13 @@ namespace EnergyPlus::MixedAir {
                     SetupOutputVariable(state, "Air System Outdoor Air High Humidity Control Status",
                                         OutputProcessor::Unit::None,
                                         loopOAController.HighHumCtrlStatus,
+                                        "System",
+                                        "Average",
+                                        airloopName);
+
+                    SetupOutputVariable(state, "Air System Outdoor Air Limiting Factor",
+                                        OutputProcessor::Unit::None,
+                                        loopOAController.OALimitingFactor,
                                         "System",
                                         "Average",
                                         airloopName);
@@ -3377,6 +3382,8 @@ namespace EnergyPlus::MixedAir {
             AirLoopCyclingFan = false;
         }
 
+        this->OALimitingFactor = limitFactorNone; // oa controller limiting factor
+
         // Check for no flow
         if (this->MixMassFlow <= SmallMassFlow) {
 
@@ -3433,6 +3440,7 @@ namespace EnergyPlus::MixedAir {
             MinOASchedVal = GetCurrentScheduleValue(state, this->MinOASchPtr);
             MinOASchedVal = min(max(MinOASchedVal, 0.0), 1.0);
             OutAirMinFrac *= MinOASchedVal;
+            this->OALimitingFactor = limitFactorLimits;
         }
 
         // Get mechanical ventilation
@@ -3478,7 +3486,10 @@ namespace EnergyPlus::MixedAir {
                 }
             }
         }
-        OutAirMinFrac = max(OutAirMinFrac, MechVentOutsideAirMinFrac);
+        if (MechVentOutsideAirMinFrac > OutAirMinFrac) {
+            OutAirMinFrac = MechVentOutsideAirMinFrac;
+            this->OALimitingFactor = limitFactorDCV;
+        }
 
         OutAirMinFrac = min(max(OutAirMinFrac, 0.0), 1.0);
 
@@ -3515,14 +3526,21 @@ namespace EnergyPlus::MixedAir {
 
         // Do not allow OA to be below Exh for controller:outside air
         if (this->ControllerType_Num == iControllerType::ControllerOutsideAir) {
-            this->OAMassFlow = max(this->ExhMassFlow, this->OAMassFlow);
+            if (this->ExhMassFlow > this->OAMassFlow) {
+                this->OAMassFlow = this->ExhMassFlow;
+                this->OALimitingFactor = limitFactorExhaust;
+            }
         }
 
         // if fixed minimum, don't let go below min OA
         if (this->FixedMin) {
             // cycling fans allow "average" min OA to be below minimum
             if (!AirLoopCyclingFan) {
-                this->OAMassFlow = max(this->OAMassFlow, this->MinOAMassFlowRate * MinOASchedVal);
+                Real64 minOASchedMassFlowRate = this->MinOAMassFlowRate * MinOASchedVal;
+                if (minOASchedMassFlowRate > this->OAMassFlow) {
+                    this->OAMassFlow = minOASchedMassFlowRate;
+                    this->OALimitingFactor = limitFactorLimits;
+                }
             }
         }
 
@@ -3531,7 +3549,11 @@ namespace EnergyPlus::MixedAir {
             Real64 MinOAflowfracVal = GetCurrentScheduleValue(state, this->MinOAflowSchPtr);
             MinOAflowfracVal = min(max(MinOAflowfracVal, 0.0), 1.0);
             OutAirMinFrac = max(MinOAflowfracVal, OutAirMinFrac);
-            this->OAMassFlow = max(this->OAMassFlow, this->MixMassFlow * MinOAflowfracVal);
+            Real64 minOAFracMassFlowRate = this->MixMassFlow * MinOAflowfracVal;
+            if (minOAFracMassFlowRate > this->OAMassFlow) {
+                this->OAMassFlow = minOAFracMassFlowRate;
+                this->OALimitingFactor = limitFactorLimits;
+            }
         }
 
         // Apply Maximum Fraction of Outdoor Air Schedule
@@ -3541,26 +3563,43 @@ namespace EnergyPlus::MixedAir {
             MaxOAflowfracVal = min(max(MaxOAflowfracVal, 0.0), 1.0);
             currentMaxOAMassFlowRate = min(this->MaxOAMassFlowRate, this->MixMassFlow * MaxOAflowfracVal);
             OutAirMinFrac = min(MaxOAflowfracVal, OutAirMinFrac);
-            this->OAMassFlow = min(this->OAMassFlow, currentMaxOAMassFlowRate);
+            if (currentMaxOAMassFlowRate < this->OAMassFlow) {
+                this->OAMassFlow = currentMaxOAMassFlowRate;
+                this->OALimitingFactor = limitFactorLimits;
+            }
         }
 
         // Don't let the OA flow be > than the max OA limit. OA for high humidity control is allowed to be greater than max OA.
         // Night Ventilation has priority and may override an OASignal > 1 high humidity condition with OASignal = 1
         if (HighHumidityOperationFlag) {
-            this->OAMassFlow = min(this->OAMassFlow, this->MaxOAMassFlowRate * max(1.0, OASignal));
+            Real64 maxOAMassFlow = this->MaxOAMassFlowRate * max(1.0, OASignal);
+            if (maxOAMassFlow < this->OAMassFlow) {
+                this->OAMassFlow = maxOAMassFlow;
+                this->OALimitingFactor = limitFactorLimits;
+            }
         } else {
-            this->OAMassFlow = min(this->OAMassFlow, this->MaxOAMassFlowRate);
+            if (this->MaxOAMassFlowRate < this->OAMassFlow) {
+                this->OAMassFlow = this->MaxOAMassFlowRate;
+                this->OALimitingFactor = limitFactorLimits;
+            }
         }
 
-        if (!state.dataGlobal->WarmupFlag && !state.dataGlobal->DoingSizing && (this->ManageDemand) && (this->OAMassFlow > this->DemandLimitFlowRate))
+        if (!state.dataGlobal->WarmupFlag && !state.dataGlobal->DoingSizing && (this->ManageDemand) &&
+            (this->OAMassFlow > this->DemandLimitFlowRate)) {
             this->OAMassFlow = this->DemandLimitFlowRate;
+            this->OALimitingFactor = limitFactorDemandLimit;
+        }
         if (this->EMSOverrideOARate) {
             this->OAMassFlow = this->EMSOARateValue;
+            this->OALimitingFactor = limitFactorEMS;
         }
 
         // Don't let OA flow be > mixed air flow.
         // Seems if RAB (return air bypass) that this should be don't let OA flow be > design supply flow but that causes other issues
-        this->OAMassFlow = min(this->OAMassFlow, this->MixMassFlow);
+        if (this->MixMassFlow < this->OAMassFlow) {
+            this->OAMassFlow = this->MixMassFlow;
+            this->OALimitingFactor = limitFactorMixedAir;
+        }
 
         // save the min outside air flow fraction and max outside air mass flow rate
         if (AirLoopNum > 0) {
@@ -3677,14 +3716,6 @@ namespace EnergyPlus::MixedAir {
         Real64 ZoneMinCO2;                // Minimum CO2 concentration in zone
         Real64 ZoneContamControllerSched; // Schedule value for ZoneControl:ContaminantController
         Real64 CO2PeopleGeneration;       // CO2 generation from people at design level
-
-        static Real64 Ep(1.0); // zone primary air fraction
-        static Real64 Er(0.0); // zone secondary recirculation fraction
-        static Real64 Fa(1.0); // temporary variable used in multi-path VRP calc
-        static Real64 Fb(1.0);
-        static Real64 Fc(1.0);
-        static Real64 Xs(1.0);  // uncorrected system outdoor air fraction
-        static Real64 Evz(1.0); // zone ventilation efficiency
 
         int PriNode;   // primary node of zone terminal unit
         int InletNode; // outlet node of zone terminal unit
@@ -4236,7 +4267,7 @@ namespace EnergyPlus::MixedAir {
         Real64 EconomizerAirFlowScheduleValue; // value of economizer operation schedule (push-button type control schedule)
         Real64 MaximumOAFracBySetPoint;        // The maximum OA fraction due to freezing cooling coil check
         Real64 OutAirSignal;                   // Used to set OA mass flow rate
-        static Array1D<Real64> Par(6);         // Par(1) = mixed air node number //Tuned Made static
+        auto & Par = state.dataMixedAir->Par;  // Par(1) = mixed air node number //Tuned Made static
                                                // Par(2) = return air node number
                                                // Par(3) = outside air node number
                                                // Par(4) = mixed air mass flow rate
@@ -4502,6 +4533,7 @@ namespace EnergyPlus::MixedAir {
             if (this->MixMassFlow > 0.0) {
                 //   calculate the actual ratio of outside air to mixed air so the magnitude of OA during high humidity control is correct
                 OASignal = max(OutAirMinFrac, (this->HighRHOAFlowRatio * this->MaxOAMassFlowRate / this->MixMassFlow));
+                this->OALimitingFactor = limitFactorHighHum;
             }
         }
 
@@ -4514,7 +4546,14 @@ namespace EnergyPlus::MixedAir {
             // OutAirMinFrac = MaximumOAFracBySetPoint;
             //    if (AirLoopNum > 0) AirLoopFlow(AirLoopNum).MinOutAir = OutAirMinFrac * this->MixMassFlow;
             //}
-            OASignal = max(min(MaximumOAFracBySetPoint, OASignal), OutAirMinFrac);
+            if (MaximumOAFracBySetPoint < OASignal) {
+                OASignal = MaximumOAFracBySetPoint;
+                this->OALimitingFactor = limitFactorLimits;
+            }
+            if (OutAirMinFrac > OASignal) {
+                OASignal = OutAirMinFrac;
+                this->OALimitingFactor = limitFactorLimits;
+            }
         }
 
         if (AirLoopNum > 0) {
@@ -4547,9 +4586,6 @@ namespace EnergyPlus::MixedAir {
             }
         }
 
-        // Night ventilation control overrides economizer and high humidity control.
-        if (AirLoopNightVent) OASignal = 1.0;
-
         // Set economizer report variable and status flag
         if (this->Econo == iEconoOp::NoEconomizer) {
             // No economizer
@@ -4561,11 +4597,20 @@ namespace EnergyPlus::MixedAir {
                 // Economizer is enabled
                 this->EconomizerStatus = 1;
                 this->EconoActive = true;
+                if ((OASignal > OutAirMinFrac) && !HighHumidityOperationFlag) {
+                    this->OALimitingFactor = limitFactorEconomizer;
+                }
             } else {
                 // Economizer is disabled
                 this->EconomizerStatus = 0;
                 this->EconoActive = false;
             }
+        }
+
+        // Night ventilation control overrides economizer and high humidity control.
+        if (AirLoopNightVent) {
+            OASignal = 1.0;
+            this->OALimitingFactor = limitFactorNightVent;
         }
 
         // Set high humidity control report variable and status flag
@@ -4969,7 +5014,7 @@ namespace EnergyPlus::MixedAir {
     // Beginning Utility Section of the Module
     //******************************************************************************
 
-    Real64 MixedAirControlTempResidual(EnergyPlusData &state, 
+    Real64 MixedAirControlTempResidual(EnergyPlusData &state,
                                        Real64 const OASignal,     // Relative outside air flow rate (0 to 1)
                                        Array1D<Real64> const &Par // par(1) = mixed node number
     )
@@ -5938,7 +5983,6 @@ namespace EnergyPlus::MixedAir {
         // It must be either found on a AirLoopHVAC or AirLoopHVAC:OutdoorAirSystem.
 
         // Using/Aliasing
-        using namespace DataIPShortCuts;
 
         // SUBROUTINE PARAMETER DEFINITIONS:
         static std::string const RoutineName("CheckControllerLists");
@@ -5969,17 +6013,17 @@ namespace EnergyPlus::MixedAir {
 
         for (Item = 1; Item <= NumControllers; ++Item) {
 
-            inputProcessor->getObjectItem(state, CurrentModuleObject, Item, cAlphaArgs, NumAlphas, rNumericArgs, NumNumbers, IOStat);
-            ControllerListName = cAlphaArgs(1);
+            inputProcessor->getObjectItem(state, CurrentModuleObject, Item, state.dataIPShortCut->cAlphaArgs, NumAlphas, state.dataIPShortCut->rNumericArgs, NumNumbers, IOStat);
+            ControllerListName = state.dataIPShortCut->cAlphaArgs(1);
             Count = 0;
 
             // Check AirLoopHVAC -- brute force, get each AirLoopHVAC
 
             for (Loop = 1; Loop <= NumAirLoop; ++Loop) {
-                inputProcessor->getObjectItem(state, AirLoopObject, Loop, cAlphaArgs, NumAlphas, rNumericArgs, NumNumbers, IOStat);
-                if (cAlphaArgs(2) != ControllerListName) continue;
+                inputProcessor->getObjectItem(state, AirLoopObject, Loop, state.dataIPShortCut->cAlphaArgs, NumAlphas, state.dataIPShortCut->rNumericArgs, NumNumbers, IOStat);
+                if (state.dataIPShortCut->cAlphaArgs(2) != ControllerListName) continue;
                 ++Count;
-                if (Count == 1) AirLoopName = cAlphaArgs(1);
+                if (Count == 1) AirLoopName = state.dataIPShortCut->cAlphaArgs(1);
             }
 
             //  Now check AirLoopHVAC and AirLoopHVAC:OutdoorAirSystem

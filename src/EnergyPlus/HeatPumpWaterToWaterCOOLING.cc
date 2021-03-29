@@ -611,8 +611,8 @@ namespace EnergyPlus::HeatPumpWaterToWaterCOOLING {
         Real64 DutyFactor;
         int IterationCount;
 
-        static Real64 CurrentSimTime(0.0);
-        static Real64 PrevSimTime(0.0);
+        auto & CurrentSimTime = state.dataHPWaterToWaterClg->CurrentSimTime;
+        auto & PrevSimTime = state.dataHPWaterToWaterClg->PrevSimTime;
 
         Real64 CpSourceSide; // local temporary for fluid specific heat
         Real64 CpLoadSide;   // local temporary for fluid specific heat
@@ -622,7 +622,7 @@ namespace EnergyPlus::HeatPumpWaterToWaterCOOLING {
         }
 
         // CALCULATE THE SIMULATION TIME
-        CurrentSimTime = (state.dataGlobal->DayOfSim - 1) * 24 + state.dataGlobal->HourOfDay - 1 + (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone + DataHVACGlobals::SysTimeElapsed;
+        CurrentSimTime = (state.dataGlobal->DayOfSim - 1) * 24 + state.dataGlobal->HourOfDay - 1 + (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone + state.dataHVACGlobal->SysTimeElapsed;
 
         if (MyLoad < 0.0) {
             this->MustRun = true;
@@ -946,7 +946,7 @@ namespace EnergyPlus::HeatPumpWaterToWaterCOOLING {
             // set node flow rates;  for these load based models
             // assume that the sufficient Source Side flow rate available
 
-            Real64 const ReportingConstant = DataHVACGlobals::TimeStepSys * DataGlobalConstants::SecInHour;
+            Real64 const ReportingConstant = state.dataHVACGlobal->TimeStepSys * DataGlobalConstants::SecInHour;
 
             this->Energy = this->Power * ReportingConstant;
             this->QSourceEnergy = QSource * ReportingConstant;

@@ -73,7 +73,6 @@ namespace DXFEarClipping {
 
     // Module variable declarations:
     // na
-    extern bool trackit;
     // Subroutine specifications for module <module_name>:
 
     // Functions
@@ -140,9 +139,13 @@ namespace DXFEarClipping {
 
 struct DXFEarClippingData : BaseGlobalStruct {
 
+    bool trackit = false;
+    int errcount = 0;
+
     void clear_state() override
     {
-
+        this->trackit = false;
+        this->errcount = 0;
     }
 };
 

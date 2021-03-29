@@ -183,7 +183,6 @@ namespace Furnaces {
     static std::string const BlankString;
 
     auto constexpr fluidNameSteam("STEAM");
-    bool GetFurnaceInputFlag(true); // Logical to allow "GetInput" only once per simulation
 
     // DERIVED TYPE DEFINITIONS
 
@@ -205,10 +204,6 @@ namespace Furnaces {
     // Reporting routines for module
 
     // Object Data
-    std::unordered_map<std::string, std::string> UniqueFurnaceNames;
-    bool InitFurnaceMyOneTimeFlag = true; // one time allocation flag
-    bool FlowFracFlagReady = true;        // one time flag for calculating flow fraction through controlled zone
-    bool MyAirLoopPass = true;            // one time allocation flag
 
     // Utility routines for module
     // na
@@ -217,14 +212,6 @@ namespace Furnaces {
     //*************************************************************************
 
     // Functions
-    void clear_state()
-    {
-        GetFurnaceInputFlag = true;
-        UniqueFurnaceNames.clear();
-        InitFurnaceMyOneTimeFlag = true;
-        FlowFracFlagReady = true; // one time flag for calculating flow fraction through controlled zone
-        MyAirLoopPass = true;
-    }
 
     void SimFurnace(EnergyPlusData &state,
                     std::string const &FurnaceName,
@@ -266,7 +253,7 @@ namespace Furnaces {
         Real64 H2OHtOfVap;        // Heat of vaporization of air
         int FurnaceInletNode;     // Inlet node to furnace or unitary system
         Real64 FurnaceSavMdot;    // saved furnace inlet air mass flow rate [m3/s]
-        static Real64 Dummy(0.0);
+        Real64 Dummy(0.0);
         int CompOp;               // compressor operation; 1=on, 0=off
         Real64 OnOffAirFlowRatio; // Ratio of compressor ON air flow to AVERAGE air flow over time step
         int FanOpMode;            // Fan operating mode (1=CycFanCycCoil, 2=ContFanCycCoil)
@@ -279,10 +266,10 @@ namespace Furnaces {
         Real64 TempMassFlowRateMaxAvail;
 
         // Obtains and Allocates Furnace related parameters from input file
-        if (GetFurnaceInputFlag) { // First time subroutine has been entered
+        if (state.dataFurnaces->GetFurnaceInputFlag) { // First time subroutine has been entered
             // Get the furnace input
             GetFurnaceInput(state);
-            GetFurnaceInputFlag = false;
+            state.dataFurnaces->GetFurnaceInputFlag = false;
         }
 
         // Find the correct Furnace
@@ -742,7 +729,7 @@ namespace Furnaces {
         ReportFurnace(state, FurnaceNum, AirLoopNum);
 
         // Reset OnOffFanPartLoadFraction to 1 in case another on/off fan is called without a part-load curve
-        OnOffFanPartLoadFraction = 1.0;
+        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
 
         state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRateMaxAvail = TempMassFlowRateMaxAvail;
     }
@@ -830,8 +817,7 @@ namespace Furnaces {
 
         using OutAirNodeManager::CheckOutAirNodeNumber;
         using SteamCoils::GetTypeOfCoil;
-        using namespace DataIPShortCuts;
-        using EMSManager::ManageEMS;
+                using EMSManager::ManageEMS;
         using HVACControllers::CheckCoilWaterInletNode;
         using IntegratedHeatPump::GetCoilIndexIHP;
 
@@ -912,8 +898,9 @@ namespace Furnaces {
         int DXCoilIndex;                // Index to DX coil in HXAssited object
         std::string IHPCoilName;        // IHP cooling coil name
         int IHPCoilIndex(0);            // IHP cooling coil id
+        auto & cCurrentModuleObject = state.dataIPShortCut->cCurrentModuleObject;
 
-        GetFurnaceInputFlag = false;
+        state.dataFurnaces->GetFurnaceInputFlag = false;
         MaxNumbers = 0;
         MaxAlphas = 0;
 
@@ -964,7 +951,7 @@ namespace Furnaces {
 
         if (state.dataFurnaces->NumFurnaces > 0) {
             state.dataFurnaces->Furnace.allocate(state.dataFurnaces->NumFurnaces);
-            UniqueFurnaceNames.reserve(state.dataFurnaces->NumFurnaces);
+            state.dataFurnaces->UniqueFurnaceNames.reserve(state.dataFurnaces->NumFurnaces);
         }
         state.dataFurnaces->CheckEquipName.dimension(state.dataFurnaces->NumFurnaces, true);
 
@@ -1012,7 +999,7 @@ namespace Furnaces {
                                           cAlphaFields,
                                           cNumericFields);
 
-            GlobalNames::VerifyUniqueInterObjectName(state, UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
+            GlobalNames::VerifyUniqueInterObjectName(state, state.dataFurnaces->UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
 
             state.dataFurnaces->Furnace(FurnaceNum).Name = Alphas(1);
             if (lAlphaBlanks(2)) {
@@ -1559,7 +1546,7 @@ namespace Furnaces {
                                           cAlphaFields,
                                           cNumericFields);
 
-            GlobalNames::VerifyUniqueInterObjectName(state, UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
+            GlobalNames::VerifyUniqueInterObjectName(state, state.dataFurnaces->UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
 
             state.dataFurnaces->Furnace(FurnaceNum).Name = Alphas(1);
             if (lAlphaBlanks(2)) {
@@ -2765,7 +2752,7 @@ namespace Furnaces {
                                           cAlphaFields,
                                           cNumericFields);
 
-            GlobalNames::VerifyUniqueInterObjectName(state, UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
+            GlobalNames::VerifyUniqueInterObjectName(state, state.dataFurnaces->UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
 
             state.dataFurnaces->Furnace(FurnaceNum).FurnaceType_Num = UnitarySys_HeatPump_AirToAir;
             state.dataFurnaces->Furnace(FurnaceNum).Name = Alphas(1);
@@ -3687,7 +3674,7 @@ namespace Furnaces {
                                           cAlphaFields,
                                           cNumericFields);
 
-            GlobalNames::VerifyUniqueInterObjectName(state, UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
+            GlobalNames::VerifyUniqueInterObjectName(state, state.dataFurnaces->UniqueFurnaceNames, Alphas(1), CurrentModuleObject, cAlphaFields(1), ErrorsFound);
 
             state.dataFurnaces->Furnace(FurnaceNum).FurnaceType_Num = UnitarySys_HeatPump_WaterToAir;
             state.dataFurnaces->Furnace(FurnaceNum).Name = Alphas(1);
@@ -4811,7 +4798,7 @@ namespace Furnaces {
 
         auto &Node(state.dataLoopNodes->Node);
 
-        if (InitFurnaceMyOneTimeFlag) {
+        if (state.dataFurnaces->InitFurnaceMyOneTimeFlag) {
             // initialize the environment and sizing flags
             state.dataFurnaces->MyEnvrnFlag.allocate(state.dataFurnaces->NumFurnaces);
             state.dataFurnaces->MySizeFlag.allocate(state.dataFurnaces->NumFurnaces);
@@ -4827,17 +4814,17 @@ namespace Furnaces {
             state.dataFurnaces->MyFanFlag = true;
             state.dataFurnaces->MyCheckFlag = true;
             state.dataFurnaces->MyFlowFracFlag = true;
-            InitFurnaceMyOneTimeFlag = false;
+            state.dataFurnaces->InitFurnaceMyOneTimeFlag = false;
             state.dataFurnaces->MyPlantScanFlag = true;
             state.dataFurnaces->MySuppCoilPlantScanFlag = true;
         }
 
-        if (state.dataGlobal->BeginEnvrnFlag && MyAirLoopPass) {
+        if (state.dataGlobal->BeginEnvrnFlag && state.dataFurnaces->MyAirLoopPass) {
             state.dataFurnaces->AirLoopPass = 0;
-            MyAirLoopPass = false;
+            state.dataFurnaces->MyAirLoopPass = false;
         }
         if (!state.dataGlobal->BeginEnvrnFlag) {
-            MyAirLoopPass = true;
+            state.dataFurnaces->MyAirLoopPass = true;
         }
 
         ++state.dataFurnaces->AirLoopPass;
@@ -5204,27 +5191,27 @@ namespace Furnaces {
         // Find the number of zones (zone Inlet Nodes) attached to an air loop from the air loop number
         NumAirLoopZones = state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).NumZonesCooled + state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).NumZonesHeated;
         if (allocated(state.dataAirLoop->AirToZoneNodeInfo) && state.dataFurnaces->MyFlowFracFlag(FurnaceNum)) {
-            FlowFracFlagReady = true;
+            state.dataFurnaces->FlowFracFlagReady = true;
             for (ZoneInSysIndex = 1; ZoneInSysIndex <= NumAirLoopZones; ++ZoneInSysIndex) {
                 // zone inlet nodes for cooling
                 if (state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).NumZonesCooled > 0) {
                     if (state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).TermUnitCoolInletNodes(ZoneInSysIndex) == -999) {
                         // the data structure for the zones inlet nodes has not been filled
-                        FlowFracFlagReady = false;
+                        state.dataFurnaces->FlowFracFlagReady = false;
                     }
                 }
                 // zone inlet nodes for heating
                 if (state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).NumZonesHeated > 0) {
                     if (state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).TermUnitHeatInletNodes(ZoneInSysIndex) == -999) {
                         // the data structure for the zones inlet nodes has not been filled
-                        FlowFracFlagReady = false;
+                        state.dataFurnaces->FlowFracFlagReady = false;
                     }
                 }
             }
         }
 
         if (state.dataFurnaces->MyFlowFracFlag(FurnaceNum)) {
-            if (allocated(state.dataAirLoop->AirToZoneNodeInfo) && FlowFracFlagReady) {
+            if (allocated(state.dataAirLoop->AirToZoneNodeInfo) && state.dataFurnaces->FlowFracFlagReady) {
                 SumOfMassFlowRateMax = 0.0; // initialize the sum of the maximum flows
                 for (ZoneInSysIndex = 1; ZoneInSysIndex <= NumAirLoopZones; ++ZoneInSysIndex) {
                     ZoneInletNodeNum = state.dataAirLoop->AirToZoneNodeInfo(AirLoopNum).TermUnitCoolInletNodes(ZoneInSysIndex);
@@ -5249,11 +5236,11 @@ namespace Furnaces {
             }
         }
 
-        // Calcuate air distribution losses
+        // Calculate air distribution losses
         if (!FirstHVACIteration && state.dataFurnaces->AirLoopPass == 1) {
             ZoneInNode = state.dataFurnaces->Furnace(FurnaceNum).ZoneInletNode;
             MassFlowRate = Node(ZoneInNode).MassFlowRate / state.dataFurnaces->Furnace(FurnaceNum).ControlZoneMassFlowFrac;
-            if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+            if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
                 DeltaMassRate = Node(state.dataFurnaces->Furnace(FurnaceNum).FurnaceOutletNodeNum).MassFlowRate -
                                 Node(ZoneInNode).MassFlowRate / state.dataFurnaces->Furnace(FurnaceNum).ControlZoneMassFlowFrac;
                 if (DeltaMassRate < 0.0) DeltaMassRate = 0.0;
@@ -5590,7 +5577,7 @@ namespace Furnaces {
         QToCoolSetPt = 0.0;
         QToHeatSetPt = 0.0;
         if (OpMode == ContFanCycCoil && GetCurrentScheduleValue(state, state.dataFurnaces->Furnace(FurnaceNum).SchedPtr) > 0.0 &&
-            ((GetCurrentScheduleValue(state, state.dataFurnaces->Furnace(FurnaceNum).FanAvailSchedPtr) > 0.0 || TurnFansOn) && !TurnFansOff)) {
+            ((GetCurrentScheduleValue(state, state.dataFurnaces->Furnace(FurnaceNum).FanAvailSchedPtr) > 0.0 || state.dataHVACGlobal->TurnFansOn) && !state.dataHVACGlobal->TurnFansOff)) {
 
             if (state.dataFurnaces->Furnace(FurnaceNum).NumOfSpeedCooling > 0) {
                 CalcVarSpeedHeatPump(
@@ -5768,7 +5755,7 @@ namespace Furnaces {
             ZoneLoad = 0.0;
             state.dataFurnaces->CoolingLoad = false;
             state.dataFurnaces->HeatingLoad = false;
-        } else if (state.dataFurnaces->Furnace(FurnaceNum).iterationCounter > (DataHVACGlobals::MinAirLoopIterationsAfterFirst + 4)) {
+        } else if (state.dataFurnaces->Furnace(FurnaceNum).iterationCounter > (state.dataHVACGlobal->MinAirLoopIterationsAfterFirst + 4)) {
             // attempt to lock output (air flow) if oscillations are detected
             OperatingMode = state.dataFurnaces->Furnace(FurnaceNum).iterationMode(1);
             OperatingModeMinusOne = state.dataFurnaces->Furnace(FurnaceNum).iterationMode(2);
@@ -5813,7 +5800,7 @@ namespace Furnaces {
         }
 
         // AirflowNetwork global variable
-        if (AirflowNetwork::SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork > AirflowNetwork::AirflowNetworkControlMultizone) {
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).AFNLoopHeatingCoilMaxRTF = 0.0;
         }
     }
@@ -6421,7 +6408,7 @@ namespace Furnaces {
 
         if (FirstHVACIteration) {
             HeatCoilLoad = ZoneLoad;
-            OnOffFanPartLoadFraction = 1.0;
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
             Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace;
         } else {
             // If Furnace runs then set HeatCoilLoad on Heating Coil and the Mass Flow
@@ -6436,7 +6423,7 @@ namespace Furnaces {
                     Node(FurnaceInletNode).MassFlowRate = 0.0;
                 }
                 if (OpMode == ContFanCycCoil) {
-                    OnOffFanPartLoadFraction = 1.0; // The on/off fan will not cycle, so set part-load fraction = 1
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // The on/off fan will not cycle, so set part-load fraction = 1
                 }
 
                 //     Set the inlet mass flow rate based on user specified coil OFF flow rate
@@ -6460,7 +6447,7 @@ namespace Furnaces {
                 Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace;
 
                 // Set fan part-load fraction equal to 1 while getting full load result
-                OnOffFanPartLoadFraction = 1.0;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                 OnOffAirFlowRatio = 1.0;
 
                 // Get full load result
@@ -6697,8 +6684,6 @@ namespace Furnaces {
         int FurnaceInletNode;             // Inlet node to furnace or unitary system
         int FurnaceOutletNode;            // Outlet node of furnace or unitary system
         int OpMode;                       // Mode of Operation (fan cycling = 1 or fan continuous = 2)
-        static Real64 CoolCoilLoad;       // Negative value means cooling required
-        static Real64 SystemSensibleLoad; // Positive value means heating required
         Real64 CoolErrorToler;            // Error tolerance in cooling mode
         Real64 HeatErrorToler;            // Error tolerance in heating mode
         Real64 ActualSensibleOutput;      // Actual furnace sensible capacity
@@ -6710,7 +6695,6 @@ namespace Furnaces {
         Real64 TempHeatOutput;      // Temporary Sensible output of heating coil while iterating on PLR (W)
         Real64 TempLatentOutput;    // Temporary Latent output of AC at increasing PLR (W)
         //                                           ! (Temp variables are used to find min PLR for positive latent removal)
-        static bool HumControl(false); // Logical flag signaling when dehumidification is required
         Array1D<Real64> Par(10);       // parameters passed to RegulaFalsi function
         int SolFlag;                   // return flag from RegulaFalsi
         Real64 TempMinPLR;             // Temporary min latent PLR when hum control is required and iter is exceeded
@@ -6721,6 +6705,10 @@ namespace Furnaces {
         Real64 HeatingSensibleOutput;
         Real64 HeatingLatentOutput;
         Real64 OutdoorDryBulbTemp; // secondary coil (condenser) entering dry bulb temperature
+
+        auto & CoolCoilLoad = state.dataFurnaces->CoolCoilLoad;
+        auto & SystemSensibleLoad = state.dataFurnaces->SystemSensibleLoad;
+        auto & HumControl = state.dataFurnaces->HumControl;
 
         // Set local variables
         FurnaceOutletNode = state.dataFurnaces->Furnace(FurnaceNum).FurnaceOutletNodeNum;
@@ -6892,7 +6880,7 @@ namespace Furnaces {
                     state.dataFurnaces->Furnace(FurnaceNum).WSHPRuntimeFrac = 1.0;
 
                     // Set fan part-load fraction equal to 1 while getting full load result
-                    OnOffFanPartLoadFraction = 1.0;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                     OnOffAirFlowRatio = 1.0;
 
                     // Get full load result
@@ -7070,7 +7058,7 @@ namespace Furnaces {
                         state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = 0.0;
                     }
                     if (OpMode == ContFanCycCoil) {
-                        OnOffFanPartLoadFraction = 1.0; // The on/off fan will not cycle, so set part-load fraction = 1
+                        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // The on/off fan will not cycle, so set part-load fraction = 1
                     }
 
                     //     Set the inlet mass flow rate based on user specified coil OFF flow rate
@@ -7095,7 +7083,7 @@ namespace Furnaces {
                         state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace;
 
                         // Set fan part-load fraction equal to 1 while getting full load result
-                        OnOffFanPartLoadFraction = 1.0;
+                        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                         OnOffAirFlowRatio = 1.0;
 
                         // Get full load result
@@ -7370,7 +7358,7 @@ namespace Furnaces {
                     state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace;
 
                     // Set fan part-load fraction equal to 1 while getting full load result
-                    OnOffFanPartLoadFraction = 1.0;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                     OnOffAirFlowRatio = 1.0;
                     PartLoadRatio = 1.0;
                     state.dataFurnaces->Furnace(FurnaceNum).CompPartLoadRatio = 1.0; // compressor ON
@@ -7532,7 +7520,7 @@ namespace Furnaces {
                             HXUnitOn = true;
                             state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace;
                             // Set fan part-load fraction equal to 1 while getting full load result
-                            OnOffFanPartLoadFraction = 1.0;
+                            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                             OnOffAirFlowRatio = 1.0;
                             // Get full load result
                             CalcFurnaceOutput(state,
@@ -7558,7 +7546,7 @@ namespace Furnaces {
                             state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace;
 
                             // Set fan part-load fraction equal to 1 while getting full load result
-                            OnOffFanPartLoadFraction = 1.0;
+                            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                             OnOffAirFlowRatio = 1.0;
                             state.dataFurnaces->Furnace(FurnaceNum).CompPartLoadRatio = 1.0; // compressor ON
                             state.dataFurnaces->Furnace(FurnaceNum).WSHPRuntimeFrac = 1.0;
@@ -7958,7 +7946,7 @@ namespace Furnaces {
                 CoolCoilLoad = 0.0;
                 HeatCoilLoad = 0.0;
                 ReheatCoilLoad = 0.0;
-                OnOffFanPartLoadFraction = 1.0; // System off, so set on/off fan part-load fraction = 1
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // System off, so set on/off fan part-load fraction = 1
                 state.dataFurnaces->Furnace(FurnaceNum).CoolPartLoadRatio = 0.0;
                 state.dataFurnaces->Furnace(FurnaceNum).HeatPartLoadRatio = 0.0;
                 state.dataFurnaces->Furnace(FurnaceNum).CompPartLoadRatio = 0.0;
@@ -8006,10 +7994,6 @@ namespace Furnaces {
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         Real64 OnOffAirFlowRatio;          // Ratio of compressor ON air mass flow to AVERAGE air mass flow over time step
-        static Real64 TotalZoneLatentLoad; // Total ZONE latent load (not including outside air)
-        // to be removed by furnace/unitary system
-        static Real64 TotalZoneSensLoad; // Total ZONE heating load (not including outside air)
-        // to be removed by furnace/unitary system
         Real64 ZoneSensLoadMet;             // Actual zone sensible load met by heat pump (W)
         Real64 ZoneLatLoadMet;              // Actual zone latent load met by heat pump (W)
         Real64 ZoneSensLoadMetFanONCompON;  // Max Zone sensible load heat pump can meet (W)
@@ -8026,9 +8010,6 @@ namespace Furnaces {
         int OASysInletNode;              // node number of return air inlet to OA sys
         int OASysOutletNode;             // node number of mixed air outlet of OA sys
         int OpMode;                      // Mode of Operation (fan cycling = 1 or fan continuous = 2)
-        static Real64 CoolPartLoadRatio; // Part load ratio (greater of sensible or latent part load ratio for cooling)
-        static Real64 HeatPartLoadRatio; // Part load ratio (greater of sensible or latent part load ratio for cooling)
-        static Real64 Dummy(0.0);        // Dummy var. for generic calc. furnace output arg. (n/a for heat pump)
         bool HumControl;                 // Logical flag signaling when dehumidification is required
         Real64 SuppHeatCoilLoad;         // Load passed to supplemental heater (W)
         Real64 CoolErrorToler;           // convergence tolerance used in cooling mode
@@ -8036,8 +8017,14 @@ namespace Furnaces {
         int SolFlag;                     // flag returned from iteration routine to denote problems
         Array1D<Real64> Par(9);          // parameters passed to iteration routine
 
+        auto & TotalZoneLatentLoad = state.dataFurnaces->TotalZoneLatentLoad;
+        auto & TotalZoneSensLoad = state.dataFurnaces->TotalZoneSensLoad;
+        auto & CoolPartLoadRatio = state.dataFurnaces->CoolPartLoadRatio;
+        auto & HeatPartLoadRatio = state.dataFurnaces->HeatPartLoadRatio;
+        auto & Dummy2 = state.dataFurnaces->Dummy2;
+
         // Set local variables
-        Dummy = 0.0;
+        Dummy2 = 0.0;
         OnOffAirFlowRatio = 1.0;
         FurnaceOutletNode = state.dataFurnaces->Furnace(FurnaceNum).FurnaceOutletNodeNum;
         FurnaceInletNode = state.dataFurnaces->Furnace(FurnaceNum).FurnaceInletNodeNum;
@@ -8059,7 +8046,7 @@ namespace Furnaces {
         //     divided by the part load factor (OnOffFanPartLoadFraction)
         //     in order to match the run time fraction of the cycling
         //     fan with the run time fraction of the cycling compressor
-        if (FirstHVACIteration) OnOffFanPartLoadFraction = 1.0;
+        if (FirstHVACIteration) state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
 
         // Calc Zone sensible loads for heating (+) and cooling (-)
         TotalZoneSensLoad = ZoneLoad;
@@ -8083,7 +8070,7 @@ namespace Furnaces {
 
             // Set the air flow rate to the design flow rate and set the fan operation fraction to 1 (continuous operation)
             state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).DesignMassFlowRate;
-            OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
 
             //         !Set the operation flag to run the fan continuously
             //         OpMode = ContFanCycCoil
@@ -8105,8 +8092,8 @@ namespace Furnaces {
                               CompOp,
                               CoolPartLoadRatio,
                               HeatPartLoadRatio,
-                              Dummy,
-                              Dummy,
+                              Dummy2,
+                              Dummy2,
                               ZoneSensLoadMetFanONCompOFF,
                               ZoneLatLoadMetFanONCompOFF,
                               OnOffAirFlowRatio,
@@ -8126,8 +8113,8 @@ namespace Furnaces {
                               CompOp,
                               CoolPartLoadRatio,
                               HeatPartLoadRatio,
-                              Dummy,
-                              Dummy,
+                              Dummy2,
+                              Dummy2,
                               ZoneSensLoadMetFanONCompON,
                               ZoneLatLoadMetFanONCompON,
                               OnOffAirFlowRatio,
@@ -8171,8 +8158,8 @@ namespace Furnaces {
                                   CompOp,
                                   CoolPartLoadRatio,
                                   HeatPartLoadRatio,
-                                  Dummy,
-                                  Dummy,
+                                  Dummy2,
+                                  Dummy2,
                                   ZoneSensLoadMetFanONCompOFF,
                                   ZoneLatLoadMetFanONCompOFF,
                                   OnOffAirFlowRatio,
@@ -8194,7 +8181,7 @@ namespace Furnaces {
                 //         CoolErrorToler is in fraction of load, MaxIter = 600, SolFalg = # of iterations or error as appropriate
                 TempSolveRoot::SolveRoot(state, CoolErrorToler, MaxIter, SolFlag, CoolPartLoadRatio, CalcWaterToAirResidual, 0.0, 1.0, Par);
                 if (SolFlag == -1 && !state.dataGlobal->WarmupFlag && !FirstHVACIteration) {
-                    OnOffFanPartLoadFraction = state.dataFurnaces->OnOffFanPartLoadFractionSave;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = state.dataFurnaces->OnOffFanPartLoadFractionSave;
                     CalcFurnaceOutput(state,
                                       FurnaceNum,
                                       FirstHVACIteration,
@@ -8228,7 +8215,7 @@ namespace Furnaces {
                     }
                 } else if (SolFlag == -2 && !state.dataGlobal->WarmupFlag && !FirstHVACIteration) {
                     CoolPartLoadRatio = max(MinPLR, min(1.0, std::abs(HPCoilSensDemand) / std::abs(HPCoilSensCapacity)));
-                    OnOffFanPartLoadFraction = 1.0;
+                    state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
                     CalcFurnaceOutput(state,
                                       FurnaceNum,
                                       FirstHVACIteration,
@@ -8275,7 +8262,7 @@ namespace Furnaces {
 
             // Set the air flow rate to the design flow rate and set the fan operation fraction to 1 (continuous operation)
             state.dataLoopNodes->Node(FurnaceInletNode).MassFlowRate = state.dataFurnaces->Furnace(FurnaceNum).DesignMassFlowRate;
-            OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
 
             //         !Set the operation flag to run the fan continuously
             //         OpMode = ContFanCycCoil
@@ -8297,8 +8284,8 @@ namespace Furnaces {
                               CompOp,
                               CoolPartLoadRatio,
                               HeatPartLoadRatio,
-                              Dummy,
-                              Dummy,
+                              Dummy2,
+                              Dummy2,
                               ZoneSensLoadMetFanONCompOFF,
                               ZoneLatLoadMetFanONCompOFF,
                               OnOffAirFlowRatio,
@@ -8319,8 +8306,8 @@ namespace Furnaces {
                               CompOp,
                               CoolPartLoadRatio,
                               HeatPartLoadRatio,
-                              Dummy,
-                              Dummy,
+                              Dummy2,
+                              Dummy2,
                               ZoneSensLoadMetFanONCompON,
                               ZoneLatLoadMetFanONCompON,
                               OnOffAirFlowRatio,
@@ -8365,8 +8352,8 @@ namespace Furnaces {
                                   CompOp,
                                   CoolPartLoadRatio,
                                   HeatPartLoadRatio,
-                                  Dummy,
-                                  Dummy,
+                                  Dummy2,
+                                  Dummy2,
                                   ZoneSensLoadMet,
                                   ZoneLatLoadMet,
                                   OnOffAirFlowRatio,
@@ -8387,7 +8374,7 @@ namespace Furnaces {
                 Par(9) = 0.0;                         // HX is OFF for water-to-air HP
                 //         HeatErrorToler is in fraction of load, MaxIter = 600, SolFalg = # of iterations or error as appropriate
                 TempSolveRoot::SolveRoot(state, HeatErrorToler, MaxIter, SolFlag, HeatPartLoadRatio, CalcWaterToAirResidual, 0.0, 1.0, Par);
-                OnOffFanPartLoadFraction = state.dataFurnaces->OnOffFanPartLoadFractionSave;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = state.dataFurnaces->OnOffFanPartLoadFractionSave;
                 CalcFurnaceOutput(state,
                                   FurnaceNum,
                                   FirstHVACIteration,
@@ -8395,8 +8382,8 @@ namespace Furnaces {
                                   CompOp,
                                   CoolPartLoadRatio,
                                   HeatPartLoadRatio,
-                                  Dummy,
-                                  Dummy,
+                                  Dummy2,
+                                  Dummy2,
                                   ZoneSensLoadMet,
                                   ZoneLatLoadMet,
                                   OnOffAirFlowRatio,
@@ -8467,7 +8454,7 @@ namespace Furnaces {
                                   CoolPartLoadRatio,
                                   HeatPartLoadRatio,
                                   SuppHeatCoilLoad,
-                                  Dummy,
+                                  Dummy2,
                                   ZoneSensLoadMet,
                                   ZoneLatLoadMet,
                                   OnOffAirFlowRatio,
@@ -8483,7 +8470,7 @@ namespace Furnaces {
             state.dataFurnaces->Furnace(FurnaceNum).InitHeatPump = true; // initialization call to Calc Furnace
             HeatPartLoadRatio = 0.0;
             CoolPartLoadRatio = 0.0;
-            OnOffFanPartLoadFraction = 1.0; //! see 'Note' under INITIAL CALCULATIONS
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; //! see 'Note' under INITIAL CALCULATIONS
             // set report variables
             state.dataFurnaces->Furnace(FurnaceNum).CompPartLoadRatio = 0.0;
             state.dataFurnaces->Furnace(FurnaceNum).CoolingCoilSensDemand = 0.0;
@@ -8491,7 +8478,7 @@ namespace Furnaces {
             state.dataFurnaces->Furnace(FurnaceNum).HeatingCoilSensDemand = 0.0;
             if (OpMode == CycFanCycCoil) {
                 state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace = 0.0;
-                OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
                 CalcFurnaceOutput(state,
                                   FurnaceNum,
                                   FirstHVACIteration,
@@ -8499,8 +8486,8 @@ namespace Furnaces {
                                   CompOp,
                                   CoolPartLoadRatio,
                                   HeatPartLoadRatio,
-                                  Dummy,
-                                  Dummy,
+                                  Dummy2,
+                                  Dummy2,
                                   ZoneSensLoadMet,
                                   ZoneLatLoadMet,
                                   OnOffAirFlowRatio,
@@ -8514,8 +8501,8 @@ namespace Furnaces {
                                   CompOp,
                                   CoolPartLoadRatio,
                                   HeatPartLoadRatio,
-                                  Dummy,
-                                  Dummy,
+                                  Dummy2,
+                                  Dummy2,
                                   ZoneSensLoadMet,
                                   ZoneLatLoadMet,
                                   OnOffAirFlowRatio,
@@ -8527,7 +8514,7 @@ namespace Furnaces {
             state.dataFurnaces->Furnace(FurnaceNum).MdotFurnace = 0.0;
             HeatPartLoadRatio = 0.0;
             CoolPartLoadRatio = 0.0;
-            OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // see 'Note' under INITIAL CALCULATIONS
             state.dataFurnaces->Furnace(FurnaceNum).CompPartLoadRatio = 0.0;
             state.dataFurnaces->Furnace(FurnaceNum).CoolingCoilSensDemand = 0.0;
             state.dataFurnaces->Furnace(FurnaceNum).CoolingCoilLatentDemand = 0.0;
@@ -8539,8 +8526,8 @@ namespace Furnaces {
                               CompOp,
                               CoolPartLoadRatio,
                               HeatPartLoadRatio,
-                              Dummy,
-                              Dummy,
+                              Dummy2,
+                              Dummy2,
                               ZoneSensLoadMet,
                               ZoneLatLoadMet,
                               OnOffAirFlowRatio,
@@ -8979,7 +8966,7 @@ namespace Furnaces {
         }
 
         // If the fan runs continually do not allow coils to set OnOffFanPartLoadRatio.
-        if (FanOpMode == ContFanCycCoil) OnOffFanPartLoadFraction = 1.0;
+        if (FanOpMode == ContFanCycCoil) state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
 
         Real64 SensibleOutput(0.0); // sensible output rate, {W}
         Real64 LatentOutput(0.0);   // latent output rate, {W}
@@ -9258,20 +9245,20 @@ namespace Furnaces {
         // see 'Note' under INITIAL CALCULATIONS
         if (Par(6) == 1.0) {
             if (RuntimeFrac > 0.0) {
-                OnOffFanPartLoadFraction = CoolPartLoadRatio / RuntimeFrac;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = CoolPartLoadRatio / RuntimeFrac;
             } else {
-                OnOffFanPartLoadFraction = 1.0;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
             }
         } else {
             if (RuntimeFrac > 0.0) {
-                OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = PartLoadRatio / RuntimeFrac;
                 //   Else IF(RuntimeFrac == 0.0d0)THEN
                 //     OnOffFanPartLoadFraction = 0.0
             } else {
-                OnOffFanPartLoadFraction = 1.0;
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
             }
         }
-        state.dataFurnaces->OnOffFanPartLoadFractionSave = OnOffFanPartLoadFraction;
+        state.dataFurnaces->OnOffFanPartLoadFractionSave = state.dataHVACGlobal->OnOffFanPartLoadFraction;
         // update fan and compressor run times
         state.dataFurnaces->Furnace(FurnaceNum).CompPartLoadRatio = PartLoadRatio;
         state.dataFurnaces->Furnace(FurnaceNum).WSHPRuntimeFrac = RuntimeFrac;
@@ -9385,7 +9372,7 @@ namespace Furnaces {
         }
         // IF the furnace is scheduled on or nightime cycle overrides fan schedule. Uses same logic as fan.
         if (GetCurrentScheduleValue(state, state.dataFurnaces->Furnace(FurnaceNum).SchedPtr) > 0.0 &&
-            ((GetCurrentScheduleValue(state, state.dataFurnaces->Furnace(FurnaceNum).FanAvailSchedPtr) > 0.0 || TurnFansOn) && !TurnFansOff)) {
+            ((GetCurrentScheduleValue(state, state.dataFurnaces->Furnace(FurnaceNum).FanAvailSchedPtr) > 0.0 || state.dataHVACGlobal->TurnFansOn) && !state.dataHVACGlobal->TurnFansOff)) {
             state.dataLoopNodes->Node(InletNode).MassFlowRate = AverageUnitMassFlow;
             state.dataLoopNodes->Node(InletNode).MassFlowRateMaxAvail = AverageUnitMassFlow;
             if (AverageUnitMassFlow > 0.0) {
@@ -9563,8 +9550,8 @@ namespace Furnaces {
         }
 
         // Set mass flow rates during on and off cylce using an OnOff fan
-        if (AirflowNetwork::SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlMultiADS ||
-            AirflowNetwork::SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlSimpleADS) {
+        if (state.dataAirflowNetwork->SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlMultiADS ||
+            state.dataAirflowNetwork->SimulateAirflowNetwork == AirflowNetwork::AirflowNetworkControlSimpleADS) {
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).LoopSystemOnMassFlowrate = state.dataFurnaces->CompOnMassFlow;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).LoopSystemOffMassFlowrate = state.dataFurnaces->CompOffMassFlow;
             state.dataAirLoop->AirLoopAFNInfo(AirLoopNum).LoopFanOperationMode = state.dataFurnaces->Furnace(FurnaceNum).OpMode;
@@ -9591,7 +9578,7 @@ namespace Furnaces {
                 DataSizing::resetHVACSizingGlobals(state, 0, state.dataSize->CurSysNum, state.dataFurnaces->Furnace(FurnaceNum).FirstPass);
             }
         }
-        DataHVACGlobals::OnOffFanPartLoadFraction =
+        state.dataHVACGlobal->OnOffFanPartLoadFraction =
             1.0; // reset to 1 in case blow through fan configuration (fan resets to 1, but for blow thru fans coil sets back down < 1)
     }
 
@@ -9639,16 +9626,15 @@ namespace Furnaces {
         Real64 HotWaterMdot;    // actual hot water mass flow rate
         Array1D<Real64> Par(4);
         int SolFlag;
-        static std::string HeatingCoilName; // name of heating coil
-        static std::string HeatingCoilType; // type of heating coil
-        static int CoilTypeNum(0);          // heating coil type number
-        static int HeatingCoilIndex(0);     // heating coil index
-        static int CoilControlNode(0);      // control node for hot water and steam heating coils
-        static int CoilOutletNode(0);       // air outlet node of the heatiing coils
-        static int LoopNum(0);              // plant loop number
-        static int LoopSideNum(0);          // plant loop side number
-        static int BranchNum(0);            // plant branch number
-        static int CompNum(0);              // Numeric Equivalent for Supplemental Heat Coil Type
+        auto & HeatingCoilName = state.dataFurnaces->HeatingCoilName; // name of heating coil
+        int CoilTypeNum(0);          // heating coil type number
+        int HeatingCoilIndex(0);     // heating coil index
+        int CoilControlNode(0);      // control node for hot water and steam heating coils
+        int CoilOutletNode(0);       // air outlet node of the heatiing coils
+        int LoopNum(0);              // plant loop number
+        int LoopSideNum(0);          // plant loop side number
+        int BranchNum(0);            // plant branch number
+        int CompNum(0);              // Numeric Equivalent for Supplemental Heat Coil Type
 
         QActual = 0.0;
 
@@ -9880,17 +9866,17 @@ namespace Furnaces {
         int OpMode;                          // operating mode (fan cycling or continious; DX coil always cycles)
         int ZoneNum;                         // Controlled zone number
         Real64 QTotUnitOut;                  // capacity output
-        static int SpeedNum(1);              // Speed number
-        static Real64 SupHeaterLoad(0.0);    // supplement heater load
+        auto & SpeedNum = state.dataFurnaces->SpeedNum;
+        auto & SupHeaterLoad = state.dataFurnaces->SupHeaterLoad;
+        Real64 TotalZoneLatentLoad;   // Total ZONE latent load
+        Real64 TotalZoneSensibleLoad; // Total ZONE sensible load
+        Real64 SystemSensibleLoad;    // Positive value means heating required
         int CompOp;                          // compressor operation; 1=on, 0=off
         Real64 SaveMassFlowRate;             // saved inlet air mass flow rate [kg/s]
         Real64 QSensUnitOut;                 // sensible capacity output
         Real64 QLatUnitOut;                  // latent capacity output
-        static Real64 TotalZoneLatentLoad;   // Total ZONE latent load
-        static Real64 TotalZoneSensibleLoad; // Total ZONE sensible load
         Real64 ActualSensibleOutput;         // Actual furnace sensible capacity
         Real64 ReheatCoilLoad;               // reheat coil load due to dehumidification
-        static Real64 SystemSensibleLoad;    // Positive value means heating required
         Real64 QToHeatSetPt;                 // Load required to meet heating setpoint temp (>0 is a heating load)
         Real64 NoCompOutput;                 // output when no active compressor [W]
         int TotBranchNum;                    // total exit branch number
@@ -9900,11 +9886,11 @@ namespace Furnaces {
         // to be removed by furnace/unitary system
 
         // zero DX coils, and supplemental electric heater electricity consumption
-        DXElecHeatingPower = 0.0;
-        DXElecCoolingPower = 0.0;
+        state.dataHVACGlobal->DXElecHeatingPower = 0.0;
+        state.dataHVACGlobal->DXElecCoolingPower = 0.0;
         state.dataFurnaces->SaveCompressorPLR = 0.0;
-        ElecHeatingCoilPower = 0.0;
-        SuppHeatingCoilPower = 0.0;
+        state.dataHVACGlobal->ElecHeatingCoilPower = 0.0;
+        state.dataHVACGlobal->SuppHeatingCoilPower = 0.0;
 
         SystemSensibleLoad = QZnReq;
         TotalZoneSensibleLoad = QZnReq;
@@ -9942,7 +9928,7 @@ namespace Furnaces {
             }
         }
 
-        OnOffFanPartLoadFraction = 1.0;
+        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
 
         if (AirLoopNum != 0) {
             EconoActive = state.dataAirLoop->AirLoopControlInfo(AirLoopNum).EconoActive;
@@ -11201,7 +11187,7 @@ namespace Furnaces {
         }
 
         // If the fan runs continually do not allow coils to set OnOffFanPartLoadRatio.
-        if (state.dataFurnaces->Furnace(FurnaceNum).OpMode == ContFanCycCoil) OnOffFanPartLoadFraction = 1.0;
+        if (state.dataFurnaces->Furnace(FurnaceNum).OpMode == ContFanCycCoil) state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
 
         auto &outNode = state.dataLoopNodes->Node(OutletNode);
         auto &zoneNode = state.dataLoopNodes->Node(state.dataFurnaces->Furnace(FurnaceNum).NodeNumOfControlledZone);
@@ -11477,8 +11463,8 @@ namespace Furnaces {
         // na
 
         // Using/Aliasing
-        using DataHVACGlobals::MSHPMassFlowRateHigh;
-        using DataHVACGlobals::MSHPMassFlowRateLow;
+        auto &MSHPMassFlowRateHigh = state.dataHVACGlobal->MSHPMassFlowRateHigh;
+        auto &MSHPMassFlowRateLow = state.dataHVACGlobal->MSHPMassFlowRateLow;
         using IntegratedHeatPump::GetAirMassFlowRateIHP;
         using IntegratedHeatPump::GetMaxSpeedNumIHP;
         using IntegratedHeatPump::IHPOperationMode;

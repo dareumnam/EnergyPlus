@@ -222,9 +222,9 @@ namespace HVACUnitaryBypassVAV {
         auto &CBVAV(state.dataHVACUnitaryBypassVAV->CBVAV);
 
         // zero the fan and DX coils electricity consumption
-        DataHVACGlobals::DXElecCoolingPower = 0.0;
-        DataHVACGlobals::DXElecHeatingPower = 0.0;
-        DataHVACGlobals::ElecHeatingCoilPower = 0.0;
+        state.dataHVACGlobal->DXElecCoolingPower = 0.0;
+        state.dataHVACGlobal->DXElecHeatingPower = 0.0;
+        state.dataHVACGlobal->ElecHeatingCoilPower = 0.0;
         state.dataHVACUnitaryBypassVAV->SaveCompressorPLR = 0.0;
 
         // initialize local variables
@@ -247,7 +247,7 @@ namespace HVACUnitaryBypassVAV {
             }
         }
 
-        DataHVACGlobals::OnOffFanPartLoadFraction = 1.0;
+        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
 
         if (UnitOn) {
             ControlCBVAVOutput(state, CBVAVNum, FirstHVACIteration, PartLoadFrac, OnOffAirFlowRatio, HXUnitOn);
@@ -289,23 +289,23 @@ namespace HVACUnitaryBypassVAV {
         CBVAV(CBVAVNum).LatHeatEnergyRate = std::abs(max(0.0, (QTotUnitOut - QSensUnitOut)));
 
         if (CBVAV(CBVAVNum).HeatCoilType_Num == DataHVACGlobals::CoilDX_HeatingEmpirical) {
-            HeatingPower = DataHVACGlobals::DXElecHeatingPower;
+            HeatingPower = state.dataHVACGlobal->DXElecHeatingPower;
         } else if (CBVAV(CBVAVNum).HeatCoilType_Num == DataHVACGlobals::Coil_HeatingAirToAirVariableSpeed) {
-            HeatingPower = DataHVACGlobals::DXElecHeatingPower;
+            HeatingPower = state.dataHVACGlobal->DXElecHeatingPower;
         } else if (CBVAV(CBVAVNum).HeatCoilType_Num == DataHVACGlobals::Coil_HeatingElectric) {
-            HeatingPower = DataHVACGlobals::ElecHeatingCoilPower;
+            HeatingPower = state.dataHVACGlobal->ElecHeatingCoilPower;
         } else {
             HeatingPower = 0.0;
         }
 
         Real64 locFanElecPower = 0.0;
         if (CBVAV(CBVAVNum).FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-            locFanElecPower = HVACFan::fanObjs[CBVAV(CBVAVNum).FanIndex]->fanPower();
+            locFanElecPower = state.dataHVACFan->fanObjs[CBVAV(CBVAVNum).FanIndex]->fanPower();
         } else {
             locFanElecPower = Fans::GetFanPower(state, CBVAV(CBVAVNum).FanIndex);
         }
 
-        CBVAV(CBVAVNum).ElecPower = locFanElecPower + DataHVACGlobals::DXElecCoolingPower + HeatingPower;
+        CBVAV(CBVAVNum).ElecPower = locFanElecPower + state.dataHVACGlobal->DXElecCoolingPower + HeatingPower;
     }
 
     void GetCBVAV(EnergyPlusData &state)
@@ -602,11 +602,11 @@ namespace HVACUnitaryBypassVAV {
             } else {
                 if (UtilityRoutines::SameString(CBVAV(CBVAVNum).FanType, "Fan:SystemModel")) {
                     CBVAV(CBVAVNum).FanType_Num = DataHVACGlobals::FanType_SystemModelObject;
-                    HVACFan::fanObjs.emplace_back(new HVACFan::FanSystem(state, CBVAV(CBVAVNum).FanName)); // call constructor
+                    state.dataHVACFan->fanObjs.emplace_back(new HVACFan::FanSystem(state, CBVAV(CBVAVNum).FanName)); // call constructor
                     CBVAV(CBVAVNum).FanIndex = HVACFan::getFanObjectVectorIndex(state, CBVAV(CBVAVNum).FanName);
-                    CBVAV(CBVAVNum).FanInletNodeNum = HVACFan::fanObjs[CBVAV(CBVAVNum).FanIndex]->inletNodeNum;
-                    fanOutletNode = HVACFan::fanObjs[CBVAV(CBVAVNum).FanIndex]->outletNodeNum;
-                    CBVAV(CBVAVNum).FanVolFlow = HVACFan::fanObjs[CBVAV(CBVAVNum).FanIndex]->designAirVolFlowRate;
+                    CBVAV(CBVAVNum).FanInletNodeNum = state.dataHVACFan->fanObjs[CBVAV(CBVAVNum).FanIndex]->inletNodeNum;
+                    fanOutletNode = state.dataHVACFan->fanObjs[CBVAV(CBVAVNum).FanIndex]->outletNodeNum;
+                    CBVAV(CBVAVNum).FanVolFlow = state.dataHVACFan->fanObjs[CBVAV(CBVAVNum).FanIndex]->designAirVolFlowRate;
                 } else {
                     Fans::GetFanType(
                         state, CBVAV(CBVAVNum).FanName, CBVAV(CBVAVNum).FanType_Num, FanErrFlag, CurrentModuleObject, CBVAV(CBVAVNum).Name);
@@ -1155,7 +1155,7 @@ namespace HVACUnitaryBypassVAV {
                                                "Air Nodes");
 
             //   Find air loop associated with CBVAV system
-            for (int AirLoopNum = 1; AirLoopNum <= DataHVACGlobals::NumPrimaryAirSys; ++AirLoopNum) {
+            for (int AirLoopNum = 1; AirLoopNum <= state.dataHVACGlobal->NumPrimaryAirSys; ++AirLoopNum) {
                 for (int BranchNum = 1; BranchNum <= state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).NumBranches; ++BranchNum) {
                     for (int CompNum = 1; CompNum <= state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).Branch(BranchNum).TotalComponents; ++CompNum) {
                         if (!UtilityRoutines::SameString(state.dataAirSystemsData->PrimaryAirSystems(AirLoopNum).Branch(BranchNum).Comp(CompNum).Name,
@@ -2227,7 +2227,7 @@ namespace HVACUnitaryBypassVAV {
 
         if (CBVAV(CBVAVNum).FanPlace == DataHVACGlobals::BlowThru) {
             if (CBVAV(CBVAVNum).FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[CBVAV(CBVAVNum).FanIndex]->simulate(state, 1.0 / OnOffAirFlowRatio, _, _, _);
+                state.dataHVACFan->fanObjs[CBVAV(CBVAVNum).FanIndex]->simulate(state, 1.0 / OnOffAirFlowRatio, _, _, _);
             } else {
                 Fans::SimulateFanComponents(
                     state, CBVAV(CBVAVNum).FanName, FirstHVACIteration, CBVAV(CBVAVNum).FanIndex, state.dataHVACUnitaryBypassVAV->FanSpeedRatio);
@@ -3437,7 +3437,7 @@ namespace HVACUnitaryBypassVAV {
 
         if (CBVAV(CBVAVNum).FanPlace == DataHVACGlobals::DrawThru) {
             if (CBVAV(CBVAVNum).FanType_Num == DataHVACGlobals::FanType_SystemModelObject) {
-                HVACFan::fanObjs[CBVAV(CBVAVNum).FanIndex]->simulate(state, 1.0 / OnOffAirFlowRatio, _, _, _);
+                state.dataHVACFan->fanObjs[CBVAV(CBVAVNum).FanIndex]->simulate(state, 1.0 / OnOffAirFlowRatio, _, _, _);
             } else {
                 Fans::SimulateFanComponents(
                     state, CBVAV(CBVAVNum).FanName, FirstHVACIteration, CBVAV(CBVAVNum).FanIndex, state.dataHVACUnitaryBypassVAV->FanSpeedRatio);
@@ -3502,7 +3502,7 @@ namespace HVACUnitaryBypassVAV {
             dayOfSim = 1; // reset so that thisTime is <= 24 during warmup
         }
         Real64 thisTime = (dayOfSim - 1) * 24 + state.dataGlobal->HourOfDay - 1 + (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone +
-                          DataHVACGlobals::SysTimeElapsed;
+                          state.dataHVACGlobal->SysTimeElapsed;
 
         if (thisTime <= CBVAV(CBVAVNum).changeOverTimer) {
             CBVAV(CBVAVNum).modeChanged = true;
@@ -3976,7 +3976,7 @@ namespace HVACUnitaryBypassVAV {
 
         auto &CBVAV(state.dataHVACUnitaryBypassVAV->CBVAV);
 
-        Real64 ReportingConstant = DataHVACGlobals::TimeStepSys * DataGlobalConstants::SecInHour;
+        Real64 ReportingConstant = state.dataHVACGlobal->TimeStepSys * DataGlobalConstants::SecInHour;
 
         CBVAV(CBVAVNum).TotCoolEnergy = CBVAV(CBVAVNum).TotCoolEnergyRate * ReportingConstant;
         CBVAV(CBVAVNum).TotHeatEnergy = CBVAV(CBVAVNum).TotHeatEnergyRate * ReportingConstant;
@@ -3993,7 +3993,7 @@ namespace HVACUnitaryBypassVAV {
         }
 
         // reset to 1 in case blow through fan configuration (fan resets to 1, but for blow thru fans coil sets back down < 1)
-        DataHVACGlobals::OnOffFanPartLoadFraction = 1.0;
+        state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;
     }
 
     void CalcNonDXHeatingCoils(EnergyPlusData &state,

@@ -60,6 +60,7 @@
 #include <EnergyPlus/DataContaminantBalance.hh>
 #include <EnergyPlus/DataEnvironment.hh>
 #include <EnergyPlus/DataHeatBalance.hh>
+#include <EnergyPlus/DataIPShortCuts.hh>
 #include <EnergyPlus/DataLoopNode.hh>
 #include <EnergyPlus/DataPrecisionGlobals.hh>
 #include <EnergyPlus/DataSizing.hh>
@@ -94,7 +95,6 @@ namespace EnergyPlus::Fans {
 
     // Using/Aliasing
     using namespace DataLoopNode;
-    using DataHVACGlobals::BalancedExhMassFlow;
     using DataHVACGlobals::cFanTypes;
     using DataHVACGlobals::Cooling;
     using DataHVACGlobals::FanType_ComponentModel;
@@ -106,13 +106,8 @@ namespace EnergyPlus::Fans {
     using DataHVACGlobals::Heating;
     using DataHVACGlobals::Main;
     using DataHVACGlobals::MinFrac;
-    using DataHVACGlobals::NightVentOn;
-    using DataHVACGlobals::OnOffFanPartLoadFraction;
     using DataHVACGlobals::Other;
     using DataHVACGlobals::SmallAirVolFlow;
-    using DataHVACGlobals::TurnFansOff;
-    using DataHVACGlobals::TurnFansOn;
-    using DataHVACGlobals::UnbalExhMassFlow;
     using EMSManager::ManageEMS;
     using Psychrometrics::PsyCpAirFnW;
     using Psychrometrics::PsyRhoAirFnPbTdbW;
@@ -190,8 +185,8 @@ namespace EnergyPlus::Fans {
             state.dataFans->LocalTurnFansOff = ZoneCompTurnFansOff;
         } else {
             // Set module-level logic flags equal to the global LocalTurnFansOn and LocalTurnFansOff variables for all other cases.
-            state.dataFans->LocalTurnFansOn = TurnFansOn;
-            state.dataFans->LocalTurnFansOff = TurnFansOff;
+            state.dataFans->LocalTurnFansOn = state.dataHVACGlobal->TurnFansOn;
+            state.dataFans->LocalTurnFansOff = state.dataHVACGlobal->TurnFansOff;
         }
 
         // Calculate the Correct Fan Model with the current FanNum
@@ -593,7 +588,7 @@ namespace EnergyPlus::Fans {
 
             if (NumAlphas > 8 && !lAlphaFieldBlanks(9)) {
 
-                if (state.dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment != DataHeatBalance::NoAdjustReturnAndMixing) {
+                if (state.dataHeatBal->ZoneAirMassFlow.ZoneFlowAdjustment != DataHeatBalance::AdjustmentType::NoAdjustReturnAndMixing) {
                     // do not include adjusted for "balanced" exhaust flow in the zone total return calculation
                     ShowWarningError(state,
                                      RoutineName + cCurrentModuleObject + ": invalid " + cAlphaFieldNames(9) + " = " + cAlphaArgs(9) +
@@ -1160,8 +1155,8 @@ namespace EnergyPlus::Fans {
         Real64 XmotorMax;                  // Factor for motor max eff curve [ln hp]
         Real64 MotorOutPwrRatio;           // Ratio of motor output power to max motor output power [-]
         Real64 MotorPLEff;                 // Motor normalized (part-load) efficiency [-]
-        static Real64 VFDSpdRatio(0.0);    // Ratio of motor speed to motor max speed [-]
-        static Real64 VFDOutPwrRatio(0.0); // Ratio of VFD output power to max VFD output power [-]
+        Real64 VFDSpdRatio(0.0);    // Ratio of motor speed to motor max speed [-]
+        Real64 VFDOutPwrRatio(0.0); // Ratio of VFD output power to max VFD output power [-]
         std::string CompName;              // component name
         std::string CompType;              // component type
         std::string SizingString;          // input field sizing description (e.g., Nominal Capacity)
@@ -1480,7 +1475,7 @@ namespace EnergyPlus::Fans {
 
         NVPerfNum = Fan(FanNum).NVPerfNum;
 
-        if (NightVentOn && NVPerfNum > 0) {
+        if (state.dataHVACGlobal->NightVentOn && NVPerfNum > 0) {
             DeltaPress = NightVentPerf(NVPerfNum).DeltaPress;
             FanEff = NightVentPerf(NVPerfNum).FanEff;
             MotEff = NightVentPerf(NVPerfNum).MotEff;
@@ -1595,8 +1590,8 @@ namespace EnergyPlus::Fans {
         Real64 MassFlow; // [kg/sec]
         Real64 PartLoadFrac;
         Real64 MinFlowFrac;                  // Variable Volume Fan Min Flow Fraction [-]
-        static Real64 FlowFracForPower(0.0); // Variable Volume Fan Flow Fraction for power calcs[-]
-        static Real64 FlowFracActual(0.0);   // actual VAV fan flow fraction
+        Real64 FlowFracForPower(0.0); // Variable Volume Fan Flow Fraction for power calcs[-]
+        Real64 FlowFracActual(0.0);   // actual VAV fan flow fraction
         Real64 FanShaftPower;                // power delivered to fan shaft
         int NVPerfNum;
 
@@ -1618,7 +1613,7 @@ namespace EnergyPlus::Fans {
         NVPerfNum = Fan(FanNum).NVPerfNum;
         MaxAirFlowRate = Fan(FanNum).MaxAirFlowRate;
 
-        if (NightVentOn && NVPerfNum > 0) {
+        if (state.dataHVACGlobal->NightVentOn && NVPerfNum > 0) {
             DeltaPress = NightVentPerf(NVPerfNum).DeltaPress;
             FanEff = NightVentPerf(NVPerfNum).FanEff;
             MotEff = NightVentPerf(NVPerfNum).MotEff;
@@ -1689,7 +1684,7 @@ namespace EnergyPlus::Fans {
             // Calculate the part Load Fraction             (PH 7/13/03)
 
             FlowFracForPower = max(MinFlowFrac, min(FlowFracActual, 1.0)); // limit flow fraction to allowed range
-            if (NightVentOn && NVPerfNum > 0) {
+            if (state.dataHVACGlobal->NightVentOn && NVPerfNum > 0) {
                 PartLoadFrac = 1.0;
             } else {
                 PartLoadFrac = Fan(FanNum).FanCoeff(1) + Fan(FanNum).FanCoeff(2) * FlowFracForPower +
@@ -1796,7 +1791,6 @@ namespace EnergyPlus::Fans {
         Real64 FanShaftPower;        // power delivered to fan shaft
         Real64 SpeedRaisedToPower;   // Result of the speed ratio raised to the power of n (Curve object)
         Real64 EffRatioAtSpeedRatio; // Efficiency ratio at current speed ratio (Curve object)
-        static int ErrCount(0);
 
         auto & Fan(state.dataFans->Fan);
 
@@ -1850,20 +1844,20 @@ namespace EnergyPlus::Fans {
             // Calculate the part load ratio, can't be greater than 1
             PartLoadRatio = min(1.0, FlowFrac);
             // Fan is operating
-            if (OnOffFanPartLoadFraction <= 0.0) {
-                ShowRecurringWarningErrorAtEnd(state, "Fan:OnOff, OnOffFanPartLoadFraction <= 0.0, Reset to 1.0", ErrCount);
-                OnOffFanPartLoadFraction = 1.0; // avoid divide by zero or negative PLF
+            if (state.dataHVACGlobal->OnOffFanPartLoadFraction <= 0.0) {
+                ShowRecurringWarningErrorAtEnd(state, "Fan:OnOff, OnOffFanPartLoadFraction <= 0.0, Reset to 1.0", state.dataFans->ErrCount);
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0; // avoid divide by zero or negative PLF
             }
 
-            if (OnOffFanPartLoadFraction < 0.7) {
-                OnOffFanPartLoadFraction = 0.7; // a warning message is already issued from the DX coils or gas heating coil
+            if (state.dataHVACGlobal->OnOffFanPartLoadFraction < 0.7) {
+                state.dataHVACGlobal->OnOffFanPartLoadFraction = 0.7; // a warning message is already issued from the DX coils or gas heating coil
             }
 
             // Keep fan runtime fraction between 0.0 and 1.0, and RTF >= PLR
-            if (OnOffFanPartLoadFraction >= 1.0) {
+            if (state.dataHVACGlobal->OnOffFanPartLoadFraction >= 1.0) {
                 Fan(FanNum).FanRuntimeFraction = PartLoadRatio;
             } else {
-                Fan(FanNum).FanRuntimeFraction = max(0.0, min(1.0, PartLoadRatio / OnOffFanPartLoadFraction));
+                Fan(FanNum).FanRuntimeFraction = max(0.0, min(1.0, PartLoadRatio / state.dataHVACGlobal->OnOffFanPartLoadFraction));
             }
             // The fan speed ratio (passed from parent) determines the fan power according to fan laws
             if (present(SpeedRatio)) {
@@ -1916,7 +1910,7 @@ namespace EnergyPlus::Fans {
 
             // OnOffFanPartLoadFraction is passed via DataHVACGlobals from the cooling or heating coil that is
             //   requesting the fan to operate in cycling fan/cycling coil mode
-            OnOffFanPartLoadFraction = 1.0;                            // reset to 1 in case other on/off fan is called without a part load curve
+            state.dataHVACGlobal->OnOffFanPartLoadFraction = 1.0;                            // reset to 1 in case other on/off fan is called without a part load curve
             FanShaftPower = Fan(FanNum).MotEff * Fan(FanNum).FanPower; // power delivered to shaft
             Fan(FanNum).PowerLossToAir = FanShaftPower + (Fan(FanNum).FanPower - FanShaftPower) * Fan(FanNum).MotInAirFrac;
             Fan(FanNum).OutletAirEnthalpy = Fan(FanNum).InletAirEnthalpy + Fan(FanNum).PowerLossToAir / MassFlow;
@@ -1991,7 +1985,7 @@ namespace EnergyPlus::Fans {
 
         // apply controls to determine if operating
         if (Fan(FanNum).AvailManagerMode == state.dataFans->ExhaustFanCoupledToAvailManagers) {
-            if (((GetCurrentScheduleValue(state, Fan(FanNum).AvailSchedPtrNum) > 0.0) || TurnFansOn) && !TurnFansOff && MassFlow > 0.0) { // available
+            if (((GetCurrentScheduleValue(state, Fan(FanNum).AvailSchedPtrNum) > 0.0) || state.dataHVACGlobal->TurnFansOn) && !state.dataHVACGlobal->TurnFansOff && MassFlow > 0.0) { // available
                 if (Fan(FanNum).MinTempLimitSchedNum > 0) {
                     if (Tin >= GetCurrentScheduleValue(state, Fan(FanNum).MinTempLimitSchedNum)) {
                         FanIsRunning = true;
@@ -2103,8 +2097,8 @@ namespace EnergyPlus::Fans {
         Real64 BeltPLEff;                  // Belt normalized (part-load) efficiency [-]
         Real64 MotorOutPwrRatio;           // Ratio of motor output power to max motor output power [-]
         Real64 MotorPLEff;                 // Motor normalized (part-load) efficiency [-]
-        static Real64 VFDSpdRatio(0.0);    // Ratio of motor speed to motor max speed [-]
-        static Real64 VFDOutPwrRatio(0.0); // Ratio of VFD output power to max VFD output power [-]
+        Real64 VFDSpdRatio(0.0);    // Ratio of motor speed to motor max speed [-]
+        Real64 VFDOutPwrRatio(0.0); // Ratio of VFD output power to max VFD output power [-]
         Real64 FanEnthalpyChange;          // Air enthalpy change due to fan, belt, and motor losses [kJ/kg]
 
         auto & NightVentPerf(state.dataFans->NightVentPerf);
@@ -2113,7 +2107,7 @@ namespace EnergyPlus::Fans {
         // Get inputs for night ventilation option
         NVPerfNum = Fan(FanNum).NVPerfNum;
 
-        if (NightVentOn && NVPerfNum > 0) {
+        if (state.dataHVACGlobal->NightVentOn && NVPerfNum > 0) {
             MotInAirFrac = NightVentPerf(NVPerfNum).MotInAirFrac;
             MaxAirMassFlowRate = NightVentPerf(NVPerfNum).MaxAirMassFlowRate;
         } else {
@@ -2320,20 +2314,20 @@ namespace EnergyPlus::Fans {
 
         if (Fan(FanNum).FanType_Num == FanType_ZoneExhaust) {
             state.dataLoopNodes->Node(InletNode).MassFlowRate = Fan(FanNum).InletAirMassFlowRate;
-            if (AirflowNetwork::AirflowNetworkNumOfExhFan == 0) {
-                UnbalExhMassFlow = Fan(FanNum).InletAirMassFlowRate;
+            if (state.dataAirflowNetwork->AirflowNetworkNumOfExhFan == 0) {
+                state.dataHVACGlobal->UnbalExhMassFlow = Fan(FanNum).InletAirMassFlowRate;
                 if (Fan(FanNum).BalancedFractSchedNum > 0) {
-                    BalancedExhMassFlow = UnbalExhMassFlow * GetCurrentScheduleValue(state, Fan(FanNum).BalancedFractSchedNum);
-                    UnbalExhMassFlow = UnbalExhMassFlow - BalancedExhMassFlow;
+                    state.dataHVACGlobal->BalancedExhMassFlow = state.dataHVACGlobal->UnbalExhMassFlow * GetCurrentScheduleValue(state, Fan(FanNum).BalancedFractSchedNum);
+                    state.dataHVACGlobal->UnbalExhMassFlow = state.dataHVACGlobal->UnbalExhMassFlow - state.dataHVACGlobal->BalancedExhMassFlow;
                 } else {
-                    BalancedExhMassFlow = 0.0;
+                    state.dataHVACGlobal->BalancedExhMassFlow = 0.0;
                 }
             } else {
-                UnbalExhMassFlow = 0.0;
-                BalancedExhMassFlow = 0.0;
+                state.dataHVACGlobal->UnbalExhMassFlow = 0.0;
+                state.dataHVACGlobal->BalancedExhMassFlow = 0.0;
             }
-            Fan(FanNum).UnbalancedOutletMassFlowRate = UnbalExhMassFlow;
-            Fan(FanNum).BalancedOutletMassFlowRate = BalancedExhMassFlow;
+            Fan(FanNum).UnbalancedOutletMassFlowRate = state.dataHVACGlobal->UnbalExhMassFlow;
+            Fan(FanNum).BalancedOutletMassFlowRate = state.dataHVACGlobal->BalancedExhMassFlow;
         }
 
         if (state.dataContaminantBalance->Contaminant.CO2Simulation) {
@@ -2358,7 +2352,7 @@ namespace EnergyPlus::Fans {
         // This subroutine updates the report variables for the fans.
 
         // Using/Aliasing
-        using DataHVACGlobals::TimeStepSys;
+        auto & TimeStepSys = state.dataHVACGlobal->TimeStepSys;
 
         auto & Fan(state.dataFans->Fan);
 

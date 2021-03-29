@@ -287,6 +287,14 @@ namespace AirflowNetworkBalanceManager {
         bool UpdateAirflowNetworkMyOneTimeFlag = true;
         bool UpdateAirflowNetworkMyOneTimeFlag1 = true;
 
+        // CalcAirflowNetworkAirBalance variables
+        int ErrCountVar = 0;
+        int ErrCountHighPre = 0;
+        int ErrCountLowPre = 0;
+        int ErrIndexHighPre = 0;
+        int ErrIndexVar = 0;
+        int ErrIndexLowPre = 0;
+
         // Object Data
         Array1D<AirflowNetworkBalanceManager::AirflowNetworkReportVars> AirflowNetworkZnRpt;
         std::unordered_map<std::string, std::string> UniqueAirflowNetworkSurfaceName;
@@ -299,6 +307,15 @@ namespace AirflowNetworkBalanceManager {
         Array1D<AirflowNetwork::AirflowNetworkLinkReportData> linkReport;
         Array1D<AirflowNetwork::AirflowNetworkNodeReportData> nodeReport;
         Array1D<AirflowNetwork::AirflowNetworkLinkReportData> linkReport1;
+
+        // used to be statics
+        Array1D<bool> onceZoneFlag;
+        Array1D<bool> onceSurfFlag;
+        bool onetime = false;
+        int HybridGlobalErrIndex = 0;
+        int HybridGlobalErrCount = 0;
+        int AFNNumOfExtOpenings = 0; // Total number of external openings in the model
+        int OpenNuminZone = 0;       // Counts which opening this is in the zone, 1 or 2
 
         void clear_state() override
         {
@@ -366,7 +383,19 @@ namespace AirflowNetworkBalanceManager {
             this->linkReport.deallocate();
             this->nodeReport.deallocate();
             this->linkReport1.deallocate();
-
+            this->ErrCountVar = 0;
+            this->ErrCountHighPre = 0;
+            this->ErrCountLowPre = 0;
+            this->ErrIndexHighPre = 0;
+            this->ErrIndexVar = 0;
+            this->ErrIndexLowPre = 0;
+            this->onceZoneFlag.clear();
+            this->onceSurfFlag.clear();
+            this->onetime = false;
+            this->HybridGlobalErrIndex = 0;
+            this->HybridGlobalErrCount = 0;
+            this->AFNNumOfExtOpenings = 0;
+            this->OpenNuminZone = 0;
             solver.clear();
         }
     };

@@ -94,7 +94,7 @@ void BaseSizerWithScalableInputs::initializeWithinEP(EnergyPlusData &state,
 
     // set supply air fan properties
     if (this->isCoilReportObject && this->curSysNum > 0 && int(this->primaryAirSystem.size()) > 0 &&
-        this->curSysNum <= DataHVACGlobals::NumPrimaryAirSys) {
+        this->curSysNum <= state.dataHVACGlobal->NumPrimaryAirSys) {
         int SupFanNum = this->primaryAirSystem(this->curSysNum).SupFanNum;
         // int RetFanNum = this->primaryAirSystem(this->curSysNum).RetFanNum;
         switch (this->primaryAirSystem(this->curSysNum).supFanModelTypeEnum) {
@@ -114,7 +114,7 @@ void BaseSizerWithScalableInputs::initializeWithinEP(EnergyPlusData &state,
                 state.dataRptCoilSelection->coilSelectionReportObj->setCoilSupplyFanInfo(state,
                                                              this->compName,
                                                              this->compType,
-                                                             HVACFan::fanObjs[this->primaryAirSystem(this->curSysNum).supFanVecIndex]->name,
+                                                             state.dataHVACFan->fanObjs[this->primaryAirSystem(this->curSysNum).supFanVecIndex]->name,
                                                              DataAirSystems::objectVectorOOFanSystemModel,
                                                              this->primaryAirSystem(this->curSysNum).supFanVecIndex);
             }

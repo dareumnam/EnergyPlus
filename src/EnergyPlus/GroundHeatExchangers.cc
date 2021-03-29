@@ -112,8 +112,6 @@ namespace EnergyPlus::GroundHeatExchangers {
     //   Ground Heat Exchanger.' Applied Energy. Vol 114, 57-69.
 
     // Using/Aliasing
-    using DataHVACGlobals::SysTimeElapsed;
-    using DataHVACGlobals::TimeStepSys;
     using namespace DataLoopNode;
 
     using namespace GroundTemperatureManager;
@@ -1402,14 +1400,14 @@ namespace EnergyPlus::GroundHeatExchangers {
         // For convenience
         using json = nlohmann::json;
 
-        if (!FileSystem::fileExists(DataStringGlobals::outputGLHEFileName)) {
+        if (!FileSystem::fileExists(state.dataStrGlobals->outputGLHEFileName)) {
             // if the file doesn't exist, there are no data to read
             return;
         } else {
             // file exists -- read data and load if possible
 
             // open file
-            std::ifstream ifs(DataStringGlobals::outputGLHEFileName);
+            std::ifstream ifs(state.dataStrGlobals->outputGLHEFileName);
 
             // create empty json object
             json json_in;
@@ -1421,7 +1419,7 @@ namespace EnergyPlus::GroundHeatExchangers {
             } catch (...) {
                 if (!json_in.empty()) {
                     // file exists, is not empty, but failed for some other reason
-                    ShowWarningError(state, DataStringGlobals::outputGLHEFileName + " contains invalid file format");
+                    ShowWarningError(state, state.dataStrGlobals->outputGLHEFileName + " contains invalid file format");
                 }
                 ifs.close();
                 return;
@@ -1479,11 +1477,11 @@ namespace EnergyPlus::GroundHeatExchangers {
         // For convenience
         using json = nlohmann::json;
 
-        if (FileSystem::fileExists(DataStringGlobals::outputGLHEFileName)) {
+        if (FileSystem::fileExists(state.dataStrGlobals->outputGLHEFileName)) {
             // file exists -- add data
 
             // open file
-            std::ifstream ifs(DataStringGlobals::outputGLHEFileName);
+            std::ifstream ifs(state.dataStrGlobals->outputGLHEFileName);
 
             // create empty json object
             json json_in;
@@ -1495,8 +1493,8 @@ namespace EnergyPlus::GroundHeatExchangers {
             } catch (...) {
                 if (!json_in.empty()) {
                     // file exists, is not empty, but failed for some other reason
-                    ShowWarningError(state, "Error reading from " + DataStringGlobals::outputGLHEFileName);
-                    ShowWarningError(state, "Data from previous " + DataStringGlobals::outputGLHEFileName + " not saved");
+                    ShowWarningError(state, "Error reading from " + state.dataStrGlobals->outputGLHEFileName);
+                    ShowWarningError(state, "Data from previous " + state.dataStrGlobals->outputGLHEFileName + " not saved");
                 }
                 ifs.close();
             }
@@ -1519,7 +1517,7 @@ namespace EnergyPlus::GroundHeatExchangers {
             if (state.files.outputControl.glhe) {
                 // open output file
                 std::ofstream ofs;
-                ofs.open(DataStringGlobals::outputGLHEFileName);
+                ofs.open(state.dataStrGlobals->outputGLHEFileName);
                 // write data to file, set spacing at 2
                 ofs << std::setw(2) << json_out;
                 // don't forget to close
@@ -1539,7 +1537,7 @@ namespace EnergyPlus::GroundHeatExchangers {
             if (state.files.outputControl.glhe) {
                 // open output file
                 std::ofstream ofs;
-                ofs.open(DataStringGlobals::outputGLHEFileName);
+                ofs.open(state.dataStrGlobals->outputGLHEFileName);
                 // write data to file, set spacing at 2
                 ofs << std::setw(2) << json_out;
                 // don't forget to close
@@ -2117,7 +2115,7 @@ namespace EnergyPlus::GroundHeatExchangers {
 
         state.dataGroundHeatExchanger->currentSimTime = (state.dataGlobal->DayOfSim - 1) * 24 + state.dataGlobal->HourOfDay - 1 +
                                                         (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone +
-                                                        SysTimeElapsed; //+ TimeStepsys
+                                                        state.dataHVACGlobal->SysTimeElapsed; //+ TimeStepsys
         state.dataGroundHeatExchanger->locHourOfDay =
             static_cast<int>(mod(state.dataGroundHeatExchanger->currentSimTime, DataGlobalConstants::HoursInDay) + 1);
         state.dataGroundHeatExchanger->locDayOfSim = static_cast<int>(state.dataGroundHeatExchanger->currentSimTime / 24 + 1);
@@ -3121,7 +3119,7 @@ namespace EnergyPlus::GroundHeatExchangers {
 
         // SUBROUTINE LOCAL VARIABLE DECLARATIONS:
         Real64 currTime = ((state.dataGlobal->DayOfSim - 1) * 24 + (state.dataGlobal->HourOfDay - 1) +
-                           (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone + SysTimeElapsed) *
+                           (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone + state.dataHVACGlobal->SysTimeElapsed) *
                           DataGlobalConstants::SecInHour;
 
         // Init more variables
@@ -3226,7 +3224,7 @@ namespace EnergyPlus::GroundHeatExchangers {
         using namespace GroundTemperatureManager;
 
         Real64 CurTime = ((state.dataGlobal->DayOfSim - 1) * 24 + (state.dataGlobal->HourOfDay - 1) +
-                          (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone + SysTimeElapsed) *
+                          (state.dataGlobal->TimeStep - 1) * state.dataGlobal->TimeStepZone + state.dataHVACGlobal->SysTimeElapsed) *
                          DataGlobalConstants::SecInHour;
 
         // Init more variables

@@ -227,7 +227,7 @@ namespace EnergyPlus::HeatPumpWaterToWaterHEATING {
         Array1D_string AlphArray(5);  // character string data
         Array1D<Real64> NumArray(23); // numeric data
 
-        static bool ErrorsFound(false);
+        bool ErrorsFound(false);
 
         state.dataHPWaterToWaterHtg->NumGSHPs = inputProcessor->getNumObjectsFound(state, ModuleCompName);
 
@@ -538,7 +538,7 @@ namespace EnergyPlus::HeatPumpWaterToWaterHEATING {
         //       RE-ENGINEERED  Mar2000
 
         // Using/Aliasing
-        using DataHVACGlobals::SysTimeElapsed;
+        auto & SysTimeElapsed = state.dataHVACGlobal->SysTimeElapsed;
         using namespace FluidProperties;
 
         using PlantUtilities::SetComponentFlowRate;
@@ -564,8 +564,8 @@ namespace EnergyPlus::HeatPumpWaterToWaterHEATING {
         std::string ErrString;
         Real64 DutyFactor;
 
-        static Real64 CurrentSimTime(0.0);
-        static Real64 PrevSimTime(0.0);
+        auto & CurrentSimTime = state.dataHPWaterToWaterHtg->CurrentSimTime;
+        auto & PrevSimTime = state.dataHPWaterToWaterHtg->PrevSimTime;
 
         // Init Module level Variables
         if (PrevSimTime != CurrentSimTime) {
@@ -877,7 +877,7 @@ namespace EnergyPlus::HeatPumpWaterToWaterHEATING {
             // set node flow rates;  for these load based models
             // assume that the sufficient Source Side flow rate available
 
-            Real64 const ReportingConstant = DataHVACGlobals::TimeStepSys * DataGlobalConstants::SecInHour;
+            Real64 const ReportingConstant = state.dataHVACGlobal->TimeStepSys * DataGlobalConstants::SecInHour;
 
             this->Energy = this->Power * ReportingConstant;
             this->QSourceEnergy = QSource * ReportingConstant;

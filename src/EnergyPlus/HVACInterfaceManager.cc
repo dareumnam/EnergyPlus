@@ -106,7 +106,7 @@ namespace EnergyPlus::HVACInterfaceManager {
         // from the outlet of one side of the loop get transferred directly
         // to the inlet node of the corresponding other side of the loop.
 
-        static Array1D<Real64> TmpRealARR(DataConvergParams::ConvergLogStackDepth); // Tuned Made static
+        auto & TmpRealARR = state.dataHVACInterfaceMgr->TmpRealARR;
         Real64 DeltaEnergy;
 
         if ((CalledFrom == DataConvergParams::iCalledFrom::AirSystemDemandSide) && (OutletNode == 0)) {
@@ -546,8 +546,8 @@ namespace EnergyPlus::HVACInterfaceManager {
         // na
 
         // Using/Aliasing
-        using DataHVACGlobals::SysTimeElapsed;
-        using DataHVACGlobals::TimeStepSys;
+        auto & SysTimeElapsed = state.dataHVACGlobal->SysTimeElapsed;
+        auto & TimeStepSys = state.dataHVACGlobal->TimeStepSys;
         using FluidProperties::GetSpecificHeatGlycol;
 
         // SUBROUTINE PARAMETER DEFINITIONS:
@@ -687,8 +687,8 @@ namespace EnergyPlus::HVACInterfaceManager {
         // na
 
         // Using/Aliasing
-        using DataHVACGlobals::SysTimeElapsed;
-        using DataHVACGlobals::TimeStepSys;
+        auto & SysTimeElapsed = state.dataHVACGlobal->SysTimeElapsed;
+        auto & TimeStepSys = state.dataHVACGlobal->TimeStepSys;
         using DataPlant::DemandSide;
         using FluidProperties::GetSpecificHeatGlycol;
 

@@ -184,7 +184,7 @@ namespace SimulationManager {
         // hour loop, and a time step loop.
 
         // Using/Aliasing
-        using DataHVACGlobals::TimeStepSys;
+        auto & TimeStepSys = state.dataHVACGlobal->TimeStepSys;
         using BranchInputManager::ManageBranchInput;
         using BranchInputManager::TestBranchIntegrity;
         using BranchNodeConnections::CheckNodeConnections;
@@ -245,7 +245,7 @@ namespace SimulationManager {
 
         if (sqlite) {
             sqlite->sqliteBegin();
-            sqlite->createSQLiteSimulationsRecord(1, DataStringGlobals::VerString, DataStringGlobals::CurrentDateTime);
+            sqlite->createSQLiteSimulationsRecord(1, DataStringGlobals::VerString, state.dataStrGlobals->CurrentDateTime);
             sqlite->sqliteCommit();
         }
 
@@ -667,11 +667,9 @@ namespace SimulationManager {
         // Using/Aliasing
         using DataStringGlobals::MatchVersion;
         using namespace DataSystemVariables;
-        using DataHVACGlobals::deviationFromSetPtThresholdClg;
-        using DataHVACGlobals::deviationFromSetPtThresholdHtg;
-        using DataHVACGlobals::LimitNumSysSteps;
+        auto &deviationFromSetPtThresholdClg = state.dataHVACGlobal->deviationFromSetPtThresholdClg;
+        auto &deviationFromSetPtThresholdHtg = state.dataHVACGlobal->deviationFromSetPtThresholdHtg;
 
-        using namespace DataIPShortCuts;
 
         // SUBROUTINE PARAMETER DEFINITIONS:
         static Array1D_int const Div60(12, {1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60});
@@ -706,10 +704,10 @@ namespace SimulationManager {
                                           Number,
                                           NumNumber,
                                           IOStat,
-                                          lNumericFieldBlanks,
-                                          lAlphaFieldBlanks,
-                                          cAlphaFieldNames,
-                                          cNumericFieldNames);
+                                          state.dataIPShortCut->lNumericFieldBlanks,
+                                          state.dataIPShortCut->lAlphaFieldBlanks,
+                                          state.dataIPShortCut->cAlphaFieldNames,
+                                          state.dataIPShortCut->cNumericFieldNames);
             std::string::size_type const lenVer(len(MatchVersion));
             if ((lenVer > 0) && (MatchVersion[lenVer - 1] == '0')) {
                 Which = static_cast<int>(index(Alphas(1).substr(0, lenVer - 2), MatchVersion.substr(0, lenVer - 2)));
@@ -740,10 +738,10 @@ namespace SimulationManager {
                                           Number,
                                           NumNumber,
                                           IOStat,
-                                          lNumericFieldBlanks,
-                                          lAlphaFieldBlanks,
-                                          cAlphaFieldNames,
-                                          cNumericFieldNames);
+                                          state.dataIPShortCut->lNumericFieldBlanks,
+                                          state.dataIPShortCut->lAlphaFieldBlanks,
+                                          state.dataIPShortCut->cAlphaFieldNames,
+                                          state.dataIPShortCut->cNumericFieldNames);
             {
                 auto const SELECT_CASE_var(Alphas(1));
                 if ((SELECT_CASE_var == "CONDUCTIONFINITEDIFFERENCE") || (SELECT_CASE_var == "CONDFD") ||
@@ -765,10 +763,10 @@ namespace SimulationManager {
                                               Number,
                                               NumNumber,
                                               IOStat,
-                                              lNumericFieldBlanks,
-                                              lAlphaFieldBlanks,
-                                              cAlphaFieldNames,
-                                              cNumericFieldNames);
+                                              state.dataIPShortCut->lNumericFieldBlanks,
+                                              state.dataIPShortCut->lAlphaFieldBlanks,
+                                              state.dataIPShortCut->cAlphaFieldNames,
+                                              state.dataIPShortCut->cNumericFieldNames);
                 {
                     auto const SELECT_CASE_var(Alphas(2));
                     if (SELECT_CASE_var == "CONDUCTIONFINITEDIFFERENCE") {
@@ -791,10 +789,10 @@ namespace SimulationManager {
                                               Number,
                                               NumNumber,
                                               IOStat,
-                                              lNumericFieldBlanks,
-                                              lAlphaFieldBlanks,
-                                              cAlphaFieldNames,
-                                              cNumericFieldNames);
+                                              state.dataIPShortCut->lNumericFieldBlanks,
+                                              state.dataIPShortCut->lAlphaFieldBlanks,
+                                              state.dataIPShortCut->cAlphaFieldNames,
+                                              state.dataIPShortCut->cNumericFieldNames);
                 {
                     auto const SELECT_CASE_var(Alphas(3));
                     if (SELECT_CASE_var == "CONDUCTIONFINITEDIFFERENCE") {
@@ -811,17 +809,17 @@ namespace SimulationManager {
                 inputProcessor->getObjectItem(state,
                                               CurrentModuleObject,
                                               1,
-                                              cAlphaArgs,
+                                              state.dataIPShortCut->cAlphaArgs,
                                               NumAlpha,
                                               Number,
                                               NumNumber,
                                               IOStat,
-                                              lNumericFieldBlanks,
-                                              lAlphaFieldBlanks,
-                                              cAlphaFieldNames,
-                                              cNumericFieldNames);
+                                              state.dataIPShortCut->lNumericFieldBlanks,
+                                              state.dataIPShortCut->lAlphaFieldBlanks,
+                                              state.dataIPShortCut->cAlphaFieldNames,
+                                              state.dataIPShortCut->cNumericFieldNames);
                 {
-                    auto const SELECT_CASE_var(cAlphaArgs(2));
+                    auto const SELECT_CASE_var(state.dataIPShortCut->cAlphaArgs(2));
                     if (SELECT_CASE_var == "CONDUCTIONFINITEDIFFERENCE") {
                         CondFDAlgo = true;
                     } else {
@@ -836,17 +834,17 @@ namespace SimulationManager {
                 inputProcessor->getObjectItem(state,
                                               CurrentModuleObject,
                                               1,
-                                              cAlphaArgs,
+                                              state.dataIPShortCut->cAlphaArgs,
                                               NumAlpha,
                                               Number,
                                               NumNumber,
                                               IOStat,
-                                              lNumericFieldBlanks,
-                                              lAlphaFieldBlanks,
-                                              cAlphaFieldNames,
-                                              cNumericFieldNames);
+                                              state.dataIPShortCut->lNumericFieldBlanks,
+                                              state.dataIPShortCut->lAlphaFieldBlanks,
+                                              state.dataIPShortCut->cAlphaFieldNames,
+                                              state.dataIPShortCut->cNumericFieldNames);
                 {
-                    auto const SELECT_CASE_var(cAlphaArgs(2));
+                    auto const SELECT_CASE_var(state.dataIPShortCut->cAlphaArgs(2));
                     if (SELECT_CASE_var == "CONDUCTIONFINITEDIFFERENCE") {
                         CondFDAlgo = true;
                     } else {
@@ -866,10 +864,10 @@ namespace SimulationManager {
                                           Number,
                                           NumNumber,
                                           IOStat,
-                                          lNumericFieldBlanks,
-                                          lAlphaFieldBlanks,
-                                          cAlphaFieldNames,
-                                          cNumericFieldNames);
+                                          state.dataIPShortCut->lNumericFieldBlanks,
+                                          state.dataIPShortCut->lAlphaFieldBlanks,
+                                          state.dataIPShortCut->cAlphaFieldNames,
+                                          state.dataIPShortCut->cNumericFieldNames);
             state.dataGlobal->NumOfTimeStepInHour = Number(1);
             if (state.dataGlobal->NumOfTimeStepInHour <= 0 || state.dataGlobal->NumOfTimeStepInHour > 60) {
                 Alphas(1) = fmt::to_string(state.dataGlobal->NumOfTimeStepInHour);
@@ -933,17 +931,17 @@ namespace SimulationManager {
                                           Number,
                                           NumNumber,
                                           IOStat,
-                                          lNumericFieldBlanks,
-                                          lAlphaFieldBlanks,
-                                          cAlphaFieldNames,
-                                          cNumericFieldNames);
+                                          state.dataIPShortCut->lNumericFieldBlanks,
+                                          state.dataIPShortCut->lAlphaFieldBlanks,
+                                          state.dataIPShortCut->cAlphaFieldNames,
+                                          state.dataIPShortCut->cNumericFieldNames);
             MinInt = int(Number(1));
             if (MinInt > state.dataGlobal->MinutesPerTimeStep) {
                 MinInt = state.dataGlobal->MinutesPerTimeStep;
             }
             if (MinInt < 0 || MinInt > 60) {
                 ShowWarningError(state,
-                                 format("{}: Requested {} ({}) invalid. Set to 1 minute.", CurrentModuleObject, cNumericFieldNames(1), MinInt));
+                                 format("{}: Requested {} ({}) invalid. Set to 1 minute.", CurrentModuleObject, state.dataIPShortCut->cNumericFieldNames(1), MinInt));
                 state.dataConvergeParams->MinTimeStepSys = 1.0 / 60.0;
             } else if (MinInt == 0) { // Set to TimeStepZone
                 state.dataConvergeParams->MinTimeStepSys = state.dataGlobal->TimeStepZone;
@@ -954,8 +952,8 @@ namespace SimulationManager {
             if (state.dataConvergeParams->MaxIter <= 0) {
                 state.dataConvergeParams->MaxIter = 20;
             }
-            if (!lNumericFieldBlanks(3)) state.dataConvergeParams->MinPlantSubIterations = int(Number(3));
-            if (!lNumericFieldBlanks(4)) state.dataConvergeParams->MaxPlantSubIterations = int(Number(4));
+            if (!state.dataIPShortCut->lNumericFieldBlanks(3)) state.dataConvergeParams->MinPlantSubIterations = int(Number(3));
+            if (!state.dataIPShortCut->lNumericFieldBlanks(4)) state.dataConvergeParams->MaxPlantSubIterations = int(Number(4));
             // trap bad values
             if (state.dataConvergeParams->MinPlantSubIterations < 1) state.dataConvergeParams->MinPlantSubIterations = 1;
             if (state.dataConvergeParams->MaxPlantSubIterations < 3) state.dataConvergeParams->MaxPlantSubIterations = 3;
@@ -971,7 +969,7 @@ namespace SimulationManager {
             ErrorsFound = true;
         }
 
-        LimitNumSysSteps = int(state.dataGlobal->TimeStepZone / state.dataConvergeParams->MinTimeStepSys);
+        state.dataHVACGlobal->LimitNumSysSteps = int(state.dataGlobal->TimeStepZone / state.dataConvergeParams->MinTimeStepSys);
 
         state.dataReportFlag->DebugOutput = false;
         state.dataReportFlag->EvenDuringWarmup = false;
@@ -1091,16 +1089,16 @@ namespace SimulationManager {
                                           Number,
                                           NumNumber,
                                           IOStat,
-                                          lNumericFieldBlanks,
-                                          lAlphaFieldBlanks,
-                                          cAlphaFieldNames,
-                                          cNumericFieldNames);
-            if (!lNumericFieldBlanks(1)) {
+                                          state.dataIPShortCut->lNumericFieldBlanks,
+                                          state.dataIPShortCut->lAlphaFieldBlanks,
+                                          state.dataIPShortCut->cAlphaFieldNames,
+                                          state.dataIPShortCut->cNumericFieldNames);
+            if (!state.dataIPShortCut->lNumericFieldBlanks(1)) {
                 deviationFromSetPtThresholdHtg = -Number(1);
             } else {
                 deviationFromSetPtThresholdHtg = -0.2;
             }
-            if (!lNumericFieldBlanks(2)) {
+            if (!state.dataIPShortCut->lNumericFieldBlanks(2)) {
                 deviationFromSetPtThresholdClg = Number(2);
             } else {
                 deviationFromSetPtThresholdClg = 0.2;
@@ -1126,10 +1124,10 @@ namespace SimulationManager {
                                           Number,
                                           NumNumber,
                                           IOStat,
-                                          lNumericFieldBlanks,
-                                          lAlphaFieldBlanks,
-                                          cAlphaFieldNames,
-                                          cNumericFieldNames);
+                                          state.dataIPShortCut->lNumericFieldBlanks,
+                                          state.dataIPShortCut->lAlphaFieldBlanks,
+                                          state.dataIPShortCut->cAlphaFieldNames,
+                                          state.dataIPShortCut->cNumericFieldNames);
             if (Alphas(1) == "YES") state.dataGlobal->DoZoneSizing = true;
             if (Alphas(2) == "YES") state.dataGlobal->DoSystemSizing = true;
             if (Alphas(3) == "YES") state.dataGlobal->DoPlantSizing = true;
@@ -1167,7 +1165,7 @@ namespace SimulationManager {
                     state.dataGlobal->DoCoilDirectSolutions = UtilityRoutines::MakeUPPERCase(fields.at("use_coil_direct_solutions")) == "YES";
                 }
                 if (fields.find("zone_radiant_exchange_algorithm") != fields.end()) {
-                    HeatBalanceIntRadExchange::CarrollMethod =
+                    state.dataHeatBalIntRadExchg->CarrollMethod =
                         UtilityRoutines::MakeUPPERCase(fields.at("zone_radiant_exchange_algorithm")) == "CARROLLMRT";
                 }
                 bool overrideTimestep(false);
@@ -1282,7 +1280,7 @@ namespace SimulationManager {
                             MinTimeStepSysOverrideValue = state.dataGlobal->MinutesPerTimeStep;
                         }
                         state.dataConvergeParams->MinTimeStepSys = MinTimeStepSysOverrideValue / 60.0;
-                        LimitNumSysSteps = int(state.dataGlobal->TimeStepZone / state.dataConvergeParams->MinTimeStepSys);
+                        state.dataHVACGlobal->LimitNumSysSteps = int(state.dataGlobal->TimeStepZone / state.dataConvergeParams->MinTimeStepSys);
                     }
                     if (overrideMaxZoneTempDiff) {
                         ShowWarningError(state,
@@ -1369,7 +1367,7 @@ namespace SimulationManager {
         } else {
             Alphas(1) = "No";
         }
-        if (HeatBalanceIntRadExchange::CarrollMethod) {
+        if (state.dataHeatBalIntRadExchg->CarrollMethod) {
             Alphas(2) = "CarrollMRT";
             ShowWarningError(state, "PerformancePrecisionTradeoffs: Carroll MRT radiant exchange method is selected.");
         } else {
@@ -1438,7 +1436,7 @@ namespace SimulationManager {
         UtilityRoutines::appendPerfLog(state, "Program, Version, TimeStamp",
                                        DataStringGlobals::VerString); // this string already includes three portions and has commas
         UtilityRoutines::appendPerfLog(state, "Use Coil Direct Solution", bool_to_string(state.dataGlobal->DoCoilDirectSolutions));
-        if (HeatBalanceIntRadExchange::CarrollMethod) {
+        if (state.dataHeatBalIntRadExchg->CarrollMethod) {
             UtilityRoutines::appendPerfLog(state, "Zone Radiant Exchange Algorithm", "CarrollMRT");
         } else {
             UtilityRoutines::appendPerfLog(state, "Zone Radiant Exchange Algorithm", "ScriptF");
@@ -1872,22 +1870,22 @@ namespace SimulationManager {
         print(state.files.audit, variable_fmt, "NumOfNodeConnections", state.dataBranchNodeConnections->NumOfNodeConnections);
         print(state.files.audit, variable_fmt, "MaxNumOfNodeConnections", state.dataBranchNodeConnections->MaxNumOfNodeConnections);
 #ifdef EP_Count_Calls
-        print(state.files.audit, variable_fmt, "NumShadow_Calls", NumShadow_Calls);
-        print(state.files.audit, variable_fmt, "NumShadowAtTS_Calls", NumShadowAtTS_Calls);
-        print(state.files.audit, variable_fmt, "NumClipPoly_Calls", NumClipPoly_Calls);
-        print(state.files.audit, variable_fmt, "NumInitSolar_Calls", NumInitSolar_Calls);
-        print(state.files.audit, variable_fmt, "NumAnisoSky_Calls", NumAnisoSky_Calls);
-        print(state.files.audit, variable_fmt, "NumDetPolyOverlap_Calls", NumDetPolyOverlap_Calls);
-        print(state.files.audit, variable_fmt, "NumCalcPerSolBeam_Calls", NumCalcPerSolBeam_Calls);
-        print(state.files.audit, variable_fmt, "NumDetShadowCombs_Calls", NumDetShadowCombs_Calls);
-        print(state.files.audit, variable_fmt, "NumIntSolarDist_Calls", NumIntSolarDist_Calls);
-        print(state.files.audit, variable_fmt, "NumIntRadExchange_Calls", NumIntRadExchange_Calls);
-        print(state.files.audit, variable_fmt, "NumIntRadExchangeZ_Calls", NumIntRadExchangeZ_Calls);
-        print(state.files.audit, variable_fmt, "NumIntRadExchangeMain_Calls", NumIntRadExchangeMain_Calls);
-        print(state.files.audit, variable_fmt, "NumIntRadExchangeOSurf_Calls", NumIntRadExchangeOSurf_Calls);
-        print(state.files.audit, variable_fmt, "NumIntRadExchangeISurf_Calls", NumIntRadExchangeISurf_Calls);
-        print(state.files.audit, variable_fmt, "NumMaxInsideSurfIterations", NumMaxInsideSurfIterations);
-        print(state.files.audit, variable_fmt, "NumCalcScriptF_Calls", NumCalcScriptF_Calls);
+        print(state.files.audit, variable_fmt, "NumShadow_Calls", state.dataTimingsData->NumShadow_Calls);
+        print(state.files.audit, variable_fmt, "NumShadowAtTS_Calls", state.dataTimingsData->NumShadowAtTS_Calls);
+        print(state.files.audit, variable_fmt, "NumClipPoly_Calls", state.dataTimingsData->NumClipPoly_Calls);
+        print(state.files.audit, variable_fmt, "NumInitSolar_Calls", state.dataTimingsData->NumInitSolar_Calls);
+        print(state.files.audit, variable_fmt, "NumAnisoSky_Calls", state.dataTimingsData->NumAnisoSky_Calls);
+        print(state.files.audit, variable_fmt, "NumDetPolyOverlap_Calls", state.dataTimingsData->NumDetPolyOverlap_Calls);
+        print(state.files.audit, variable_fmt, "NumCalcPerSolBeam_Calls", state.dataTimingsData->NumCalcPerSolBeam_Calls);
+        print(state.files.audit, variable_fmt, "NumDetShadowCombs_Calls", state.dataTimingsData->NumDetShadowCombs_Calls);
+        print(state.files.audit, variable_fmt, "NumIntSolarDist_Calls", state.dataTimingsData->NumIntSolarDist_Calls);
+        print(state.files.audit, variable_fmt, "NumIntRadExchange_Calls", state.dataTimingsData->NumIntRadExchange_Calls);
+        print(state.files.audit, variable_fmt, "NumIntRadExchangeZ_Calls", state.dataTimingsData->NumIntRadExchangeZ_Calls);
+        print(state.files.audit, variable_fmt, "NumIntRadExchangeMain_Calls", state.dataTimingsData->NumIntRadExchangeMain_Calls);
+        print(state.files.audit, variable_fmt, "NumIntRadExchangeOSurf_Calls", state.dataTimingsData->NumIntRadExchangeOSurf_Calls);
+        print(state.files.audit, variable_fmt, "NumIntRadExchangeISurf_Calls", state.dataTimingsData->NumIntRadExchangeISurf_Calls);
+        print(state.files.audit, variable_fmt, "NumMaxInsideSurfIterations", state.dataTimingsData->NumMaxInsideSurfIterations);
+        print(state.files.audit, variable_fmt, "NumCalcScriptF_Calls", state.dataTimingsData->NumCalcScriptF_Calls);
 #endif
 
         print(state.files.eso, "{}\n", EndOfDataString);
@@ -2313,7 +2311,7 @@ namespace SimulationManager {
         //  Plant Loops
         print(state.files.bnd, "{}\n", "! ===============================================================");
         print(state.files.bnd, "{}\n", "! <# Plant Loops>,<Number of Plant Loops>");
-        print(state.files.bnd, " #Plant Loops,{}\n", NumPlantLoops);
+        print(state.files.bnd, " #Plant Loops,{}\n", state.dataHVACGlobal->NumPlantLoops);
         print(state.files.bnd,
               "{}\n",
               "! <Plant Loop>,<Plant Loop Name>,<Loop Type>,<Inlet Node Name>,<Outlet Node Name>,<Branch List>,<Connector List>");
@@ -2333,7 +2331,7 @@ namespace SimulationManager {
         print(state.files.bnd,
               "{}\n",
               "! <Plant Loop Return Connection>,<Plant Loop Name>,<Demand Side Outlet Node Name>,<Supply Side Inlet Node Name>");
-        for (int Count = 1; Count <= NumPlantLoops; ++Count) {
+        for (int Count = 1; Count <= state.dataHVACGlobal->NumPlantLoops; ++Count) {
             for (int LoopSideNum = DemandSide; LoopSideNum <= SupplySide; ++LoopSideNum) {
                 //  Plant Supply Side Loop
                 // Demandside and supplyside is parametrized in DataPlant
@@ -2459,7 +2457,7 @@ namespace SimulationManager {
         //  Condenser Loops
         print(state.files.bnd, "{}\n", "! ===============================================================");
         print(state.files.bnd, "{}\n", "! <# Condenser Loops>,<Number of Condenser Loops>");
-        print(state.files.bnd, " #Condenser Loops,{}\n", NumCondLoops);
+        print(state.files.bnd, " #Condenser Loops,{}\n", state.dataHVACGlobal->NumCondLoops);
         print(state.files.bnd,
               "{}\n",
               "! <Condenser Loop>,<Condenser Loop Name>,<Loop Type>,<Inlet Node Name>,<Outlet Node Name>,<Branch List>,<Connector List>");
@@ -2481,7 +2479,7 @@ namespace SimulationManager {
               "{}\n",
               "! <Condenser Loop Return Connection>,<Condenser Loop Name>,<Demand Side Outlet Node Name>,<Supply Side Inlet Node Name>");
 
-        for (int Count = NumPlantLoops + 1; Count <= state.dataPlnt->TotNumLoops; ++Count) {
+        for (int Count = state.dataHVACGlobal->NumPlantLoops + 1; Count <= state.dataPlnt->TotNumLoops; ++Count) {
             for (int LoopSideNum = DemandSide; LoopSideNum <= SupplySide; ++LoopSideNum) {
                 //  Plant Supply Side Loop
                 // Demandside and supplyside is parametrized in DataPlant
@@ -2942,9 +2940,6 @@ namespace SimulationManager {
         // Using/Aliasing
         // using SQLiteProcedures::CreateSQLiteDatabase;
         using FluidProperties::FindGlycol;
-        using FluidProperties::FluidIndex_EthyleneGlycol;
-        using FluidProperties::FluidIndex_PropoleneGlycol;
-        using FluidProperties::FluidIndex_Water;
 
         state.dataGlobal->DoingInputProcessing = false;
 
@@ -2955,9 +2950,9 @@ namespace SimulationManager {
         }
 
         // Set up more globals - process fluid input.
-        FluidIndex_Water = FindGlycol(state, "Water");
-        FluidIndex_EthyleneGlycol = FindGlycol(state, "EthyleneGlycol");
-        FluidIndex_PropoleneGlycol = FindGlycol(state, "PropoleneGlycol");
+        state.dataFluidProps->FluidIndex_Water = FindGlycol(state, "Water");
+        state.dataFluidProps->FluidIndex_EthyleneGlycol = FindGlycol(state, "EthyleneGlycol");
+        state.dataFluidProps->FluidIndex_PropoleneGlycol = FindGlycol(state, "PropoleneGlycol");
 
         inputProcessor->preScanReportingVariables(state);
     }
@@ -3034,7 +3029,6 @@ void Resimulate(EnergyPlusData &state,
     using HVACManager::SimHVAC;
     using RefrigeratedCase::ManageRefrigeratedCaseRacks;
     using ZoneTempPredictorCorrector::ManageZoneAirUpdates;
-    using DataHVACGlobals::UseZoneTimeStepHistory; // , InitDSwithZoneHistory
     using ZoneContaminantPredictorCorrector::ManageZoneContaminanUpdates;
     using namespace ZoneEquipmentManager;
 
@@ -3064,11 +3058,11 @@ void Resimulate(EnergyPlusData &state,
 
     if (ResimHVAC) {
         // HVAC simulation
-        ManageZoneAirUpdates(state, iGetZoneSetPoints, ZoneTempChange, false, UseZoneTimeStepHistory, 0.0);
-        if (state.dataContaminantBalance->Contaminant.SimulateContaminants) ManageZoneContaminanUpdates(state, iGetZoneSetPoints, false, UseZoneTimeStepHistory, 0.0);
+        ManageZoneAirUpdates(state, iGetZoneSetPoints, ZoneTempChange, false, state.dataHVACGlobal->UseZoneTimeStepHistory, 0.0);
+        if (state.dataContaminantBalance->Contaminant.SimulateContaminants) ManageZoneContaminanUpdates(state, iGetZoneSetPoints, false, state.dataHVACGlobal->UseZoneTimeStepHistory, 0.0);
         CalcAirFlowSimple(state, 0, state.dataHeatBal->ZoneAirMassFlow.AdjustZoneMixingFlow, state.dataHeatBal->ZoneAirMassFlow.AdjustZoneInfiltrationFlow);
-        ManageZoneAirUpdates(state, iPredictStep, ZoneTempChange, false, UseZoneTimeStepHistory, 0.0);
-        if (state.dataContaminantBalance->Contaminant.SimulateContaminants) ManageZoneContaminanUpdates(state, iPredictStep, false, UseZoneTimeStepHistory, 0.0);
+        ManageZoneAirUpdates(state, iPredictStep, ZoneTempChange, false, state.dataHVACGlobal->UseZoneTimeStepHistory, 0.0);
+        if (state.dataContaminantBalance->Contaminant.SimulateContaminants) ManageZoneContaminanUpdates(state, iPredictStep, false, state.dataHVACGlobal->UseZoneTimeStepHistory, 0.0);
         SimHVAC(state);
 
         ++state.dataDemandManager->DemandManagerHVACIterations;
