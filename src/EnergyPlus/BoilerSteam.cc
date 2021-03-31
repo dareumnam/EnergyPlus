@@ -228,7 +228,7 @@ namespace BoilerSteam {
             thisBoiler.FullLoadCoef(3) = state.dataIPShortCut->rNumericArgs(10);
             thisBoiler.SizFac = state.dataIPShortCut->rNumericArgs(11);
             if (thisBoiler.SizFac <= 0.0) thisBoiler.SizFac = 1.0;
-            thisBoiler.OutletSteamQuality = DataIPShortCuts::rNumericArgs(12);
+            thisBoiler.OutletSteamQuality = state.dataIPShortCut->rNumericArgs(12);
 
             if ((state.dataIPShortCut->rNumericArgs(8) + state.dataIPShortCut->rNumericArgs(9) + state.dataIPShortCut->rNumericArgs(10)) == 0.0) {
                 ShowSevereError(state, RoutineName + state.dataIPShortCut->cCurrentModuleObject + "=\"" + state.dataIPShortCut->cAlphaArgs(1) + "\",");
