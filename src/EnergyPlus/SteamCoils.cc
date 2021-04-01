@@ -841,7 +841,7 @@ namespace SteamCoils {
                         // RefrigIndex is set during GetInput for this module
                         EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                         EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                        DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
+                        DeltaEnthSteam = QualitySteamIn * (EnthSteamInDry - EnthSteamOutWet);
                         SteamDensity = GetSatDensityRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                         // SteamCoil(CoilNum)%MaxSteamVolFlowRate = DesCoilLoad/(SteamDensity * DeltaEnthSteam)
                         //            CpWater  =  GetSpecificHeatGlycol('WATER',  &
@@ -929,7 +929,7 @@ namespace SteamCoils {
                             // RefrigIndex is set during GetInput for this module
                             EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                             EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                            DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
+                            DeltaEnthSteam = QualitySteamIn * (EnthSteamInDry - EnthSteamOutWet);
                             SteamDensity = GetSatDensityRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                             // SteamCoil(CoilNum)%MaxSteamVolFlowRate = DesCoilLoad/(SteamDensity * DeltaEnthSteam)
                             //           CpWater  =  GetSpecificHeatGlycol('WATER',  &
@@ -1164,7 +1164,7 @@ namespace SteamCoils {
                     EnthSteamOutWet = GetSatEnthalpyRefrig(
                         state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
 
-                    DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
+                    DeltaEnthSteam = QualitySteamIn * (EnthSteamInDry - EnthSteamOutWet);
 
                     //          CpWater = GetSpecificHeatGlycol('WATER',  &
                     //                                           TempSteamIn, &
@@ -1279,7 +1279,7 @@ namespace SteamCoils {
                     // exchanger, subsequently heat exchange is latent heat + subcooling.
                     EnthSteamInDry = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 1.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
                     EnthSteamOutWet = GetSatEnthalpyRefrig(state, fluidNameSteam, TempSteamIn, 0.0, state.dataSteamCoils->SteamCoil(CoilNum).FluidIndex, RoutineName);
-                    DeltaEnthSteam = (EnthSteamInDry * QualitySteamIn + EnthSteamOutWet * (1 - QualitySteamIn)) - EnthSteamOutWet;
+                    DeltaEnthSteam = QualitySteamIn * (EnthSteamInDry - EnthSteamOutWet);
 
                     //          CpWater = GetSpecificHeatGlycol('WATER',  &
                     //                                           TempSteamIn, &
