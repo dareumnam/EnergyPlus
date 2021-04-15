@@ -336,7 +336,7 @@ namespace BoilerSteam {
         Real64 EnthSteamOutDry =
             FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->TempUpLimitBoilerOut, 1.0, this->FluidIndex, RoutineName);
         Real64 EnthSteamOutWet =
-                FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->TempUpLimitBoilerOut, 0.0, this->FluidIndex, RoutineName);
+            FluidProperties::GetSatEnthalpyRefrig(state, fluidNameSteam, this->TempUpLimitBoilerOut, 0.0, this->FluidIndex, RoutineName);
         Real64 DeltaEnthSteam = this->OutletSteamQuality * (EnthSteamOutDry - EnthSteamOutWet);
 
         Real64 CpWater =
