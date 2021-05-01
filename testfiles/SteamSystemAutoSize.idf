@@ -3233,7 +3233,7 @@
     Steam Boiler Plant Boiler Outlet Node,  !- Steam Outlet Node Name
     ,
     ,
-    0.95;
+    1;
 
   SetpointManager:Scheduled,
     Steam Boiler Plant Boiler Setpoint Manager,  !- Name
